@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Étape 1 : Carte - EcoSimRPG</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <nav class="floating-menu">
+        <div class="menu-title">EcoSimRPG</div>
+        <a href="index.html">Accueil</a>
+        <a href="map.html" class="active">Étape 1<br><small>(Carte)</small></a>
+        <a href="#">Étape 2<br><small>(Configuration)</small></a>
+        <a href="#">Étape 3<br><small>(Simulation)</small></a>
+        <a href="#">Étape 4<br><small>(Données)</small></a>
+    </nav>
+
+    <div class="page-container">
+        <header id="top-band">
+            <div id="top-band-left">
+                <section class="control-section" aria-labelledby="region-heading">
+                    <h2 id="region-heading">Gestion des Régions</h2>
+                    <div class="form-group">
+                        <label for="region-select">Région Actuelle :</label>
+                        <div class="input-group">
+                            <select id="region-select" name="region-select">
+                                <option value="">Aucune région sélectionnée</option>
+                            </select>
+                            <button id="delete-region-btn" class="btn-delete" disabled title="Supprimer la région sélectionnée">Supprimer</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="new-region-name">Créer une nouvelle région :</label>
+                        <div class="input-group">
+                            <input type="text" id="new-region-name" placeholder="Nom de la nouvelle région...">
+                            <button id="create-region-btn" class="btn-primary">Créer</button>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="control-section" aria-labelledby="config-heading">
+                    <h2 id="config-heading">Configuration</h2>
+                    <div class="form-group">
+                        <label for="hex-distance">Distance par hexagone (Km) :</label>
+                        <input type="number" id="hex-distance" value="1" min="0.1" step="0.1" style="width: 80px;">
+                    </div>
+                </section>
+            </div>
+
+            <div id="top-band-right">
+                <section class="control-section" aria-labelledby="random-gen-heading">
+                    <h2 id="random-gen-heading">Génération Aléatoire</h2>
+                    <div class="form-group">
+                        <label for="random-place-count">Nombre de lieux à créer :</label>
+                        <input type="number" id="random-place-count" value="5" min="1" max="50" style="width: 80px;">
+                    </div>
+                    <div class="form-group">
+                        <label for="placement-strategy">Stratégie de placement :</label>
+                        <select id="placement-strategy">
+                            <option value="random">Complètement aléatoire</option>
+                            <option value="ranged">Proximité définie</option>
+                        </select>
+                    </div>
+                    <div id="ranged-options" class="form-group" hidden>
+                        <label>Distance entre les lieux (en hex.)</label>
+                        <div class="input-group">
+                            <input type="number" id="min-range" placeholder="Min" value="2" min="1">
+                            <input type="number" id="max-range" placeholder="Max" value="5" min="1">
+                        </div>
+                    </div>
+                    <button id="generate-map-btn" class="btn-primary" style="width:100%;">Générer la carte</button>
+                    <p class="remark"><strong>Attention :</strong> Ceci supprimera tous les lieux existants sur la carte.</p>
+                </section>
+                
+                <section class="control-section" aria-labelledby="next-step-heading">
+                    <h2 id="next-step-heading">Action</h2>
+                    <button id="next-step-btn" class="btn-next" disabled>Passer à l'étape suivante &rarr;</button>
+                    <p id="next-step-error" class="error-message" hidden>Créez au moins un lieu pour continuer.</p>
+                </section>
+            </div>
+        </header>
+
+        <main id="main-content">
+            <aside id="left-column">
+                <section class="tools-section" aria-labelledby="tools-heading">
+                    <h2 id="tools-heading">Outils de la Région</h2>
+                    <div class="zoom-controls">
+                        <label>Zoom</label>
+                        <button id="zoom-in-btn" aria-label="Zoomer">+</button>
+                        <button id="zoom-out-btn" aria-label="Dézoomer">–</button>
+                    </div>
+                     <p class="remark" style="margin-bottom: 15px;">Utilisez la molette pour zoomer.</p>
+                    
+                     <div class="form-group" style="display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" id="show-distances-toggle" checked>
+                        <label for="show-distances-toggle" style="margin-bottom: 0;">Afficher les distances</label>
+                    </div>
+
+                    <h3>Lieux Créés</h3>
+                    <ul id="places-list">
+                        <li class="placeholder">Aucun lieu pour le moment.</li>
+                    </ul>
+                </section>
+            </aside>
+
+            <div id="center-column">
+                <div id="map-container">
+                    <canvas id="hex-map"></canvas>
+                    <div id="tooltip" class="tooltip" style="display:none; text-align: left; padding: 10px;"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <dialog id="place-modal">
+        <form id="place-form" method="dialog">
+            <h3>Créer un Nouveau Lieu</h3>
+            <div class="form-group">
+                <label for="place-name">Nom du lieu :</label>
+                <input type="text" id="place-name" required>
+            </div>
+            <div class="form-group">
+                <label for="place-type">Type de lieu :</label>
+                <select id="place-type" required>
+                    <option value="" disabled selected>Choisir un type...</option>
+                    <option value="Capitale">Capitale</option>
+                    <option value="Ville">Ville</option>
+                    <option value="Bourg">Bourg</option>
+                    <option value="Village">Village</option>
+                    <option value="Hameau">Hameau</option>
+                </select>
+            </div>
+            <div class="modal-actions">
+                <button type="submit" id="confirm-place-btn" class="btn-primary">Créer</button>
+                <button type="button" id="cancel-place-btn" class="btn-secondary">Annuler</button>
+            </div>
+        </form>
+    </dialog>
+
+    <script src="script.js"></script>
+
+</body>
+</html>

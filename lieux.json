@@ -1,0 +1,44 @@
+{
+    "Capitale": [
+        "Citadelle d'Argent",
+        "Fort-Tempête",
+        "Corvus",
+        "Aethelgard",
+        "Roche-du-Roi"
+    ],
+    "Ville": [
+        "Port-d'Ébène",
+        "Muraillegrise",
+        "Valbrume",
+        "Fauconia",
+        "Croisée-des-Marchands",
+        "Lance-d'Argent",
+        "Austheria"
+    ],
+    "Bourg": [
+        "Bois-Tranquille",
+        "Croisée-des-Vents",
+        "Pont-de-Pierre",
+        "Hauterive",
+        "Chardonneret",
+        "Salisbourg",
+        "Vieil-Marché"
+    ],
+    "Village": [
+        "Hautecolline",
+        "Riveclaire",
+        "Chênevieux",
+        "Gué-du-Sorbier",
+        "Aubépine",
+        "Combe-Fleurie",
+        "Murmure-du-Vent"
+    ],
+    "Hameau": [
+        "Le Gué du Pêcheur",
+        "La Retraite du Solitaire",
+        "Le Nid du Faucon",
+        "Le Repos du Chasseur",
+        "Clairière-aux-Fées",
+        "Trois-Chênes"
+    ]
+}

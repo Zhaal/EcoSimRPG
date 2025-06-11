@@ -1,0 +1,483 @@
+/* --- Variables de Thème Médiéval --- */
+:root {
+    /* Palette de couleurs */
+    --color-parchment: #F4EBD0;
+    --color-gold: #D4A017;
+    --color-forest-green: #2E7D32;
+    --color-royal-blue: #1E3A8A;
+    --color-stone-gray: #78909C;
+    --color-dark-text: #3E2723; /* Brun foncé pour le texte */
+    --color-border: #A1887F; /* Brun plus clair pour les bordures */
+    --color-modal-backdrop: rgba(0, 0, 0, 0.6);
+    --color-error: #B71C1C;
+
+    /* Polices */
+    --font-title: 'Cinzel', serif; /* Pour les titres */
+    --font-body: 'Lora', serif;   /* Pour le corps du texte */
+}
+
+/* --- Réinitialisation et Configuration de Base --- */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html, body {
+    height: 100%;
+    overflow: hidden;
+}
+
+body {
+    font-family: var(--font-body);
+    background-color: var(--color-parchment);
+    color: var(--color-dark-text);
+    padding-left: 160px; /* Espace pour le menu latéral */
+    font-size: 16px;
+}
+
+/* --- Menu Flottant --- */
+.floating-menu {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 160px;
+    background: linear-gradient(135deg, var(--color-royal-blue), #1a237e);
+    box-shadow: 4px 0 15px rgba(0,0,0,0.3);
+    z-index: 1001;
+    display: flex;
+    flex-direction: column;
+    padding-top: 20px;
+    border-right: 2px solid var(--color-gold);
+}
+
+.floating-menu .menu-title {
+    font-family: var(--font-title);
+    color: var(--color-gold);
+    text-align: center;
+    font-size: 1.5em;
+    margin-bottom: 20px;
+    text-shadow: 1px 1px 2px #000;
+}
+
+.floating-menu a {
+    color: var(--color-parchment);
+    padding: 12px 20px;
+    text-decoration: none;
+    font-family: var(--font-title);
+    font-weight: 400;
+    transition: background-color 0.3s, transform 0.2s;
+    border-bottom: 1px solid rgba(244, 235, 208, 0.2);
+}
+
+.floating-menu a small {
+    font-family: var(--font-body);
+    font-size: 0.8em;
+    opacity: 0.8;
+}
+
+.floating-menu a:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    transform: translateX(5px);
+}
+
+.floating-menu a.active {
+    background-color: var(--color-gold);
+    color: var(--color-dark-text);
+    font-weight: 700;
+    border-left: 4px solid var(--color-parchment);
+}
+
+/* --- Structure de la Page --- */
+.page-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 100%;
+}
+
+#top-band {
+    flex-shrink: 0;
+    display: flex;
+    background-color: rgba(255, 255, 255, 0.3);
+    border-bottom: 2px solid var(--color-border);
+}
+
+#top-band-left, #top-band-right {
+    flex: 1;
+    padding: 15px;
+    display: flex;
+    gap: 15px;
+}
+
+#top-band-left > .control-section,
+#top-band-right > .control-section {
+    flex: 1;
+}
+
+
+#top-band-left {
+    border-right: 1px solid var(--color-border);
+}
+
+#main-content {
+    display: flex;
+    flex-grow: 1;
+    overflow: hidden;
+}
+
+#left-column {
+    flex: 0 0 280px;
+    background-color: rgba(255, 255, 255, 0.3);
+    border-right: 2px solid var(--color-border);
+    overflow-y: auto;
+    padding: 15px;
+}
+
+#center-column {
+    flex-grow: 1;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+}
+
+/* --- Sections de Contrôle (Haut & Gauche) --- */
+.control-section, .tools-section {
+    margin-bottom: 20px;
+}
+.control-section:last-child, .tools-section:last-child {
+    margin-bottom: 0;
+}
+
+
+.control-section h2, .tools-section h2, .tools-section h3 {
+    font-family: var(--font-title);
+    color: var(--color-royal-blue);
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: 5px;
+    margin-bottom: 15px;
+    font-size: 1.2em;
+}
+
+.tools-section h3 {
+    margin-top: 20px;
+    font-size: 1.1em;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+.input-group {
+    display: flex;
+    gap: 5px;
+}
+
+.input-group > select, .input-group > input {
+    flex-grow: 1;
+}
+
+input[type="text"], input[type="number"], select {
+    width: 100%;
+    padding: 8px 12px;
+    background-color: #fff;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    font-family: var(--font-body);
+    color: var(--color-dark-text);
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+input:focus, select:focus {
+    outline: none;
+    border-color: var(--color-gold);
+    box-shadow: 0 0 5px rgba(212, 160, 23, 0.5);
+}
+
+.btn-primary, .btn-secondary, .btn-next, .btn-delete {
+    font-family: var(--font-title);
+    padding: 8px 15px;
+    border-radius: 4px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-weight: 700;
+}
+
+.btn-primary {
+    background-color: var(--color-forest-green);
+    color: white;
+    border-color: #1b5e20;
+}
+.btn-primary:hover { background-color: #388e3c; }
+
+.btn-delete {
+    background-color: var(--color-error);
+    color: white;
+    border-color: #7f1d1d;
+}
+.btn-delete:hover:not(:disabled) { background-color: #c62828; }
+.btn-delete:disabled {
+    background-color: var(--color-stone-gray);
+    border-color: #546e7a;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.btn-next {
+    background-color: var(--color-royal-blue);
+    color: white;
+    border-color: #1a237e;
+    width: 100%;
+    padding: 12px;
+    font-size: 1.1em;
+}
+.btn-next:hover:not(:disabled) { background-color: #3949ab; }
+.btn-next:disabled {
+    background-color: var(--color-stone-gray);
+    border-color: #546e7a;
+    cursor: not-allowed;
+}
+
+.error-message {
+    color: var(--color-error);
+    font-size: 0.9em;
+    margin-top: 5px;
+}
+
+.instructions-list {
+    list-style-type: '✧';
+    padding-left: 20px;
+}
+.instructions-list li { padding-left: 10px; margin-bottom: 5px; }
+.remark { margin-top: 10px; font-style: italic; font-size: 0.9em}
+
+/* --- Outils de la Région --- */
+.zoom-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 5px;
+}
+.zoom-controls button {
+    width: 30px;
+    height: 30px;
+    font-size: 1.2em;
+    background-color: var(--color-stone-gray);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+}
+.zoom-controls button:hover { background-color: #546e7a; }
+
+#places-list {
+    list-style: none;
+    padding: 0;
+}
+#places-list li {
+    padding: 8px;
+    border-bottom: 1px dashed var(--color-border);
+    transition: background-color 0.2s;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 5px;
+}
+#places-list li:hover { background-color: rgba(212, 160, 23, 0.2); }
+#places-list li.placeholder { font-style: italic; color: var(--color-stone-gray); cursor: default; }
+#places-list li .place-info {
+    cursor: pointer;
+    flex-grow: 1;
+    /* Allow shrinking */
+    min-width: 0;
+}
+#places-list li .place-info > div {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#places-list li .place-type {
+    font-size: 0.8em;
+    color: var(--color-stone-gray);
+    font-style: italic;
+}
+
+.place-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.btn-center, .btn-edit {
+    font-family: var(--font-body);
+    font-weight: 600;
+    background-color: var(--color-stone-gray);
+    color: white;
+    border: none;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    transition: background-color 0.2s;
+}
+.btn-center:hover, .btn-edit:hover {
+    background-color: #546e7a;
+}
+.btn-edit {
+    background-color: var(--color-royal-blue);
+}
+.btn-edit:hover {
+    background-color: #3949ab;
+}
+
+
+.delete-place-btn {
+    font-family: sans-serif;
+    font-weight: bold;
+    background: transparent;
+    border: none;
+    color: var(--color-stone-gray);
+    cursor: pointer;
+    padding: 5px 8px;
+    border-radius: 50%;
+    transition: background-color 0.2s, color 0.2s;
+}
+.delete-place-btn:hover {
+    background-color: var(--color-error);
+    color: white;
+}
+
+
+/* --- Carte --- */
+#map-container {
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+#hex-map {
+    display: block;
+    background-color: #e0e0e0;
+    cursor: grab; /* Default cursor for panning */
+}
+
+#hex-map.place-draggable {
+    cursor: move; /* Cursor when hovering over a place */
+}
+
+#hex-map.dragging {
+    cursor: grabbing; /* Cursor when actively panning */
+}
+
+.tooltip {
+    position: absolute;
+    background: rgba(0, 0, 0, 0.75);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    pointer-events: none; /* Important */
+    transform: translate(-50%, -100%);
+    white-space: nowrap;
+}
+
+/* --- Modale --- */
+#place-modal {
+    width: 90%;
+    max-width: 400px;
+    border: 2px solid var(--color-gold);
+    border-radius: 8px;
+    background-color: var(--color-parchment);
+    box-shadow: 0 5px 20px rgba(0,0,0,0.4);
+    padding: 25px;
+}
+
+#place-modal::backdrop {
+    background: var(--color-modal-backdrop);
+}
+
+#place-modal h3 {
+    font-family: var(--font-title);
+    text-align: center;
+    margin-bottom: 20px;
+    color: var(--color-royal-blue);
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.btn-secondary {
+    background-color: transparent;
+    color: var(--color-dark-text);
+    border-color: var(--color-border);
+}
+.btn-secondary:hover { background-color: rgba(0,0,0,0.05); }
+
+
+/* --- Responsive Design --- */
+@media (max-width: 1200px) {
+    #left-column {
+        flex-basis: 220px;
+    }
+}
+
+@media (max-width: 992px) {
+    body {
+        padding-left: 0;
+    }
+    .page-container {
+        flex-direction: column;
+    }
+    .floating-menu {
+        /* Devient un menu hamburger ou horizontal en haut */
+        width: 100%;
+        height: auto;
+        flex-direction: row;
+        bottom: auto;
+        top: 0;
+        padding: 5px;
+        justify-content: center;
+    }
+    .floating-menu a {
+        padding: 8px 10px;
+    }
+    .floating-menu .menu-title {
+        display: none; /* Cacher le titre sur mobile */
+    }
+
+    #top-band {
+        flex-direction: column;
+        margin-top: 50px; /* Espace pour le menu */
+    }
+    #top-band-left { border-right: none; border-bottom: 1px solid var(--color-border); }
+
+    #main-content {
+        flex-direction: column;
+    }
+    #left-column {
+        flex-basis: auto;
+        width: 100%;
+        border-right: none;
+        border-bottom: 2px solid var(--color-border);
+        max-height: 250px;
+    }
+    #center-column {
+        height: 50vh; /* Donner une hauteur définie pour la carte */
+    }
+}
