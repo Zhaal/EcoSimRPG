@@ -37,8 +37,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let regions = [];
     let currentRegion = null;
     let hexSize = 30;
-    let selectedHex = null; // For creating a new place
-    let selectedPlaceForLines = null;
+    let selectedHex = null; // Pour créer un nouveau lieu
+    let selectedPlaceForLines = null; // Pour afficher les distances après un clic
+    let hoveredPlace = null; // Pour afficher les distances au survol
     let placeNames = {}; // Pour stocker les noms de lieux depuis le JSON
     
     const hexImage = new Image();
@@ -163,6 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
             offsetX = 0;
             offsetY = 0;
             selectedPlaceForLines = null;
+            hoveredPlace = null;
         } else {
             currentRegion = null;
         }
@@ -226,6 +228,9 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (selectedPlaceForLines && selectedPlaceForLines.id === placeId) {
                 selectedPlaceForLines = null;
+            }
+            if (hoveredPlace && hoveredPlace.id === placeId) {
+                hoveredPlace = null;
             }
 
             saveData();
@@ -299,9 +304,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         if (showDistancesToggle.checked) {
-            let placeToDrawLinesFrom = selectedPlaceForLines;
+            let placeToDrawLinesFrom = null;
+
+            // Priority: dragged > hovered > selected
             if (isPlaceDragging && draggedPlace) {
-                 placeToDrawLinesFrom = draggedPlace;
+                placeToDrawLinesFrom = draggedPlace;
+            } else {
+                placeToDrawLinesFrom = hoveredPlace || selectedPlaceForLines;
             }
             
             if (placeToDrawLinesFrom && currentRegion.places.length > 1) {
@@ -386,10 +395,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         
             ctx.restore(); 
-        
-            if ((showDistancesToggle.checked && selectedPlaceForLines && selectedPlaceForLines.id === place.id && !isPlaceDragging) || (customStroke)) {
+            
+            const placeIsSelected = (selectedPlaceForLines && selectedPlaceForLines.id === place.id);
+            const placeIsHovered = (hoveredPlace && hoveredPlace.id === place.id);
+
+            if ((showDistancesToggle.checked && (placeIsSelected || placeIsHovered) && !isPlaceDragging) || customStroke) {
                 ctx.lineWidth = 3;
-                ctx.strokeStyle = customStroke || '#FFFFFF';
+                ctx.strokeStyle = customStroke || (placeIsHovered ? '#FFD700' : '#FFFFFF'); // Gold for hover, White for select
                 ctx.beginPath();
                 for (let i = 0; i < 6; i++) {
                     const angle_deg = 60 * i - 30;
@@ -702,10 +714,11 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (action === 'select') {
             const place = currentRegion.places.find(p => p.id === placeId);
             if (selectedPlaceForLines && selectedPlaceForLines.id === placeId) {
-                selectedPlaceForLines = null;
+                selectedPlaceForLines = null; // Unselect if clicked again
             } else {
                 selectedPlaceForLines = place;
             }
+            hoveredPlace = null; // Clear hover when selecting
             drawMap();
         } else if (action === 'center') {
             animatePanAndPulse(placeId);
@@ -789,7 +802,8 @@ document.addEventListener('DOMContentLoaded', () => {
             isPlaceDragging = true;
             draggedPlace = clickedPlace;
             dragStartCoords = { ...clickedPlace.coords };
-            selectedPlaceForLines = null;
+            selectedPlaceForLines = null; // Clear selection when dragging
+            hoveredPlace = null;
             canvas.style.cursor = 'grabbing';
         } else {
             isMapDragging = true;
@@ -800,7 +814,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('mousemove', (event) => {
         if (!currentRegion) return;
 
-        if (isMouseDown) {
+        if (isMouseDown) { // Logic for when dragging
             const dx = event.clientX - lastMouseX;
             const dy = event.clientY - lastMouseY;
             lastMouseX = event.clientX;
@@ -821,12 +835,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 offsetY += dy;
                 drawMap();
             }
-        } else {
+        } else { // Logic for when just moving the mouse (not dragging)
              const rect = canvas.getBoundingClientRect();
              const mouseX = event.clientX - rect.left;
              const mouseY = event.clientY - rect.top;
              const hexCoords = pixelToHex(mouseX, mouseY);
-             if (getPlaceAtHex(hexCoords)) {
+             const placeUnderMouse = getPlaceAtHex(hexCoords);
+
+             // Handle hover for distances
+             if (hoveredPlace?.id !== placeUnderMouse?.id) {
+                 hoveredPlace = placeUnderMouse;
+                 drawMap();
+             }
+             
+             // Handle cursor style
+             if (placeUnderMouse) {
                  canvas.style.cursor = 'move';
              } else {
                  canvas.style.cursor = 'grab';
@@ -847,16 +870,17 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const occupyingPlace = getPlaceAtHex(finalHexCoords);
             if(occupyingPlace && occupyingPlace.id !== draggedPlace.id) {
-                draggedPlace.coords = dragStartCoords;
+                draggedPlace.coords = dragStartCoords; // Revert position
                 alert("Vous ne pouvez pas déplacer un lieu sur un autre.");
             } else {
                 draggedPlace.coords = finalHexCoords;
                 saveData();
             }
+            // After dropping, this place becomes the selected one for lines
             selectedPlaceForLines = draggedPlace;
         }
 
-        if (!wasDragging) {
+        if (!wasDragging) { // This was a simple click, not a drag
              const rect = canvas.getBoundingClientRect();
              const clickX = event.clientX - rect.left;
              const clickY = event.clientY - rect.top;
@@ -865,21 +889,29 @@ document.addEventListener('DOMContentLoaded', () => {
              
              if(clickedPlace){
                 if(selectedPlaceForLines && selectedPlaceForLines.id === clickedPlace.id){
-                    selectedPlaceForLines = null;
+                    selectedPlaceForLines = null; // Unselect if clicked again
                 } else {
                     selectedPlaceForLines = clickedPlace;
                 }
              } else {
-                 selectedPlaceForLines = null;
+                 selectedPlaceForLines = null; // Clicked on empty space
              }
         }
-
+        
+        hoveredPlace = null;
         isMouseDown = false;
         isMapDragging = false;
         isPlaceDragging = false;
         draggedPlace = null;
         canvas.style.cursor = 'grab';
         drawMap();
+    });
+
+    canvas.addEventListener('mouseout', () => {
+        if (hoveredPlace) {
+            hoveredPlace = null;
+            drawMap();
+        }
     });
 
     zoomInBtn.addEventListener('click', () => { hexSize = Math.min(60, hexSize + 5); drawMap(); });
