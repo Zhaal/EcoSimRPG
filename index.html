@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Accueil - Simulateur de Région</title>
+    <title>Accueil - EcoSimRPG</title>
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
-
 </head>
 <body>
     <nav class="floating-menu">
@@ -22,31 +21,32 @@
 
     <div class="page-container">
         <div id="top-band">
-            <div id="top-band-left">
-                </div>
-            <div id="top-band-right">
-                </div>
+            <div id="top-band-left"></div>
+            <div id="top-band-right"></div>
         </div>
 
-        <div id="main-content">
-            <div id="left-column">
-            </div>
+        <main id="main-content" class="home-main">
+            <div class="home-content-panel">
+                <header class="home-header">
+                    <h1>EcoSimRPG</h1>
+                    <h2>Simulateur de Monde et d'Économie</h2>
+                </header>
+                
+                <p class="home-intro">
+                    Bienvenue, stratège. Cet outil vous est destiné pour forger des mondes, ériger des cités et insuffler la vie à des économies complexes pour vos récits et campagnes. De la plus humble bourgade à la plus majestueuse des capitales, chaque décision influe sur le destin de votre peuple.
+                </p>
 
-            <div id="center-column">
-                <div class="welcome-container">
-                    <h1>Bienvenue sur le Simulateur de Région</h1>
-                    <p>
-                        Cet outil vous permet de créer et de gérer dynamiquement une région pour vos campagnes de jeu de rôle. Commencez par dessiner votre carte, placez des lieux, puis simulez l'évolution de la population et des événements.
+                <div class="home-features">
+                    <h3>Informations</h3>
+                    <p class="feature-info-text">
+                        Pour le moment, seule la configuration d'une "Capitale" avec un système économique "Libéral" est pleinement intégrée.
                     </p>
-                    <a href="map.html" class="cta-button">Commencer la création &rarr;</a>
                 </div>
-            </div>
 
-            <div id="right-column">
+                <a href="map.html" class="cta-button">Forger votre Région &rarr;</a>
             </div>
-        </div>
+        </main>
     </div>
 
-    <script src="script.js"></script>
 </body>
 </html>

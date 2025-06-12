@@ -1046,7 +1046,6 @@ input:focus, select:focus {
 }
 
 
-/* AJOUTÉ : Styles pour les barres de défilement personnalisées */
 /* --- Barres de Défilement Personnalisées --- */
 ::-webkit-scrollbar {
     width: 12px;
@@ -1066,7 +1065,7 @@ input:focus, select:focus {
     background-color: var(--color-stone-gray);
 }
 
-/* --- NOUVEAU : Fenêtre Modale de Création/Édition de Lieu --- */
+/* --- Fenêtre Modale de Création/Édition de Lieu --- */
 #place-modal {
     background: var(--color-parchment);
     border: 2px solid var(--color-gold);
@@ -1117,6 +1116,93 @@ input:focus, select:focus {
     border-top: 1px solid var(--color-border);
 }
 
+/* --- Styles pour la Page d'Accueil --- */
+
+.home-main {
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.home-content-panel {
+    width: 100%;
+    max-width: 800px;
+    background-color: rgba(255, 255, 255, 0.4);
+    border: 1px solid var(--color-border);
+    padding: 30px 40px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    text-align: center;
+}
+
+.home-header h1 {
+    font-family: var(--font-title);
+    font-size: 4em;
+    color: var(--color-royal-blue);
+    margin: 0;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+}
+
+.home-header h2 {
+    font-family: var(--font-body);
+    font-style: italic;
+    font-size: 1.2em;
+    color: var(--color-dark-text);
+    margin: 0 0 25px 0;
+    font-weight: 600;
+}
+
+.home-intro {
+    font-size: 1.1em;
+    line-height: 1.6;
+    margin-bottom: 30px;
+}
+
+.home-features {
+    background-color: rgba(0,0,0,0.03);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 35px;
+}
+
+.home-features h3 {
+    font-family: var(--font-title);
+    color: var(--color-royal-blue);
+    margin: 0 0 15px 0;
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: 10px;
+}
+
+.feature-info-text {
+    font-style: italic;
+    color: var(--color-dark-text);
+    font-size: 1.0em;
+    padding: 5px 0;
+}
+
+.cta-button {
+    display: inline-block;
+    background-color: var(--color-forest-green);
+    color: white;
+    font-family: var(--font-title);
+    font-size: 1.3em;
+    padding: 15px 30px;
+    border-radius: 5px;
+    text-decoration: none;
+    border: 2px solid #1b5e20;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    transition: all 0.3s ease;
+}
+
+.cta-button:hover {
+    background-color: #388e3c;
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0 6px 15px rgba(0,0,0,0.3);
+}
+
+
 /* --- Responsive Design --- */
 @media (max-width: 1200px) {
     #left-column {
@@ -1137,9 +1223,11 @@ input:focus, select:focus {
         top: 0;
         padding: 5px;
         justify-content: center;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
     }
     .floating-menu a {
         padding: 8px 10px;
+        border-bottom: none;
     }
     .floating-menu .menu-title {
         display: none;
@@ -1180,6 +1268,10 @@ input:focus, select:focus {
     .financial-summary-grid {
         grid-template-columns: 1fr;
     }
+
+    .home-header h1 { font-size: 2.5em; }
+    .home-header h2 { font-size: 1em; }
+    .home-content-panel { padding: 20px; }
 }
 
 /* --- Animations --- */
