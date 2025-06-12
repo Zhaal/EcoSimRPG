@@ -235,17 +235,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             saveData();
             updatePlacesList();
-            updateNextStepButton();
+            // updateNextStepButton(); // CORRECTION: Fonction inexistante commentée
             drawMap();
         }
     }
 
-    function updateNextStepButton() {
-        const enabled = currentRegion && currentRegion.places.length > 0;
-        nextStepBtn.disabled = !enabled;
-        nextStepError.hidden = enabled;
-    }
-    
     function resizeCanvas() {
         canvas.width = mapContainer.clientWidth;
         canvas.height = mapContainer.clientHeight;
@@ -516,7 +510,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         saveData();
         updatePlacesList();
-        updateNextStepButton();
+        // updateNextStepButton(); // CORRECTION: Fonction inexistante commentée
         drawMap();
         placeModal.close();
     }
