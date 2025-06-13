@@ -470,7 +470,7 @@ input:focus, select:focus {
     border: 2px solid var(--color-gold);
     border-radius: 6px;
     padding: 15px;
-    z-index: 1010;
+    z-index: 2100;
     pointer-events: none;
     width: auto;
     max-width: 450px;
@@ -586,20 +586,23 @@ input:focus, select:focus {
     overflow: hidden;
 }
 
+/* ----- PREMIÈRE MODIFICATION : On enlève le scroll de cette zone ----- */
 .simulation-scroll-area {
     flex-grow: 1;
-    overflow-y: auto;
+    /* overflow-y: auto; -- DÉSACTIVÉ */ /* <-- MODIFICATION APPLIQUÉE */
     min-height: 0;
     display: flex;
     gap: 20px;
     padding-right: 10px;
 }
 
+/* ----- DEUXIÈME MODIFICATION : On ajoute le scroll à la colonne de gauche ----- */
 .simulation-column-left {
     flex: 0 0 320px;
     display: flex;
     flex-direction: column;
     gap: 15px;
+    overflow-y: auto; /* <-- MODIFICATION APPLIQUÉE */
 }
 .simulation-column-right {
     flex: 1 1 auto;
@@ -607,6 +610,15 @@ input:focus, select:focus {
     flex-direction: column;
     min-width: 0;
 }
+
+/* ----- BLOCK MODIFIÉ 2/3 : On prépare le fieldset à contenir un élément scrollable ----- */
+.simulation-column-right > fieldset {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    min-height: 0;
+}
+
 
 #revenue-simulation-modal #tax-settings-fieldset {
     flex-shrink: 0;
@@ -647,8 +659,10 @@ input:focus, select:focus {
     font-weight: normal;
 }
 
+/* ----- BLOCK MODIFIÉ 3/3 : Le conteneur du tableau devient la zone de défilement ----- */
 #simulation-details-container {
-    overflow-x: auto;
+    overflow: auto; /* Gère le scroll vertical et horizontal */
+    flex-grow: 1;
 }
 
 .simulation-table {
@@ -661,25 +675,31 @@ input:focus, select:focus {
     text-align: left;
     border-bottom: 1px solid var(--color-border);
 }
+
 .simulation-table th {
     font-family: var(--font-title);
     font-weight: 700;
     vertical-align: bottom;
+    /* L'en-tête est maintenant "sticky" par rapport à #simulation-details-container */
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background-color: var(--color-parchment);
 }
+
 .simulation-table .category-header {
     background-color: rgba(30, 58, 138, 0.1);
     font-family: var(--font-title);
     font-size: 1.1em;
     padding: 10px;
 }
-/* AJOUTÉ : Style pour les lignes paires pour une meilleure lisibilité */
 .simulation-table tbody tr:nth-child(even) {
     background-color: rgba(0,0,0,0.03);
 }
 
 .simulation-table .subtotal-row {
     font-weight: bold;
-    background-color: rgba(0,0,0,0.06); /* MODIFIÉ : légèrement plus sombre pour se démarquer */
+    background-color: rgba(0,0,0,0.06);
 }
 
 .simulation-table td.jobs-tier-cell {
@@ -762,7 +782,6 @@ input:focus, select:focus {
     font-size: 1.8rem;
     padding: 0 5px;
     line-height: 1;
-    /* MODIFIÉ (implicitement) : La transition est déjà définie plus haut */
 }
 .draggable-modal-body {
     padding: 20px;
@@ -1084,7 +1103,7 @@ input:focus, select:focus {
 
 /* Annuler la bordure par défaut du navigateur sur la modale */
 #place-modal {
-    border: none; 
+    border: none;
 }
 
 #place-modal[open] {

@@ -4,13 +4,8 @@ var EcoSim = window.EcoSim || {};
 
 /**
  * Calcule l'économie mensuelle pour une capitale en système libéral.
- * VERSION CORRIGÉE : Les calculs de salaires sont faits en PC pour une précision maximale.
- *
- * PRINCIPES DE CETTE VERSION :
- * 1.  CALCUL EN PC : Pour éviter les erreurs d'arrondi où les bas salaires tombaient à zéro,
- * toute la logique de paie est désormais effectuée en Pièces de Cuivre.
- * 2.  PRÉSERVATION DES FRACTIONS : La conversion finale en PO conserve les décimales, qui
- * représentent les Pièces d'Argent et de Cuivre. La fonction formatCurrency se charge de l'affichage.
+ * VERSION CORRIGÉE : Toutes les taxes (Taille, Octroi, Banalités) impactent le bénéfice net.
+ * La Capitation est déduite du salaire de l'employé.
  *
  * @param {object} place - L'objet de la capitale.
  * @param {object} activeCrises - Les crises actives.
@@ -75,7 +70,6 @@ EcoSim.calculateLiberalEconomy = function(place, activeCrises, buildingDetails, 
                 const fixedCost = parsePO(details.chargeFixe);
                 const salaryPoolInPO = Math.floor(parsePO(details.chargeMax) / 12);
                 
-                // CORRECTION : On passe tout en PC pour le calcul des salaires afin de garder la précision.
                 const salaryPoolInPC = salaryPoolInPO * PO_TO_PC_CONVERSION;
 
                 let totalWeightedPay = 0;
@@ -87,9 +81,10 @@ EcoSim.calculateLiberalEconomy = function(place, activeCrises, buildingDetails, 
 
                 let salariesPerEmployee = {};
                 for (let tier = 0; tier <= 5; tier++) {
-                    const salaryInPC = payPointValueInPC * (salaryWeights[tier] || 0);
-                    // On stocke la valeur en PO (avec décimales) pour les calculs de taxes etc.
-                    salariesPerEmployee[tier] = salaryInPC / PO_TO_PC_CONVERSION;
+                    const grossSalaryInPC = payPointValueInPC * (salaryWeights[tier] || 0);
+                    const capitationTaxInPC = grossSalaryInPC * (taxRates.payroll / 100);
+                    const netSalaryInPC = grossSalaryInPC - capitationTaxInPC;
+                    salariesPerEmployee[tier] = netSalaryInPC / PO_TO_PC_CONVERSION;
                 }
 
                 const isAdministrative = category === "Bâtiments Administratifs";
@@ -99,16 +94,31 @@ EcoSim.calculateLiberalEconomy = function(place, activeCrises, buildingDetails, 
                 }
 
                 const totalCost = fixedCost + salaryPoolInPO;
-                const netProfit = revenue - totalCost;
+                const preTaxNetProfit = revenue - totalCost;
 
                 let taxes = { sales: 0, profit: 0, property: 0, payroll: 0 };
+                let finalNetProfit = preTaxNetProfit;
+
                 if (!isAdministrative) {
-                    const taxableProfit = Math.max(0, netProfit);
-                    taxes.sales = revenue * (taxRates.sales / 100);
-                    taxes.profit = taxableProfit * (taxRates.profit / 100);
+                    // MODIFICATION : Calcul séquentiel des taxes pour impacter le bénéfice net
+                    
+                    // 1. Calcul des taxes considérées comme des charges d'exploitation
+                    taxes.sales = revenue * (taxRates.sales / 100); // Octroi
+                    taxes.property = parsePO(details.coutConstruction) * (taxRates.property / 100); // Banalités
+                    
+                    // 2. Le bénéfice imposable pour la "Taille" est calculé après déduction de ces charges
+                    const profitBaseForTaille = preTaxNetProfit - taxes.sales - taxes.property;
+                    
+                    // 3. Calcul de la "Taille" (impôt sur les bénéfices)
+                    taxes.profit = Math.max(0, profitBaseForTaille) * (taxRates.profit / 100);
+                    
+                    // 4. La Capitation est calculée sur la masse salariale brute (le coût pour l'employeur ne change pas)
                     taxes.payroll = salaryPoolInPO * (taxRates.payroll / 100);
-                    taxes.property = parsePO(details.coutConstruction) * (taxRates.property / 100);
+                    
+                    // 5. Le bénéfice net final est le bénéfice avant impôt sur les sociétés, moins cet impôt.
+                    finalNetProfit = profitBaseForTaille - taxes.profit;
                 }
+
 
                 sim.categories[category].buildings.push({
                     name: buildingName,
@@ -116,7 +126,7 @@ EcoSim.calculateLiberalEconomy = function(place, activeCrises, buildingDetails, 
                     fixedCost: fixedCost,
                     salaryCost: salaryPoolInPO,
                     totalCost: totalCost,
-                    net: netProfit,
+                    net: finalNetProfit, // On utilise le bénéfice net après TOUS les impôts.
                     jobsByTier: jobsByTier,
                     salariesPerEmployee: salariesPerEmployee,
                     taxes: taxes

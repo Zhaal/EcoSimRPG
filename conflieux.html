@@ -9,6 +9,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
     
     <link rel="stylesheet" href="style.css">
+    <style>
+.simulation-column-left {
+    width: 50%; /* La colonne de gauche prend 35% de la largeur */
+}
+.simulation-column-right {
+    width: 50%; /* La colonne de droite prend 65% */
+}
+    </style>
 
 </head>
 <body>
@@ -81,19 +89,19 @@
                     <legend>Fiscalité (Système Libéral)</legend>
                     <div id="tax-settings" style="display: flex; flex-wrap: wrap; gap: 15px;">
                         <div class="form-group" style="flex: 1; min-width: 200px;">
-                            <label for="tax-sales" style="font-size: 0.9em; margin-bottom: 2px;">Impôt sur les ventes (%)</label>
+                            <label for="tax-sales" style="font-size: 0.9em; margin-bottom: 2px;">Octroi (%) <span class="info-icon" data-tooltip-title="Octroi" data-tooltip-desc="Taxe sur les marchandises">?</span></label>
                             <input type="number" class="tax-input" id="tax-sales" data-tax-type="sales" min="0" max="25" step="0.5" style="width: 100%;">
                         </div>
                         <div class="form-group" style="flex: 1; min-width: 200px;">
-                            <label for="tax-profit" style="font-size: 0.9em; margin-bottom: 2px;">Impôt sur les bénéfices (%)</label>
+                            <label for="tax-profit" style="font-size: 0.9em; margin-bottom: 2px;">Taille (%) <span class="info-icon" data-tooltip-title="Taille" data-tooltip-desc="Impôt direct payé par les batîments">?</span></label>
                             <input type="number" class="tax-input" id="tax-profit" data-tax-type="profit" min="0" max="50" step="1" style="width: 100%;">
                         </div>
                         <div class="form-group" style="flex: 1; min-width: 200px;">
-                            <label for="tax-property" style="font-size: 0.9em; margin-bottom: 2px;">Taxe Foncière (% val/mois)</label>
+                            <label for="tax-property" style="font-size: 0.9em; margin-bottom: 2px;">Banalités (% val/mois) <span class="info-icon" data-tooltip-title="Banalités" data-tooltip-desc="Redevance d’usage public">?</span></label>
                             <input type="number" class="tax-input" id="tax-property" data-tax-type="property" min="0" max="1" step="0.01" style="width: 100%;">
                         </div>
                          <div class="form-group" style="flex: 1; min-width: 200px;">
-                            <label for="tax-payroll" style="font-size: 0.9em; margin-bottom: 2px;">Charges salariales (%)</label>
+                            <label for="tax-payroll" style="font-size: 0.9em; margin-bottom: 2px;">Capitation (%) <span class="info-icon" data-tooltip-title="Capitation" data-tooltip-desc="Impôt par tête">?</span></label>
                             <input type="number" class="tax-input" id="tax-payroll" data-tax-type="payroll" min="0" max="10" step="0.5" style="width: 100%;">
                         </div>
                     </div>

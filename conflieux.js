@@ -353,16 +353,23 @@ document.addEventListener('DOMContentLoaded', () => {
                     <strong>Détail des Impôts (Revenus de la Cité):</strong>
                 </p>
                 <ul style="list-style-position: inside; padding-left: 5px; font-size: 0.9em; color: var(--color-dark-text); margin:0;">
-                    <li>Ventes: <span style="font-weight:bold; color: var(--color-forest-green);">${fmp(taxes.sales)}</span></li>
-                    <li>Bénéfices: <span style="font-weight:bold; color: var(--color-forest-green);">${fmp(taxes.profit)}</span></li>
-                    <li>Taxe Foncière: <span style="font-weight:bold; color: var(--color-forest-green);">${fmp(taxes.property)}</span></li>
-                    <li>Charges Salariales: <span style="font-weight:bold; color: var(--color-forest-green);">${fmp(taxes.payroll)}</span></li>
+                    <li>Octroi: <span style="font-weight:bold; color: var(--color-forest-green);">${fmp(taxes.sales)}</span><span class="info-icon" data-tooltip-title="Octroi" data-tooltip-desc="Taxe sur les marchandises">?</span></li>
+                    <li>Taille: <span style="font-weight:bold; color: var(--color-forest-green);">${fmp(taxes.profit)}</span><span class="info-icon" data-tooltip-title="Taille" data-tooltip-desc="Impôt direct payé par les batîments">?</span></li>
+                    <li>Banalités: <span style="font-weight:bold; color: var(--color-forest-green);">${fmp(taxes.property)}</span><span class="info-icon" data-tooltip-title="Banalités" data-tooltip-desc="Redevance d’usage public">?</span></li>
+                    <li>Capitation: <span style="font-weight:bold; color: var(--color-forest-green);">${fmp(taxes.payroll)}</span><span class="info-icon" data-tooltip-title="Capitation" data-tooltip-desc="Impôt par tête">?</span></li>
                 </ul>
             `;
             keyIndicatorsHTML += `</div>`;
         }
         keyIndicatorsHTML += `</div>`;
         document.getElementById('key-indicators').innerHTML = keyIndicatorsHTML;
+        
+        // Add listeners for the newly created icons in the simulation results
+        document.getElementById('key-indicators').querySelectorAll('.info-icon').forEach(icon => {
+            icon.addEventListener('mouseenter', showSimpleTooltip);
+            icon.addEventListener('mouseleave', hideBuildingTooltip);
+            icon.addEventListener('mousemove', moveBuildingTooltip);
+        });
         
         document.getElementById('social-distribution').innerHTML = `
             <p><strong>Total Emplois Pourvus: </strong> ${fm(results.employment.employed)} / ${fm(results.employment.totalJobs)}</p>
@@ -372,7 +379,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </p>
         `;
     
-        let tableHTML = `<table class="simulation-table"><thead><tr><th>Bâtiment</th><th>Revenu</th><th>Entretien</th><th>Salaires</th><th>Coût Total</th><th>Bénéfice Net</th><th>Taxe Vente</th><th>Taxe Profit</th><th>Taxe Prop.</th><th>Taxe Salari.</th></tr></thead><tbody>`;
+        let tableHTML = `<table class="simulation-table"><thead><tr><th>Bâtiment</th><th>Revenu</th><th>Entretien</th><th>Salaires</th><th>Coût Total</th><th>Bénéfice Net</th><th title="Taxe sur les marchandises">Octroi</th><th title="Impôt direct payé par les batîments">Taille</th><th title="Redevance d’usage public">Banalités</th><th title="Impôt par tête">Capitation</th></tr></thead><tbody>`;
         for (const category in results.categories) {
             const categoryData = results.categories[category];
             if (categoryData.buildings.length > 0) {
@@ -692,6 +699,22 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
+    function showSimpleTooltip(event) {
+        const target = event.target;
+        const title = target.dataset.tooltipTitle;
+        const desc = target.dataset.tooltipDesc;
+
+        if (!title || !desc) return;
+
+        let tooltipContent = `
+            <h4>${title}</h4>
+            <p class="description">${desc}</p>
+        `;
+        buildingTooltip.innerHTML = tooltipContent;
+        buildingTooltip.hidden = false;
+        moveBuildingTooltip(event);
+    }
+    
     function showBuildingTooltip(event) {
         const icon = event.target;
         const category = icon.dataset.category;
@@ -755,7 +778,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const tier = tierMatch[1];
                     const individualSalary = buildingSimResult.salariesPerEmployee[tier];
                     if (individualSalary !== undefined) {
-                        salaryInfo = ` <span style="color: var(--color-forest-green); font-weight: bold;">(${EcoSim.formatCurrency(individualSalary)}/mois)</span>`;
+                        salaryInfo = ` <span style="color: var(--color-forest-green); font-weight: bold;">(${EcoSim.formatCurrency(individualSalary)}/mois net)</span>`;
                     }
                 }
                 tooltipContent += `<li>${job.split('(mixte)')[0]}${salaryInfo}</li>`;
@@ -841,10 +864,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 simEtatInitialSelect.value = config.etatInitial;
                 
                 if (config.systemeEconomique === 'Libéral') {
-                    document.getElementById('tax-sales').value = 5;
+                    document.getElementById('tax-sales').value = 10;
                     document.getElementById('tax-profit').value = 10;
-                    document.getElementById('tax-property').value = 0.05;
-                    document.getElementById('tax-payroll').value = 2;
+                    document.getElementById('tax-property').value = 0.1;
+                    document.getElementById('tax-payroll').value = 5;
                 }
 
                 runAndDisplaySimulation({});
@@ -866,6 +889,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         simulationModal.addEventListener('click', (event) => {
             if (event.target === simulationModal) simulationModal.style.display = 'none';
+        });
+
+        // Add listeners for the static tax icons in the config form
+        document.getElementById('tax-settings').querySelectorAll('.info-icon').forEach(icon => {
+            icon.addEventListener('mouseenter', showSimpleTooltip);
+            icon.addEventListener('mouseleave', hideBuildingTooltip);
+            icon.addEventListener('mousemove', moveBuildingTooltip);
         });
 
         makeModalDraggable(salaryModal, salaryModal.querySelector('.draggable-modal-header'));
