@@ -4,17 +4,16 @@ var EcoSim = window.EcoSim || {};
 
 /**
  * Calcule l'économie mensuelle pour une capitale en système libéral.
- * VERSION CORRIGÉE : Toutes les taxes (Taille, Octroi, Banalités) impactent le bénéfice net.
- * La Capitation est déduite du salaire de l'employé.
+ * VERSION MISE À JOUR
  *
  * @param {object} place - L'objet de la capitale.
- * @param {object} activeCrises - Les crises actives.
+ * @param {object} activeCrises - Les crises actives (non utilisé ici, mais gardé pour la forme).
  * @param {object} buildingDetails - Les détails de tous les bâtiments.
  * @param {object} revenueModifiers - Les modificateurs de revenus basés sur l'état.
  * @param {object} taxRates - Les taux d'imposition actuels.
- * @returns {object} Les résultats détaillés de la simulation.
+ * @param {object} crisisModifiers - L'objet contenant les modificateurs de la crise actuelle.
  */
-EcoSim.calculateLiberalEconomy = function(place, activeCrises, buildingDetails, revenueModifiers, taxRates) {
+EcoSim.calculateLiberalEconomy = function(place, activeCrises, buildingDetails, revenueModifiers, taxRates, crisisModifiers) {
     const config = place.config;
     const PO_TO_PC_CONVERSION = 10000; // 1 PO = 100 PA = 10000 PC
 
@@ -53,15 +52,14 @@ EcoSim.calculateLiberalEconomy = function(place, activeCrises, buildingDetails, 
         jobsByTier: { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
     };
 
+    const modifiers = crisisModifiers || { laborEfficiency: 1.0 };
+
+    // --- PASSE DE CALCUL ---
     for (const category in buildingDetails) {
         sim.categories[category] = {
             buildings: [],
             totals: { revenue: 0, fixedCost: 0, salaryCost: 0, totalCost: 0, net: 0, taxes: { sales: 0, profit: 0, property: 0, payroll: 0 } }
         };
-    }
-
-    // --- PASSE DE CALCUL ---
-    for (const category in buildingDetails) {
         for (const buildingName in buildingDetails[category]) {
             if (config.batiments[category]?.[buildingName]) {
                 const details = buildingDetails[category][buildingName];
@@ -88,34 +86,26 @@ EcoSim.calculateLiberalEconomy = function(place, activeCrises, buildingDetails, 
                 }
 
                 const isAdministrative = category === "Bâtiments Administratifs";
+                
                 let revenue = 0;
                 if (!isAdministrative) {
-                    revenue = parsePO(details.chiffreAffairesMax);
+                    revenue = parsePO(details.chiffreAffairesMax) * modifiers.laborEfficiency;
                 }
-
-                const totalCost = fixedCost + salaryPoolInPO;
+                
+                const effectiveSalaryPoolInPO = salaryPoolInPO * modifiers.laborEfficiency;
+                const totalCost = fixedCost + effectiveSalaryPoolInPO;
                 const preTaxNetProfit = revenue - totalCost;
 
                 let taxes = { sales: 0, profit: 0, property: 0, payroll: 0 };
                 let finalNetProfit = preTaxNetProfit;
 
                 if (!isAdministrative) {
-                    // MODIFICATION : Calcul séquentiel des taxes pour impacter le bénéfice net
+                    taxes.sales = revenue * (taxRates.sales / 100);
+                    taxes.property = parsePO(details.coutConstruction) * (taxRates.property / 100);
                     
-                    // 1. Calcul des taxes considérées comme des charges d'exploitation
-                    taxes.sales = revenue * (taxRates.sales / 100); // Octroi
-                    taxes.property = parsePO(details.coutConstruction) * (taxRates.property / 100); // Banalités
-                    
-                    // 2. Le bénéfice imposable pour la "Taille" est calculé après déduction de ces charges
                     const profitBaseForTaille = preTaxNetProfit - taxes.sales - taxes.property;
-                    
-                    // 3. Calcul de la "Taille" (impôt sur les bénéfices)
                     taxes.profit = Math.max(0, profitBaseForTaille) * (taxRates.profit / 100);
-                    
-                    // 4. La Capitation est calculée sur la masse salariale brute (le coût pour l'employeur ne change pas)
-                    taxes.payroll = salaryPoolInPO * (taxRates.payroll / 100);
-                    
-                    // 5. Le bénéfice net final est le bénéfice avant impôt sur les sociétés, moins cet impôt.
+                    taxes.payroll = effectiveSalaryPoolInPO * (taxRates.payroll / 100);
                     finalNetProfit = profitBaseForTaille - taxes.profit;
                 }
 
@@ -124,9 +114,9 @@ EcoSim.calculateLiberalEconomy = function(place, activeCrises, buildingDetails, 
                     name: buildingName,
                     revenue: revenue,
                     fixedCost: fixedCost,
-                    salaryCost: salaryPoolInPO,
+                    salaryCost: effectiveSalaryPoolInPO,
                     totalCost: totalCost,
-                    net: finalNetProfit, // On utilise le bénéfice net après TOUS les impôts.
+                    net: finalNetProfit,
                     jobsByTier: jobsByTier,
                     salariesPerEmployee: salariesPerEmployee,
                     taxes: taxes
@@ -173,6 +163,7 @@ EcoSim.calculateLiberalEconomy = function(place, activeCrises, buildingDetails, 
 
     // --- Assemblage final de l'objet de résultats ---
     const totalJobsOffered = Object.values(sim.jobsByTier).reduce((a, b) => a + b, 0);
+    const totalEmployed = Math.floor(totalJobsOffered * modifiers.laborEfficiency);
     const totalGdp = Object.values(sim.categories).reduce((sum, cat) => sum + (cat.totals.revenue || 0), 0);
 
     return {
@@ -180,8 +171,8 @@ EcoSim.calculateLiberalEconomy = function(place, activeCrises, buildingDetails, 
         jobsByTier: sim.jobsByTier,
         gdp: totalGdp,
         employment: {
-            rate: 100,
-            employed: totalJobsOffered,
+            rate: (totalJobsOffered > 0 ? (totalEmployed / totalJobsOffered) * 100 : 100),
+            employed: totalEmployed,
             totalJobs: totalJobsOffered
         },
         publicFinance: {

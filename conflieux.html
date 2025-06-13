@@ -138,8 +138,13 @@
                                 <div class="form-group">
                                     <label for="crisis-slider">Intensité de la Crise : <span id="crisis-slider-value">0</span></label>
                                     <input type="range" id="crisis-slider" min="-100" max="100" value="0" style="width: 100%;">
-                                    <p class="remark" style="font-size: 0.8em;">Ce curseur permettra de moduler l'impact des crises futures (logique à implémenter dans crises.js).</p>
+                                    <p class="remark" style="font-size: 0.8em;">
+                                        <b>Négatif :</b> Pénurie de main-d'œuvre. <br>
+                                        <b>Positif :</b> Surpopulation, troubles sociaux.
+                                    </p>
                                 </div>
+                                <div id="crisis-indicators" style="margin-top: 15px; padding-top: 10px; border-top: 1px solid var(--color-border);">
+                                    </div>
                             </div>
                         </fieldset>
                         <fieldset>
@@ -178,15 +183,14 @@
 
 <script src="building-capitale.js"></script>
     
+    <script src="crises.js"></script>
+    
     <script src="simulation-liberal.js"></script>
     <script src="simulation-communist.js"></script>
     
     <script src="ressources.js"></script> 
     
     <script src="conflieux.js"></script>
-
-</body>
-</html>
 
 </body>
 </html>

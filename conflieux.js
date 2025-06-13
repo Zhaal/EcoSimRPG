@@ -1,3 +1,5 @@
+// conflieux.js
+
 document.addEventListener('DOMContentLoaded', () => {
     // --- SÉLECTEURS D'ÉLÉMENTS DU DOM ---
     const regionSelect = document.getElementById('region-select');
@@ -17,7 +19,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const simEtatInitialSelect = document.getElementById('sim-etat-initial');
     const crisisSlider = document.getElementById('crisis-slider');
     const crisisSliderValue = document.getElementById('crisis-slider-value');
-    
+    const crisisIndicators = document.getElementById('crisis-indicators');
+
     // --- NOUVEAUX SÉLECTEURS POUR LA MODALE DES SALAIRES ---
     const salaryModal = document.getElementById('draggable-salary-modal');
     const salaryModalTitle = document.getElementById('draggable-modal-title');
@@ -214,21 +217,17 @@ document.addEventListener('DOMContentLoaded', () => {
         bindCapitalFormEvents();
     }
 
-    function updateCapitalStats() {
-        if (!selectedPlace || selectedPlace.type !== 'Capitale') {
-            capitalStatsContent.innerHTML = '<p class="placeholder-text">Sélectionnez une capitale pour afficher ses statistiques.</p>';
-            if(simulateRevenueBtn) simulateRevenueBtn.hidden = true;
-            return;
+    // Nouvelle fonction pour calculer les stats de base de la cité
+    function calculateBaseCityStats(place) {
+        if (!place || place.type !== 'Capitale') {
+            return { prestige: 0, menace: 0, population: 0 };
         }
-
-        const config = selectedPlace.config;
+        
+        const config = place.config;
         const capitalBuildings = EcoSimData.buildings['Capitale'];
         let totalPrestige = 0;
         let totalMenace = 0;
         let populationRequise = 0;
-        let revenusBrutsPrive = 0;
-        let chargesPrivees = 0;
-        let chargesPubliques = 0;
 
         for (const category in config.batiments) {
             for (const buildingName in config.batiments[category]) {
@@ -239,19 +238,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     populationRequise += calculatePopulationFromJobs(details);
                     totalPrestige += details.prestige || 0;
                     totalMenace += details.menace || 0;
-                    
-                    const buildingCharge = parsePO(details.chargeFixe) + (parsePO(details.chargeMax) / 12);
-                    if (category === 'Bâtiments Administratifs') {
-                        chargesPubliques += buildingCharge;
-                    } else {
-                        revenusBrutsPrive += parsePO(details.chiffreAffairesMax);
-                        chargesPrivees += buildingCharge;
-                    }
                 }
             }
         }
-        
-        const beneficeNetPrive = revenusBrutsPrive - chargesPrivees;
         
         const etatPrestige = { 'Prospère': 50, 'Croissante': 25, 'Stable': 0, 'Fragile': -10, 'Difficile': -25, 'Décadente': -50, 'En crise': -100 };
         const etatMenace = { 'Prospère': -10, 'Croissante': 0, 'Stable': 5, 'Fragile': 10, 'Difficile': 20, 'Décadente': 30, 'En crise': 50 };
@@ -266,11 +255,46 @@ document.addEventListener('DOMContentLoaded', () => {
             totalPrestige -= 15;
             totalMenace += 30;
         }
+        
+        return { prestige: totalPrestige, menace: totalMenace, population: populationRequise };
+    }
+
+    function updateCapitalStats() {
+        if (!selectedPlace || selectedPlace.type !== 'Capitale') {
+            capitalStatsContent.innerHTML = '<p class="placeholder-text">Sélectionnez une capitale pour afficher ses statistiques.</p>';
+            if(simulateRevenueBtn) simulateRevenueBtn.hidden = true;
+            return;
+        }
+
+        const config = selectedPlace.config;
+        const baseStats = calculateBaseCityStats(selectedPlace);
+        let revenusBrutsPrive = 0;
+        let chargesPrivees = 0;
+        let chargesPubliques = 0;
+
+        for (const category in config.batiments) {
+            for (const buildingName in config.batiments[category]) {
+                if (config.batiments[category][buildingName]) {
+                    const details = EcoSimData.buildings['Capitale'][category]?.[buildingName];
+                    if (!details) continue;
+
+                    const buildingCharge = parsePO(details.chargeFixe) + (parsePO(details.chargeMax) / 12);
+                    if (category === 'Bâtiments Administratifs') {
+                        chargesPubliques += buildingCharge;
+                    } else {
+                        revenusBrutsPrive += parsePO(details.chiffreAffairesMax);
+                        chargesPrivees += buildingCharge;
+                    }
+                }
+            }
+        }
+        
+        const beneficeNetPrive = revenusBrutsPrive - chargesPrivees;
 
         capitalStatsContent.innerHTML = `
-            <div class="stat-item"><strong>Prestige Total:</strong> <span>${totalPrestige}</span></div>
-            <div class="stat-item"><strong>Menace Totale:</strong> <span>${totalMenace}</span></div>
-            <div class="stat-item"><strong>Total des Postes:</strong> <span>${populationRequise.toLocaleString('fr-FR')}</span></div>
+            <div class="stat-item"><strong>Prestige Total (base):</strong> <span>${baseStats.prestige}</span></div>
+            <div class="stat-item"><strong>Menace Totale (base):</strong> <span>${baseStats.menace}</span></div>
+            <div class="stat-item"><strong>Total des Postes:</strong> <span>${baseStats.population.toLocaleString('fr-FR')}</span></div>
             <div class="stat-item"><strong>Système:</strong> <span>${config.systemeEconomique}</span></div>
             <div class="stat-item"><strong>État:</strong> <span>${config.etatInitial}</span></div>
             <hr style="border-top: 1px solid var(--color-border); margin: 8px 0;">
@@ -282,14 +306,30 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- FONCTIONS DE SIMULATION ---
-    function runAndDisplaySimulation(activeCrises = {}) {
+    function runAndDisplaySimulation() {
         if (!selectedPlace || selectedPlace.type !== 'Capitale') return;
 
+        // 1. Récupérer les valeurs des modificateurs de la UI
         const tempPlace = JSON.parse(JSON.stringify(selectedPlace));
-
         tempPlace.config.systemeEconomique = document.getElementById('sim-eco-system').value;
         tempPlace.config.etatInitial = document.getElementById('sim-etat-initial').value;
+        
+        const crisisIntensity = parseInt(crisisSlider.value, 10);
 
+        // 2. Calculer les modificateurs de crise
+        const crisisModifiers = EcoSim.applyCrisisModifiers(crisisIntensity);
+
+        // 3. Calculer les stats de base et appliquer les modificateurs de crise pour l'affichage
+        const baseStats = calculateBaseCityStats(tempPlace);
+        const finalPrestige = baseStats.prestige + crisisModifiers.prestige;
+        const finalMenace = baseStats.menace + crisisModifiers.menace;
+        
+        crisisIndicators.innerHTML = `
+            <div class="stat-item"><strong>Prestige (Final):</strong> <span>${finalPrestige}</span></div>
+            <div class="stat-item"><strong>Menace (Final):</strong> <span>${finalMenace}</span></div>
+        `;
+
+        // 4. Lancer la simulation économique en passant les modificateurs
         const capitalBuildings = EcoSimData.buildings['Capitale'];
         let results;
 
@@ -303,9 +343,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 property: parseFloat(document.getElementById('tax-property').value) || 0,
                 payroll: parseFloat(document.getElementById('tax-payroll').value) || 0,
             };
-            results = EcoSim.calculateLiberalEconomy(tempPlace, activeCrises, capitalBuildings, etatRevenueModifier, taxRates);
+            results = EcoSim.calculateLiberalEconomy(tempPlace, {}, capitalBuildings, etatRevenueModifier, taxRates, crisisModifiers);
         } else { // Communiste
-            results = EcoSim.calculateCommunistEconomy(tempPlace, activeCrises, capitalBuildings, etatRevenueModifier);
+            results = EcoSim.calculateCommunistEconomy(tempPlace, {}, capitalBuildings, etatRevenueModifier, crisisModifiers);
         }
         
         window.currentSimulationResults = results;
@@ -331,8 +371,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 </select>
             </div>
         `;
-        document.getElementById('sim-eco-system').addEventListener('change', () => runAndDisplaySimulation({}));
-        document.getElementById('sim-etat-initial').addEventListener('change', () => runAndDisplaySimulation({}));
+        document.getElementById('sim-eco-system').addEventListener('change', () => runAndDisplaySimulation());
+        document.getElementById('sim-etat-initial').addEventListener('change', () => runAndDisplaySimulation());
     
         const gdpClass = results.gdp >= 0 ? 'positive' : 'negative';
         const employmentClass = results.employment.rate >= 90 ? 'positive' : (results.employment.rate >= 75 ? 'neutral' : 'negative');
@@ -364,7 +404,6 @@ document.addEventListener('DOMContentLoaded', () => {
         keyIndicatorsHTML += `</div>`;
         document.getElementById('key-indicators').innerHTML = keyIndicatorsHTML;
         
-        // Add listeners for the newly created icons in the simulation results
         document.getElementById('key-indicators').querySelectorAll('.info-icon').forEach(icon => {
             icon.addEventListener('mouseenter', showSimpleTooltip);
             icon.addEventListener('mouseleave', hideBuildingTooltip);
@@ -870,18 +909,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     document.getElementById('tax-payroll').value = 5;
                 }
 
-                runAndDisplaySimulation({});
+                runAndDisplaySimulation();
             }
         });
         
         document.getElementById('tax-settings').addEventListener('change', () => {
-             if (simulationModal.style.display === 'flex') runAndDisplaySimulation({});
+             if (simulationModal.style.display === 'flex') runAndDisplaySimulation();
         });
-        simEcoSystemSelect.addEventListener('change', () => runAndDisplaySimulation({}));
-        simEtatInitialSelect.addEventListener('change', () => runAndDisplaySimulation({}));
+        simEcoSystemSelect.addEventListener('change', () => runAndDisplaySimulation());
+        simEtatInitialSelect.addEventListener('change', () => runAndDisplaySimulation());
         crisisSlider.addEventListener('input', () => {
             crisisSliderValue.textContent = crisisSlider.value;
-            runAndDisplaySimulation({});
+            runAndDisplaySimulation();
         });
 
         closeSimulationModalBtn.addEventListener('click', () => {
@@ -891,7 +930,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (event.target === simulationModal) simulationModal.style.display = 'none';
         });
 
-        // Add listeners for the static tax icons in the config form
         document.getElementById('tax-settings').querySelectorAll('.info-icon').forEach(icon => {
             icon.addEventListener('mouseenter', showSimpleTooltip);
             icon.addEventListener('mouseleave', hideBuildingTooltip);
