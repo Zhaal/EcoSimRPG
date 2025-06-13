@@ -14,14 +14,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const simulationModal = document.getElementById('revenue-simulation-modal');
     const closeSimulationModalBtn = document.getElementById('close-simulation-modal');
 
-    // --- SÉLECTEURS DE LA FENÊTRE MODALE ---
+    // --- SÉLECTEURS DE LA FENÊTRE MODALE PRINCIPALE ---
     const simEcoSystemSelect = document.getElementById('sim-eco-system');
     const simEtatInitialSelect = document.getElementById('sim-etat-initial');
     const crisisSlider = document.getElementById('crisis-slider');
     const crisisSliderValue = document.getElementById('crisis-slider-value');
     const crisisIndicators = document.getElementById('crisis-indicators');
 
-    // --- NOUVEAUX SÉLECTEURS POUR LA MODALE DES SALAIRES ---
+    // --- SÉLECTEURS POUR MODALE DES SALAIRES ---
     const salaryModal = document.getElementById('draggable-salary-modal');
     const salaryModalTitle = document.getElementById('draggable-modal-title');
     const salaryModalContent = document.getElementById('draggable-modal-content');
@@ -29,6 +29,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnAvgSalaries = document.getElementById('btn-avg-salaries');
     const btnAdminSalaries = document.getElementById('btn-admin-salaries');
     const btnEnterpriseSalaries = document.getElementById('btn-enterprise-salaries');
+    
+    // --- NOUVEAUX SÉLECTEURS POUR MODALES DE CRISE ET DÉTAILS ---
+    const openCrisisModalBtn = document.getElementById('open-crisis-modal-btn');
+    const crisisModal = document.getElementById('crisis-draggable-modal');
+    const crisisModalCloseBtn = document.getElementById('crisis-modal-close');
+
+    const openDetailsModalBtn = document.getElementById('open-details-modal-btn');
+    const detailsModal = document.getElementById('details-draggable-modal');
+    const detailsModalContent = document.getElementById('details-modal-content');
+    const detailsModalCloseBtn = document.getElementById('details-modal-close');
 
 
     // --- VARIABLES D'ÉTAT ---
@@ -217,7 +227,6 @@ document.addEventListener('DOMContentLoaded', () => {
         bindCapitalFormEvents();
     }
 
-    // Nouvelle fonction pour calculer les stats de base de la cité
     function calculateBaseCityStats(place) {
         if (!place || place.type !== 'Capitale') {
             return { prestige: 0, menace: 0, population: 0 };
@@ -459,7 +468,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         tableHTML += '</tbody></table>';
-        document.getElementById('simulation-details-container').innerHTML = tableHTML;
+        // MODIFIED: Display table in its own modal
+        detailsModalContent.innerHTML = tableHTML;
     
         let summaryHTML = '';
         if (currentSimConfig.systemeEconomique === 'Libéral') {
@@ -936,8 +946,18 @@ document.addEventListener('DOMContentLoaded', () => {
             icon.addEventListener('mousemove', moveBuildingTooltip);
         });
 
+        // --- ÉVÉNEMENTS POUR LES NOUVELLES MODALES DÉPLAÇABLES ---
         makeModalDraggable(salaryModal, salaryModal.querySelector('.draggable-modal-header'));
+        makeModalDraggable(crisisModal, crisisModal.querySelector('.draggable-modal-header'));
+        makeModalDraggable(detailsModal, detailsModal.querySelector('.draggable-modal-header'));
+
         salaryModalCloseBtn.addEventListener('click', () => salaryModal.hidden = true);
+        crisisModalCloseBtn.addEventListener('click', () => crisisModal.hidden = true);
+        detailsModalCloseBtn.addEventListener('click', () => detailsModal.hidden = true);
+
+        openCrisisModalBtn.addEventListener('click', () => crisisModal.hidden = false);
+        openDetailsModalBtn.addEventListener('click', () => detailsModal.hidden = false);
+
         btnAvgSalaries.addEventListener('click', showAverageSalariesModal);
         btnAdminSalaries.addEventListener('click', () => showBuildingSalariesModal('admin'));
         btnEnterpriseSalaries.addEventListener('click', () => showBuildingSalariesModal('enterprise'));

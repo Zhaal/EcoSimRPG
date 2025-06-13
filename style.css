@@ -585,23 +585,20 @@ input:focus, select:focus {
     overflow: hidden;
 }
 
-/* ----- PREMIÈRE MODIFICATION : On enlève le scroll de cette zone ----- */
 .simulation-scroll-area {
     flex-grow: 1;
-    /* overflow-y: auto; -- DÉSACTIVÉ */ /* <-- MODIFICATION APPLIQUÉE */
     min-height: 0;
     display: flex;
     gap: 20px;
     padding-right: 10px;
 }
 
-/* ----- DEUXIÈME MODIFICATION : On ajoute le scroll à la colonne de gauche ----- */
 .simulation-column-left {
     flex: 0 0 320px;
     display: flex;
     flex-direction: column;
     gap: 15px;
-    overflow-y: auto; /* <-- MODIFICATION APPLIQUÉE */
+    overflow-y: auto; 
 }
 .simulation-column-right {
     flex: 1 1 auto;
@@ -610,12 +607,20 @@ input:focus, select:focus {
     min-width: 0;
 }
 
-/* ----- BLOCK MODIFIÉ 2/3 : On prépare le fieldset à contenir un élément scrollable ----- */
-.simulation-column-right > fieldset {
+/* NOUVEAU: Style pour les conteneurs des boutons d'ouverture de modale */
+.modal-opener-container {
+    padding: 15px;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    background-color: rgba(255, 255, 255, 0.4);
     display: flex;
-    flex-direction: column;
-    flex-grow: 1;
-    min-height: 0;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+}
+.modal-opener-container button {
+    width: 100%;
+    max-width: 300px; /* Limite la largeur du bouton */
 }
 
 
@@ -658,10 +663,12 @@ input:focus, select:focus {
     font-weight: normal;
 }
 
-/* ----- BLOCK MODIFIÉ 3/3 : Le conteneur du tableau devient la zone de défilement ----- */
-#simulation-details-container {
-    overflow: auto; /* Gère le scroll vertical et horizontal */
+
+#details-modal-content {
+    overflow: auto; 
     flex-grow: 1;
+    /* On ajoute une hauteur min pour éviter que la modale soit trop petite */
+    min-height: 300px;
 }
 
 .simulation-table {
@@ -679,7 +686,6 @@ input:focus, select:focus {
     font-family: var(--font-title);
     font-weight: 700;
     vertical-align: bottom;
-    /* L'en-tête est maintenant "sticky" par rapport à #simulation-details-container */
     position: sticky;
     top: 0;
     z-index: 1;
@@ -763,6 +769,12 @@ input:focus, select:focus {
     flex-direction: column;
 }
 
+/* NOUVEAU: Agrandir la modale des résultats */
+#details-draggable-modal {
+    max-width: 1200px;
+}
+
+
 .draggable-modal-header {
     padding: 10px 15px;
     background-color: rgba(0,0,0,0.05);
@@ -786,6 +798,8 @@ input:focus, select:focus {
     padding: 20px;
     max-height: 70vh;
     overflow-y: auto;
+    display: flex; /* Ajout pour que le contenu puisse grandir */
+    flex-direction: column; /* Ajout */
 }
 .draggable-modal-body .form-group {
     margin-bottom: 20px;

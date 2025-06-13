@@ -125,21 +125,10 @@
                             </div>
                         </fieldset>
                         
-                        <fieldset>
-                            <legend>Scénarios de Crise</legend>
-                            <div id="crisis-scenarios">
-                                <div class="form-group">
-                                    <label for="crisis-slider">Intensité de la Crise : <span id="crisis-slider-value">0</span></label>
-                                    <input type="range" id="crisis-slider" min="-100" max="100" value="0" style="width: 100%;">
-                                    <p class="remark" style="font-size: 0.8em;">
-                                        <b>Négatif :</b> Pénurie de main-d'œuvre. <br>
-                                        <b>Positif :</b> Surpopulation, troubles sociaux.
-                                    </p>
-                                </div>
-                                <div id="crisis-indicators" style="margin-top: 15px; padding-top: 10px; border-top: 1px solid var(--color-border);">
-                                    </div>
-                            </div>
-                        </fieldset>
+                        <div class="modal-opener-container">
+                             <button id="open-crisis-modal-btn" class="btn-secondary">Gérer les Scénarios de Crise</button>
+                        </div>
+
                         <fieldset>
                             <legend>Indicateurs Clés</legend>
                             <div id="key-indicators"></div>
@@ -151,10 +140,9 @@
                     </div>
     
                     <div class="simulation-column-right">
-                        <fieldset>
-                            <legend>Résultats Détaillés par Catégorie</legend>
-                            <div id="simulation-details-container"></div>
-                        </fieldset>
+                        <div class="modal-opener-container">
+                            <button id="open-details-modal-btn" class="btn-secondary">Voir les Résultats Détaillés</button>
+                        </div>
                     </div>
                 </div>
 
@@ -172,6 +160,36 @@
         </div>
         <div id="draggable-modal-content" class="draggable-modal-body">
             </div>
+    </div>
+
+    <div id="crisis-draggable-modal" class="draggable-modal" hidden>
+        <div class="draggable-modal-header">
+            <h4>Scénarios de Crise</h4>
+            <button id="crisis-modal-close" class="close-btn">&times;</button>
+        </div>
+        <div class="draggable-modal-body">
+            <div id="crisis-scenarios">
+                <div class="form-group">
+                    <label for="crisis-slider">Intensité de la Crise : <span id="crisis-slider-value">0</span></label>
+                    <input type="range" id="crisis-slider" min="-100" max="100" value="0" style="width: 100%;">
+                    <p class="remark" style="font-size: 0.8em;">
+                        <b>Négatif :</b> Pénurie de main-d'œuvre. <br>
+                        <b>Positif :</b> Surpopulation, troubles sociaux.
+                    </p>
+                </div>
+                <div id="crisis-indicators" style="margin-top: 15px; padding-top: 10px; border-top: 1px solid var(--color-border);">
+                    </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="details-draggable-modal" class="draggable-modal" hidden>
+        <div class="draggable-modal-header">
+            <h4>Résultats Détaillés par Catégorie</h4>
+            <button id="details-modal-close" class="close-btn">&times;</button>
+        </div>
+        <div id="details-modal-content" class="draggable-modal-body">
+             </div>
     </div>
 
 <script src="building-capitale.js"></script>
