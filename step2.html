@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoSimRPG - Étape 2 : Configuration</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="step2-style.css">
+</head>
+<body>
+
+    <nav class="floating-menu">
+        <div class="menu-title">EcoSimRPG</div>
+        <a href="#">Accueil</a>
+        <a href="index.html">Étape 1<br><small>(Carte)</small></a>
+        <a href="step2.html" class="active">Étape 2<br><small>(Conf. Lieux)</small></a>
+        <a href="step3.html" id="nav-step-3" class="nav-disabled">Étape 3<br><small>(Gen.0)</small></a>
+    </nav>
+
+    <div class="main-content">
+        <header id="top-bar">
+            <div class="control-group">
+                <label for="region-select">Région Actuelle :</label>
+                <select id="region-select"><option>Chargement...</option></select>
+            </div>
+            <div id="place-stats-summary" class="control-group">
+                </div>
+        </header>
+
+        <div class="workspace-step2">
+            <aside id="places-panel">
+                <h3>Lieux de la Région</h3>
+                <ul id="places-list">
+                    </ul>
+            </aside>
+            <main id="config-panel">
+                <div id="welcome-panel">
+                    <h2>Bienvenue à l'Étape 2</h2>
+                    <p>Veuillez sélectionner une région et un lieu à gauche pour commencer la configuration.</p>
+                    <p>Si aucun lieu n'est disponible, retournez à l'<strong>Étape 1</strong> pour en créer sur votre carte.</p>
+                </div>
+                </main>
+        </div>
+    </div>
+
+    <script> var EcoSimData = window.EcoSimData || {}; </script>
+    <script src="building.js"></script>
+    <script src="races.js"></script>
+    <script src="step2.js"></script>
+
+</body>
+</html>

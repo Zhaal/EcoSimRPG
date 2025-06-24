@@ -1,934 +1,782 @@
-// Attend que le DOM soit entièrement chargé avant d'exécuter le script
 document.addEventListener('DOMContentLoaded', () => {
 
-    // --- SÉLECTEURS D'ÉLÉMENTS DU DOM ---
+    // --- CONSTANTES & CONFIGURATION ---
+    const STORAGE_KEY = 'ecoSimRPG_map_data';
+    const LAST_REGION_KEY = 'ecoSimRPG_last_region_id'; 
+    const PLACE_TYPES = {
+        Capitale: { img: null, file: 'capitale.jpg' },
+        Ville: { img: null, file: 'ville.jpg' },
+        Bourg: { img: null, file: 'bourg.jpg' },
+        Village: { img: null, file: 'village.jpg' },
+        Hameau: { img: null, file: 'hameau.jpg' },
+    };
+    const HEX_TERRAIN = { img: null, file: 'terrain_hex.jpg' };
+    const RANDOM_NAMES = ["Aethelgard", "Baeldor", "Crystalgate", "Dunharrow", "Eldoria", "Faelivrin", "Glimmerwood", "Highgarden", "Ironcliff", "Silvercreek", "Valoria", "Windhaven", "Dragon's Rest", "Starfall"];
+
+    // --- SELECTEURS DOM ---
+    const canvas = document.getElementById('hex-map');
+    const ctx = canvas.getContext('2d');
+    const mapContainer = document.getElementById('map-container');
     const regionSelect = document.getElementById('region-select');
     const newRegionNameInput = document.getElementById('new-region-name');
     const createRegionBtn = document.getElementById('create-region-btn');
     const deleteRegionBtn = document.getElementById('delete-region-btn');
-    const hexDistanceInput = document.getElementById('hex-distance');
-    const nextStepBtn = document.getElementById('next-step-btn');
-    const nextStepError = document.getElementById('next-step-error');
-    const placesList = document.getElementById('places-list');
-    const zoomInBtn = document.getElementById('zoom-in-btn');
-    const zoomOutBtn = document.getElementById('zoom-out-btn');
-    const placeModal = document.getElementById('place-modal');
-    const placeForm = document.getElementById('place-form');
-    const confirmPlaceBtn = document.getElementById('confirm-place-btn');
-    const cancelPlaceBtn = document.getElementById('cancel-place-btn');
-    const placeNameInput = document.getElementById('place-name');
-    const placeTypeSelect = document.getElementById('place-type');
-    const canvas = document.getElementById('hex-map');
-    const mapContainer = document.getElementById('map-container');
-    const ctx = canvas.getContext('2d');
-    const showDistancesToggle = document.getElementById('show-distances-toggle');
-
-
-    // --- Random Generation Elements ---
     const generateMapBtn = document.getElementById('generate-map-btn');
     const randomPlaceCountInput = document.getElementById('random-place-count');
-    const placementStrategySelect = document.getElementById('placement-strategy');
-    const rangedOptionsDiv = document.getElementById('ranged-options');
-    const minRangeInput = document.getElementById('min-range');
-    const maxRangeInput = document.getElementById('max-range');
-
-
-    // --- VARIABLES D'ÉTAT DE L'APPLICATION ---
+    const placesList = document.getElementById('places-list');
+    const placeModal = document.getElementById('place-modal');
+    const placeForm = document.getElementById('place-form');
+    const modalTitle = document.getElementById('modal-title');
+    const placeNameInput = document.getElementById('place-name');
+    const placeTypeSelect = document.getElementById('place-type');
+    const confirmPlaceBtn = document.getElementById('confirm-place-btn');
+    const cancelPlaceBtn = document.getElementById('cancel-place-btn');
+    const navStep2 = document.getElementById('nav-step-2');
+    const navStep3 = document.getElementById('nav-step-3');
+    const floatingMenu = document.querySelector('.floating-menu');
+    
+    // --- ETAT DE L'APPLICATION ---
+    let hexSize = { w: 100, h: 114 }; // Sera mis à jour après chargement de l'image
     let regions = [];
     let currentRegion = null;
-    let hexSize = 30;
-    let selectedHex = null; // Pour créer un nouveau lieu
-    let selectedPlaceForLines = null; // Pour afficher les distances après un clic
-    let hoveredPlace = null; // Pour afficher les distances au survol
-    let placeNames = {}; // Pour stocker les noms de lieux depuis le JSON
-    
-    const hexImage = new Image();
-    hexImage.src = 'terrain_hex.jpg';
-    hexImage.onload = () => {
-        drawMap();
-    };
-
-    // --- State for dragging map vs place ---
-    let isMouseDown = false;
-    let isMapDragging = false;
-    let isPlaceDragging = false;
+    let view = { x: 0, y: 0, zoom: 1 };
+    let isPanning = false;
+    let isDraggingPlace = false;
     let draggedPlace = null;
-    let dragStartCoords = { x: 0, y: 0 };
-    let lastMouseX = 0;
-    let lastMouseY = 0;
+    let lastMouse = { x: 0, y: 0 };
+    let tempHexCoords = null;
+    let selectedPlaceForDistance = null;
+    let hoveredPlace = null;
+    let hoveredHex = null; 
+    let pulsingPlaceId = null;
+    let pulseInterval = null; 
+    let panAnimationId = null; // Pour l'animation de glissement
 
-    let offsetX = 0;
-    let offsetY = 0;
-
-    let animationFrameId = null;
-    let pulseEffect = null;
-
-    const STORAGE_KEY = 'ecoSimRPG_data';
-
-    // Objet pour stocker les images préchargées des lieux
-    const placeImages = {};
-    const PLACE_TYPES = ['Capitale', 'Ville', 'Bourg', 'Village', 'Hameau'];
-
-
-    // Fonction pour précharger les images des types de lieux
-    function preloadPlaceImages() {
-        PLACE_TYPES.forEach(type => {
+    // --- FONCTIONS DE PRE-CHARGEMENT ---
+    function loadImage(src) {
+        return new Promise((resolve, reject) => {
             const img = new Image();
-            img.src = `${type.toLowerCase()}.jpg`; 
-            placeImages[type] = img;
+            img.onload = () => resolve(img);
+            img.onerror = reject;
+            img.src = src;
         });
     }
 
-    // Fonction pour charger les noms de lieux depuis le fichier JSON
-    async function loadPlaceNames() {
+    async function preloadAssets() {
         try {
-            const response = await fetch('lieux.json');
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            placeNames = await response.json();
+            const placePromises = Object.entries(PLACE_TYPES).map(async ([key, value]) => {
+                PLACE_TYPES[key].img = await loadImage(value.file);
+            });
+            const terrainPromise = loadImage(HEX_TERRAIN.file).then(img => {
+                HEX_TERRAIN.img = img;
+                hexSize = { w: img.width, h: img.height };
+            });
+
+            await Promise.all([...placePromises, terrainPromise]);
+            console.log("Toutes les ressources ont été chargées.");
         } catch (error) {
-            console.error("Erreur lors du chargement de lieux.json:", error);
-            // Initialiser avec des tableaux vides en cas d'erreur
-            PLACE_TYPES.forEach(type => {
-                if (!placeNames[type]) placeNames[type] = [];
+            console.error("Erreur lors du chargement des images:", error);
+            alert("Impossible de charger les textures de la carte. L'application ne peut pas démarrer. Vérifiez que les fichiers images (terrain_hex.jpg, etc.) sont accessibles.");
+        }
+    }
+
+    // --- LOGIQUE DE LA GRILLE HEXAGONALE (Coordonnées axiales) ---
+    function roundAxial(frac) {
+        const frac_q = frac.q;
+        const frac_r = frac.r;
+        const frac_s = -frac_q - frac_r;
+
+        let q = Math.round(frac_q);
+        let r = Math.round(frac_r);
+        let s = Math.round(frac_s);
+
+        const q_diff = Math.abs(q - frac_q);
+        const r_diff = Math.abs(r - frac_r);
+        const s_diff = Math.abs(s - frac_s);
+
+        if (q_diff > r_diff && q_diff > s_diff) {
+            q = -r - s;
+        } else if (r_diff > s_diff) {
+            r = -q - s;
+        } else {
+            s = -q - r;
+        }
+        return { q: q, r: r };
+    }
+
+    function getHexCenter(q, r) {
+        const x = hexSize.w * q + hexSize.w / 2 * r;
+        const y = hexSize.h * 3/4 * r;
+        return { x, y };
+    }
+
+    function getPixelToHex(pixelX, pixelY) {
+        const worldX = (pixelX - view.x) / view.zoom;
+        const worldY = (pixelY - view.y) / view.zoom;
+
+        const r_frac = worldY * 4 / (3 * hexSize.h);
+        const q_frac = worldX / hexSize.w - r_frac / 2;
+        
+        return roundAxial({ q: q_frac, r: r_frac });
+    }
+    
+    function axialDistance(a, b) {
+        const dq = a.q - b.q;
+        const dr = a.r - b.r;
+        const ds = -dq - dr;
+        return (Math.abs(dq) + Math.abs(dr) + Math.abs(ds)) / 2;
+    }
+
+    function getHexCorners(center, size) {
+        const corners = [];
+        const hexRadius = size.h / 2; 
+        for (let i = 0; i < 6; i++) {
+            const angle_rad = Math.PI / 3 * i + Math.PI / 6; // pointy top
+            corners.push({
+                x: center.x + hexRadius * Math.cos(angle_rad),
+                y: center.y + hexRadius * Math.sin(angle_rad)
             });
         }
+        return corners;
     }
 
-    function loadData() {
-        const savedData = localStorage.getItem(STORAGE_KEY);
-        if (savedData) {
-            regions = JSON.parse(savedData);
-        }
-        populateRegionSelect();
-    }
 
+    // --- GESTION DES DONNEES (LocalStorage) ---
     function saveData() {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(regions));
+        updateNavLinksState();
     }
 
-    function populateRegionSelect() {
-        const selectedValue = regionSelect.value;
-        regionSelect.innerHTML = '<option value="">Aucune région sélectionnée</option>';
-        regions.forEach((region, index) => {
+    function updateRegionSelect() {
+        const selectedId = regionSelect.value;
+        regionSelect.innerHTML = '<option value="">Aucune région</option>';
+        
+        regions.forEach(region => {
             const option = document.createElement('option');
-            option.value = index;
+            option.value = region.id;
             option.textContent = region.name;
             regionSelect.appendChild(option);
         });
-        regionSelect.value = selectedValue;
-    }
-
-    function handleCreateRegion() {
-        const name = newRegionNameInput.value.trim();
-        if (!name) {
-            alert('Veuillez entrer un nom pour la nouvelle région.');
-            return;
-        }
-        const newRegion = {
-            id: Date.now(),
-            name: name,
-            hexDistance: 1,
-            places: []
-        };
-        regions.push(newRegion);
-        saveData();
-        populateRegionSelect();
-        regionSelect.value = regions.length - 1;
-        handleRegionChange();
-        newRegionNameInput.value = '';
-    }
-
-    function handleDeleteRegion() {
-        const selectedIndex = regionSelect.value;
-        if (selectedIndex === "" || !currentRegion) {
-            alert("Aucune région n'est sélectionnée.");
-            return;
-        }
-
-        if (confirm(`Êtes-vous sûr de vouloir supprimer la région "${currentRegion.name}" ? Cette action est irréversible.`)) {
-            regions.splice(selectedIndex, 1);
-            saveData();
-            currentRegion = null;
-            populateRegionSelect();
-            handleRegionChange(); // This will reset the UI
+        
+        if (regions.some(r => r.id == selectedId)) {
+            regionSelect.value = selectedId;
         }
     }
 
-    function handleRegionChange() {
-        const selectedIndex = regionSelect.value;
-        if (selectedIndex !== "") {
-            currentRegion = regions[selectedIndex];
-            hexDistanceInput.value = currentRegion.hexDistance;
-            offsetX = 0;
-            offsetY = 0;
-            selectedPlaceForLines = null;
-            hoveredPlace = null;
-        } else {
-            currentRegion = null;
+
+    function loadData() {
+        const data = localStorage.getItem(STORAGE_KEY);
+        if (data) {
+            regions = JSON.parse(data);
         }
-        updateUIForRegion();
+        updateRegionSelect();
+
+        const lastRegionId = localStorage.getItem(LAST_REGION_KEY);
+        if (lastRegionId && regions.some(r => r.id == lastRegionId)) {
+            regionSelect.value = lastRegionId;
+        }
     }
     
-    function handleHexDistanceChange() {
-        if (currentRegion) {
-            const distance = parseFloat(hexDistanceInput.value);
-            if (distance > 0) {
-                currentRegion.hexDistance = distance;
-                saveData();
-                drawMap();
-            }
-        }
-    }
-
-    function updateUIForRegion() {
-        const isRegionSelected = !!currentRegion;
-        hexDistanceInput.disabled = !isRegionSelected;
-        deleteRegionBtn.disabled = !isRegionSelected;
-        generateMapBtn.disabled = !isRegionSelected;
-        
-        canvas.style.cursor = isRegionSelected ? 'grab' : 'default';
-        
-        updatePlacesList();
-        updateNextStepButton();
-        drawMap();
-    }
-
-    function updatePlacesList() {
-        placesList.innerHTML = '';
-        if (currentRegion && currentRegion.places.length > 0) {
-            currentRegion.places.forEach(place => {
-                const li = document.createElement('li');
-                li.dataset.placeId = place.id;
-                
-                li.innerHTML = `
-                    <div class="place-info" data-action="select" title="Afficher/Cacher les distances">
-                        <div>${place.name}</div>
-                        <div class="place-type">(${place.type})</div>
-                    </div>
-                    <div class="place-actions">
-                        <button class="btn-edit" data-action="edit" title="Éditer ce lieu">Éditer</button>
-                        <button class="btn-center" data-action="center" title="Centrer la vue sur ce lieu">Centrer</button>
-                        <button class="delete-place-btn" data-action="delete" title="Supprimer ce lieu">X</button>
-                    </div>
-                `;
-                placesList.appendChild(li);
-            });
-        } else {
-            placesList.innerHTML = '<li class="placeholder">Aucun lieu pour le moment.</li>';
-        }
-    }
-
-    function handleDeletePlace(placeId) {
-        if (!currentRegion) return;
-        const placeIndex = currentRegion.places.findIndex(p => p.id === placeId);
-        if (placeIndex > -1) {
-            currentRegion.places.splice(placeIndex, 1);
-            
-            if (selectedPlaceForLines && selectedPlaceForLines.id === placeId) {
-                selectedPlaceForLines = null;
-            }
-            if (hoveredPlace && hoveredPlace.id === placeId) {
-                hoveredPlace = null;
-            }
-
-            saveData();
-            updatePlacesList();
-            updateNextStepButton();
-            drawMap();
-        }
-    }
-
-    function updateNextStepButton() {
-        const enabled = currentRegion && currentRegion.places.length > 0;
-        nextStepBtn.disabled = !enabled;
-        nextStepError.hidden = enabled;
-    }
-    
+    // --- RENDU GRAPHIQUE ---
     function resizeCanvas() {
         canvas.width = mapContainer.clientWidth;
         canvas.height = mapContainer.clientHeight;
         drawMap();
     }
-    
-    function drawHex(x, y, size, customStroke = null) {
-        ctx.beginPath();
-        for (let i = 0; i < 6; i++) {
-            const angle_deg = 60 * i - 30;
-            const angle_rad = Math.PI / 180 * angle_deg;
-            ctx.lineTo(x + size * Math.cos(angle_rad), y + size * Math.sin(angle_rad));
-        }
-        ctx.closePath();
 
-        if (hexImage.complete && hexImage.naturalHeight !== 0) {
+    function drawMap() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.save();
+        ctx.translate(view.x, view.y);
+        ctx.scale(view.zoom, view.zoom);
+        
+        const hexCornersPx = [
+            getPixelToHex(0, 0),
+            getPixelToHex(canvas.width, 0),
+            getPixelToHex(0, canvas.height),
+            getPixelToHex(canvas.width, canvas.height)
+        ];
+
+        const qMin = Math.min(...hexCornersPx.map(c => c.q));
+        const qMax = Math.max(...hexCornersPx.map(c => c.q));
+        const rMin = Math.min(...hexCornersPx.map(c => c.r));
+        const rMax = Math.max(...hexCornersPx.map(c => c.r));
+
+        const overlap = 8; 
+
+        for (let r = rMin - 2; r <= rMax + 2; r++) {
+            for (let q = qMin - 2; q <= qMax + 2; q++) {
+                const center = getHexCenter(q, r);
+                const drawW = hexSize.w + overlap;
+                const drawH = hexSize.h + overlap;
+                const drawX = center.x - drawW / 2;
+                const drawY = center.y - drawH / 2;
+                
+                if (HEX_TERRAIN.img) {
+                   ctx.drawImage(HEX_TERRAIN.img, drawX, drawY, drawW, drawH);
+                }
+
+                if (hoveredHex && q === hoveredHex.q && r === hoveredHex.r) {
+                    const corners = getHexCorners(center, hexSize);
+                    ctx.strokeStyle = 'rgba(212, 160, 23, 0.9)'; // --color-gold
+                    ctx.lineWidth = 4 / view.zoom;
+                    ctx.beginPath();
+                    ctx.moveTo(corners[0].x, corners[0].y);
+                    for (let i = 1; i < 6; i++) {
+                        ctx.lineTo(corners[i].x, corners[i].y);
+                    }
+                    ctx.closePath();
+                    ctx.stroke();
+                }
+            }
+        }
+
+        if (currentRegion) {
+            currentRegion.places.forEach(place => {
+                if(draggedPlace && draggedPlace.id === place.id) return;
+                drawPlace(place);
+            });
+
+            if (isDraggingPlace && draggedPlace) {
+                const currentHexUnderMouse = getPixelToHex(lastMouse.x, lastMouse.y);
+                const tempOriginPlace = { ...draggedPlace, coords: currentHexUnderMouse };
+                drawDistancesFrom(tempOriginPlace);
+            } else if(selectedPlaceForDistance) {
+                drawDistancesFrom(selectedPlaceForDistance);
+            } else if (hoveredPlace) {
+                drawDistancesFrom(hoveredPlace);
+            }
+        }
+
+        if (isDraggingPlace && draggedPlace) {
+            const placeImg = PLACE_TYPES[draggedPlace.type]?.img;
+            if (placeImg) {
+                const drawX = (lastMouse.x - view.x) / view.zoom - hexSize.w / 2;
+                const drawY = (lastMouse.y - view.y) / view.zoom - hexSize.h / 2;
+                ctx.globalAlpha = 0.7;
+                ctx.drawImage(placeImg, drawX, drawY, hexSize.w, hexSize.h);
+                ctx.globalAlpha = 1;
+            }
+        }
+
+        ctx.restore();
+    }
+    
+    function drawPlace(place) {
+        const placeImg = PLACE_TYPES[place.type]?.img;
+        if (!placeImg) return;
+        
+        const center = getHexCenter(place.coords.q, place.coords.r);
+        const scaledW = hexSize.w;
+        const scaledH = hexSize.h;
+
+        if (pulsingPlaceId === place.id) {
             ctx.save();
-            ctx.clip();
-            ctx.drawImage(hexImage, x - size, y - size, size * 2, size * 2);
+            const pulseScale = 1 + (Math.sin(Date.now() * 0.005) * 0.05);
+            ctx.translate(center.x, center.y);
+            ctx.scale(pulseScale, pulseScale);
+            ctx.drawImage(placeImg, -scaledW/2, -scaledH/2, scaledW, scaledH);
             ctx.restore();
         } else {
-            ctx.fillStyle = '#bdc3c7';
-            ctx.fill();
+             ctx.drawImage(placeImg, center.x - scaledW/2, center.y - scaledH/2, scaledW, scaledH);
         }
-
-        ctx.strokeStyle = customStroke || '#7f8c8d';
-        ctx.lineWidth = customStroke ? 3 : 1;
-        ctx.stroke();
-        ctx.lineWidth = 1;
     }
-    
-    function drawMap() {
-        if (!canvas.getContext) return;
 
-        if (pulseEffect && Date.now() > pulseEffect.startTime + pulseEffect.duration) {
-            pulseEffect = null;
-        }
-
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    function drawDistancesFrom(originPlace) {
         if (!currentRegion) return;
-
-        const hexWidth = Math.sqrt(3) * hexSize;
-        const hexHeight = 2 * hexSize;
+        const originCenter = getHexCenter(originPlace.coords.q, originPlace.coords.r);
         
-        const startCol = Math.floor(-offsetX / hexWidth) - 1;
-        const endCol = Math.floor((canvas.width - offsetX) / hexWidth) + 1;
-        const startRow = Math.floor(-offsetY / (hexHeight * 0.75)) - 1;
-        const endRow = Math.floor((canvas.height - offsetY) / (hexHeight * 0.75)) + 1;
-
-        for (let row = startRow; row <= endRow; row++) {
-            for (let col = startCol; col <= endCol; col++) {
-                const x = col * hexWidth + (row % 2) * (hexWidth / 2);
-                const y = row * hexHeight * 0.75;
-                drawHex(x + offsetX, y + offsetY, hexSize);
-            }
-        }
+        ctx.save();
+        ctx.strokeStyle = 'rgba(212, 160, 23, 0.8)';
+        ctx.fillStyle = 'white';
+        const bodyStyle = getComputedStyle(document.body);
+        ctx.font = `bold ${14 / view.zoom}px ${bodyStyle.getPropertyValue('--font-body')}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
         
-        if (showDistancesToggle.checked) {
-            let placeToDrawLinesFrom = null;
-
-            // Priority: dragged > hovered > selected
-            if (isPlaceDragging && draggedPlace) {
-                placeToDrawLinesFrom = draggedPlace;
-            } else {
-                placeToDrawLinesFrom = hoveredPlace || selectedPlaceForLines;
-            }
+        currentRegion.places.forEach(targetPlace => {
+            if(originPlace.id === targetPlace.id) return;
             
-            if (placeToDrawLinesFrom && currentRegion.places.length > 1) {
-                const sourceCoords = placeToDrawLinesFrom.coords;
-                const startX = sourceCoords.q * hexWidth + (sourceCoords.r % 2) * (hexWidth / 2) + offsetX;
-                const startY = sourceCoords.r * hexHeight * 0.75 + offsetY;
-    
-                currentRegion.places.forEach(targetPlace => {
-                    if (targetPlace.id === placeToDrawLinesFrom.id) return;
-    
-                    const targetCoords = targetPlace.coords;
-                    const endX = targetCoords.q * hexWidth + (targetCoords.r % 2) * (hexWidth / 2) + offsetX;
-                    const endY = targetCoords.r * hexHeight * 0.75 + offsetY;
-    
-                    ctx.beginPath();
-                    ctx.setLineDash([8, 8]);
-                    ctx.moveTo(startX, startY);
-                    ctx.lineTo(endX, endY);
-                    ctx.strokeStyle = 'black';
-                    ctx.lineWidth = 2;
-                    ctx.stroke();
-                    ctx.setLineDash([]);
-    
-                    const hexDist = calculateHexDistance(sourceCoords, targetCoords);
-                    const realDist = (hexDist * currentRegion.hexDistance).toFixed(1);
-                    const text = `${realDist} km`;
-                    
-                    const midX = (startX + endX) / 2;
-                    const midY = (startY + endY) / 2;
-    
-                    ctx.font = `bold ${Math.max(10, hexSize / 2.5)}px ${getComputedStyle(document.body).getPropertyValue('--font-body')}`;
-                    const textMetrics = ctx.measureText(text);
-                    ctx.fillStyle = `rgba(244, 235, 208, 0.75)`;
-                    ctx.fillRect(midX - textMetrics.width / 2 - 4, midY - (hexSize / 2.5) + 2, textMetrics.width + 8, (hexSize / 2.5) + 4);
-                    
-                    ctx.fillStyle = 'black';
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillText(text, midX, midY);
-                });
-            }
-        }
-        
-        currentRegion.places.forEach(place => {
-            const { q, r } = place.coords;
-            const hexWidth = Math.sqrt(3) * hexSize;
-            const hexHeight = 2 * hexSize;
-            const x = q * hexWidth + (r % 2) * (hexWidth / 2) + offsetX;
-            const y = r * hexHeight * 0.75 + offsetY;
-        
-            let currentHexSize = hexSize;
-            let customStroke = null;
-            if (pulseEffect && pulseEffect.id === place.id) {
-                const elapsed = Date.now() - pulseEffect.startTime;
-                const progress = elapsed / pulseEffect.duration;
-                const pulse = Math.sin(progress * Math.PI * 2) * 4;
-                currentHexSize += pulse;
-                customStroke = `rgba(255, 255, 100, ${1 - progress})`;
-            }
-        
-            const placeImg = placeImages[place.type];
+            const targetCenter = getHexCenter(targetPlace.coords.q, targetPlace.coords.r);
             
-            ctx.save();
             ctx.beginPath();
-            for (let i = 0; i < 6; i++) {
-                const angle_deg = 60 * i - 30;
-                const angle_rad = Math.PI / 180 * angle_deg;
-                let size = currentHexSize;
-                if(isPlaceDragging && draggedPlace && draggedPlace.id === place.id) {
-                    size += Math.sin(Date.now() / 100) * 2;
-                }
-                ctx.lineTo(x + size * Math.cos(angle_rad), y + size * Math.sin(angle_rad));
-            }
-            ctx.closePath();
-            ctx.clip();
-        
-            if (placeImg && placeImg.complete && placeImg.naturalHeight !== 0) {
-                ctx.drawImage(placeImg, x - currentHexSize, y - currentHexSize, currentHexSize * 2, currentHexSize * 2);
-            } else {
-                ctx.fillStyle = '#c0392b';
-                ctx.fill();
-            }
-        
-            ctx.restore(); 
+            ctx.setLineDash([5 / view.zoom, 3 / view.zoom]);
+            ctx.moveTo(originCenter.x, originCenter.y);
+            ctx.lineTo(targetCenter.x, targetCenter.y);
+            ctx.lineWidth = 2 / view.zoom;
+            ctx.stroke();
             
-            const placeIsSelected = (selectedPlaceForLines && selectedPlaceForLines.id === place.id);
-            const placeIsHovered = (hoveredPlace && hoveredPlace.id === place.id);
-
-            if ((showDistancesToggle.checked && (placeIsSelected || placeIsHovered) && !isPlaceDragging) || customStroke) {
-                ctx.lineWidth = 3;
-                ctx.strokeStyle = customStroke || (placeIsHovered ? '#FFD700' : '#FFFFFF'); // Gold for hover, White for select
-                ctx.beginPath();
-                for (let i = 0; i < 6; i++) {
-                    const angle_deg = 60 * i - 30;
-                    const angle_rad = Math.PI / 180 * angle_deg;
-                    ctx.lineTo(x + currentHexSize * Math.cos(angle_rad), y + currentHexSize * Math.sin(angle_rad));
-                }
-                ctx.closePath();
-                ctx.stroke();
-            }
-        
-            const nameFontSize = Math.max(9, currentHexSize / 3.5);
-            const typeFontSize = Math.max(8, currentHexSize / 4.5);
-            const fontName = getComputedStyle(document.body).getPropertyValue('--font-body');
-
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            
-            const nameY = y - (nameFontSize / 2);
-            ctx.font = `bold ${nameFontSize}px ${fontName}`;
+            const distance = axialDistance(originPlace.coords, targetPlace.coords) * (currentRegion.scale || 1);
+            const midX = (originCenter.x + targetCenter.x) / 2;
+            const midY = (originCenter.y + targetCenter.y) / 2;
+            ctx.setLineDash([]);
             ctx.strokeStyle = 'black';
-            ctx.lineWidth = 3;
-            ctx.strokeText(place.name, x, nameY);
-            ctx.fillStyle = 'white';
-            ctx.fillText(place.name, x, nameY);
-
-            const typeY = y + (nameFontSize / 2) + 2;
-            ctx.font = `italic ${typeFontSize}px ${fontName}`;
-            ctx.lineWidth = 2;
-            ctx.strokeText(`(${place.type})`, x, typeY);
-            ctx.fillStyle = '#DDDDDD';
-            ctx.fillText(`(${place.type})`, x, typeY);
+            ctx.lineWidth = 3 / view.zoom;
+            ctx.strokeText(`${distance.toFixed(0)} km`, midX, midY);
+            ctx.fillText(`${distance.toFixed(0)} km`, midX, midY);
         });
+        
+        ctx.restore();
+    }
+
+    // --- GESTION DES INTERACTIONS UTILISATEUR ---
+    function handleCreateRegion() {
+        const name = newRegionNameInput.value.trim();
+        if (name) {
+            const newRegion = {
+                id: Date.now(),
+                name: name,
+                scale: 1, 
+                places: []
+            };
+            regions.push(newRegion);
+            saveData();
+            updateRegionSelect();
+            regionSelect.value = newRegion.id;
+            handleRegionChange();
+            newRegionNameInput.value = '';
+        } else {
+            alert("Veuillez donner un nom à la région.");
+        }
+    }
+
+    function handleDeleteRegion() {
+        if (currentRegion && confirm(`Êtes-vous sûr de vouloir supprimer la région "${currentRegion.name}" ? Cette action est irréversible.`)) {
+            regions = regions.filter(r => r.id !== currentRegion.id);
+            saveData();
+            currentRegion = null;
+            regionSelect.value = '';
+            handleRegionChange();
+        }
     }
     
-    function pixelToHex(x, y) {
-        const adjustedX = x - offsetX;
-        const adjustedY = y - offsetY;
-        const hexWidth = Math.sqrt(3) * hexSize;
-        const hexHeight = 2 * hexSize;
-        const r_approx = adjustedY / (hexHeight * 0.75);
-        const r = Math.round(r_approx);
-        const x_offset = (r % 2) * (hexWidth / 2);
-        const q_approx = (adjustedX - x_offset) / hexWidth;
-        const q = Math.round(q_approx);
-        return { q, r };
+    function handleRegionChange() {
+        const selectedId = parseInt(regionSelect.value);
+        currentRegion = regions.find(r => r.id === selectedId) || null;
+        selectedPlaceForDistance = null;
+        hoveredPlace = null;
+        
+        localStorage.setItem(LAST_REGION_KEY, currentRegion ? currentRegion.id : '');
+
+        updateUIForRegion();
     }
 
-    function getPlaceAtHex(hexCoords) {
-        if (!currentRegion) return null;
-        return currentRegion.places.find(p => p.coords.q === hexCoords.q && p.coords.r === hexCoords.r);
+    function updateUIForRegion() {
+        const hasRegion = !!currentRegion;
+        deleteRegionBtn.disabled = !hasRegion;
+        generateMapBtn.disabled = !hasRegion;
+        if (hasRegion) {
+            document.getElementById('right-panel').querySelector('h3').textContent = `Lieux de ${currentRegion.name}`;
+        } else {
+            document.getElementById('right-panel').querySelector('h3').textContent = 'Aucune région sélectionnée';
+        }
+        updatePlacesList();
+        updateNavLinksState(); 
+        drawMap();
     }
 
-    function calculateHexDistance(coords1, coords2) {
-        const dq = Math.abs(coords1.q - coords2.q);
-        const dr = Math.abs(coords1.r - coords2.r);
-        const ds = Math.abs((-coords1.q - coords1.r) - (-coords2.q - coords2.r));
-        return Math.max(dq, dr, ds);
-    }
-    
-    // --- MODAL MANAGEMENT ---
-    
-    function openCreatePlaceModal(hexCoords) {
-        selectedHex = hexCoords;
-        placeForm.removeAttribute('data-editing-id');
-        placeModal.querySelector('h3').textContent = 'Créer un Nouveau Lieu';
-        confirmPlaceBtn.textContent = 'Créer';
-        placeNameInput.value = '';
-        placeTypeSelect.value = '';
-        placeModal.showModal();
-    }
-
-    function openEditPlaceModal(placeId) {
-        const placeToEdit = currentRegion.places.find(p => p.id === placeId);
-        if (!placeToEdit) return;
-
-        selectedHex = null; // Not creating
-        placeForm.dataset.editingId = placeId;
-        placeModal.querySelector('h3').textContent = 'Éditer le Lieu';
-        confirmPlaceBtn.textContent = 'Modifier';
-        placeNameInput.value = placeToEdit.name;
-        placeTypeSelect.value = placeToEdit.type;
-        placeModal.showModal();
-    }
-
-    function handlePlaceFormSubmit(event) {
-        event.preventDefault();
-        const name = placeNameInput.value.trim();
-        const type = placeTypeSelect.value;
-        const editingId = placeForm.dataset.editingId;
-
-        if (!name || !type) {
-            alert("Veuillez remplir tous les champs.");
+    function updatePlacesList() {
+        placesList.innerHTML = '';
+        if (!currentRegion) {
+            placesList.innerHTML = `<li style="padding: 15px; text-align: center;">Créez votre première région pour commencer.</li>`;
             return;
         }
-
-        if (editingId) { // --- EDIT MODE ---
-            const placeToUpdate = currentRegion.places.find(p => p.id === parseInt(editingId));
-            if(placeToUpdate) {
-                placeToUpdate.name = name;
-                placeToUpdate.type = type;
-            }
-        } else { // --- CREATE MODE ---
-            if (!selectedHex) return;
-            const newPlace = {
-                id: Date.now(),
-                name,
-                type,
-                coords: selectedHex
-            };
-            currentRegion.places.push(newPlace);
+        if (currentRegion.places.length === 0) {
+            placesList.innerHTML = `<li style="padding: 15px; text-align: center;">Cette région est vide.<br>Double-cliquez sur la carte pour ajouter un lieu.</li>`;
         }
+        
+        currentRegion.places
+            .sort((a,b) => a.name.localeCompare(b.name))
+            .forEach(place => {
+                const li = document.createElement('li');
+                li.className = 'place-item';
+                li.dataset.placeId = place.id;
+                li.innerHTML = `
+                    <div class="info">
+                        <span class="place-name">${place.name}</span>
+                        <span class="place-type">${place.type}</span>
+                    </div>
+                    <div class="actions">
+                        <button class="btn-edit btn-center" title="Centrer la carte">🎯</button>
+                        <button class="btn-edit" title="Éditer">✏️</button>
+                        <button class="btn-delete" title="Supprimer">🗑️</button>
+                    </div>
+                `;
+                placesList.appendChild(li);
+            });
+    }
 
+    function handlePlaceListClick(e) {
+        const target = e.target.closest('button');
+        if (!target) return;
+
+        const placeItem = target.closest('.place-item');
+        const placeId = parseInt(placeItem.dataset.placeId);
+        const place = currentRegion.places.find(p => p.id === placeId);
+        if (!place) return;
+        
+        if (target.classList.contains('btn-center')) {
+            centerOnPlace(place);
+        } else if (target.classList.contains('btn-edit')) {
+            openPlaceModal(place.coords, place);
+        } else if (target.classList.contains('btn-delete')) {
+            if (confirm(`Supprimer le lieu "${place.name}" ?`)) {
+                currentRegion.places = currentRegion.places.filter(p => p.id !== placeId);
+                if(selectedPlaceForDistance && selectedPlaceForDistance.id === placeId) selectedPlaceForDistance = null;
+                saveData();
+                updatePlacesList();
+                drawMap();
+            }
+        }
+    }
+    
+    function openPlaceModal(coords, placeToEdit = null) {
+        placeForm.dataset.editingId = '';
+        if (placeToEdit) {
+            modalTitle.textContent = "Éditer le Lieu";
+            confirmPlaceBtn.textContent = "Modifier";
+            placeNameInput.value = placeToEdit.name;
+            placeTypeSelect.value = placeToEdit.type;
+            placeForm.dataset.editingId = placeToEdit.id;
+        } else {
+            modalTitle.textContent = "Créer un Nouveau Lieu";
+            confirmPlaceBtn.textContent = "Créer";
+            placeForm.reset();
+            tempHexCoords = coords;
+        }
+        placeModal.showModal();
+    }
+    
+    function handlePlaceFormSubmit(e) {
+        e.preventDefault();
+        const name = placeNameInput.value.trim();
+        const type = placeTypeSelect.value;
+        if (!name || !type) return alert("Veuillez remplir tous les champs.");
+
+        const editingId = parseInt(placeForm.dataset.editingId);
+        if(editingId) { 
+            const place = currentRegion.places.find(p => p.id === editingId);
+            if (place) {
+                place.name = name;
+                place.type = type;
+            }
+        } else { 
+             currentRegion.places.push({
+                id: Date.now(),
+                name: name,
+                type: type,
+                coords: tempHexCoords
+            });
+        }
         saveData();
         updatePlacesList();
-        updateNextStepButton();
         drawMap();
         placeModal.close();
     }
 
+    // --- MODIFIÉ : Ajout de l'animation de glissement ---
+    function centerOnPlace(place) {
+        if (pulseInterval) clearInterval(pulseInterval);
+        if (panAnimationId) cancelAnimationFrame(panAnimationId);
 
-    function animatePanAndPulse(placeId) {
-        if (!currentRegion || isMapDragging || isPlaceDragging) return;
-        if (animationFrameId) cancelAnimationFrame(animationFrameId);
-
-        const place = currentRegion.places.find(p => p.id === placeId);
-        if (!place) return;
-
-        const hexWidth = Math.sqrt(3) * hexSize;
-        const hexHeight = 2 * hexSize;
-
-        const placePixelX = place.coords.q * hexWidth + (place.coords.r % 2) * (hexWidth / 2);
-        const placePixelY = place.coords.r * hexHeight * 0.75;
-        const targetOffsetX = canvas.width / 2 - placePixelX;
-        const targetOffsetY = canvas.height / 2 - placePixelY;
-
-        const startOffsetX = offsetX;
-        const startOffsetY = offsetY;
-        const duration = 600;
+        // --- Début de la logique de l'animation de glissement ---
+        const startX = view.x;
+        const startY = view.y;
+        const center = getHexCenter(place.coords.q, place.coords.r);
+        const targetX = -center.x * view.zoom + canvas.width / 2;
+        const targetY = -center.y * view.zoom + canvas.height / 2;
+        
+        const duration = 500; // Durée de l'animation en ms
         let startTime = null;
 
-        function animationStep(timestamp) {
-            if (!startTime) startTime = timestamp;
-            const elapsed = timestamp - startTime;
-            const progress = Math.min(elapsed / duration, 1);
-            const easeProgress = progress < 0.5 ? 4 * progress * progress * progress : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+        function panAnimation(currentTime) {
+            if (!startTime) startTime = currentTime;
+            const elapsedTime = currentTime - startTime;
+            const progress = Math.min(elapsedTime / duration, 1);
+            
+            // Fonction d'"easing" pour un mouvement plus naturel (ralentit à la fin)
+            const easedProgress = progress * (2 - progress);
 
-            offsetX = startOffsetX + (targetOffsetX - startOffsetX) * easeProgress;
-            offsetY = startOffsetY + (targetOffsetY - startOffsetY) * easeProgress;
+            view.x = startX + (targetX - startX) * easedProgress;
+            view.y = startY + (targetY - startY) * easedProgress;
+
             drawMap();
 
             if (progress < 1) {
-                animationFrameId = requestAnimationFrame(animationStep);
+                panAnimationId = requestAnimationFrame(panAnimation);
             } else {
-                animationFrameId = null;
-                pulseEffect = { id: placeId, startTime: Date.now(), duration: 1000 };
-                function pulseAnimation() {
-                    if (pulseEffect) {
-                        drawMap();
-                        requestAnimationFrame(pulseAnimation);
-                    } else {
-                        drawMap();
-                    }
-                }
-                pulseAnimation();
+                panAnimationId = null;
             }
         }
-        animationFrameId = requestAnimationFrame(animationStep);
+        panAnimationId = requestAnimationFrame(panAnimation);
+        // --- Fin de la logique de l'animation de glissement ---
+
+        // Démarre l'animation de pulsation en parallèle
+        pulsingPlaceId = place.id;
+        pulseInterval = setInterval(drawMap, 16);
+
+        setTimeout(() => {
+            clearInterval(pulseInterval);
+            pulseInterval = null;
+            pulsingPlaceId = null;
+            drawMap(); 
+        }, 2500);
     }
-    
-    // --- RANDOM MAP GENERATION ---
+
+
+    function getPlaceAt(hexCoords) {
+        if (!currentRegion) return null;
+        return currentRegion.places.find(p => p.coords.q === hexCoords.q && p.coords.r === hexCoords.r);
+    }
 
     function handleGenerateMap() {
-        if (!currentRegion) {
-            alert("Veuillez d'abord créer ou sélectionner une région.");
+        if (!currentRegion) return;
+        if(currentRegion.places.length > 0 && !confirm("Cette action va supprimer tous les lieux existants dans cette région. Continuer ?")) {
             return;
         }
-        if (currentRegion.places.length > 0 && !confirm("Attention : Ceci va supprimer tous les lieux existants sur la carte. Continuer ?")) {
-            return;
-        }
+        
+        currentRegion.places = [];
+        const count = parseInt(randomPlaceCountInput.value);
+        const occupied = new Set();
+        const radius = Math.ceil(Math.sqrt(count)) + 2;
 
-        const numPlaces = parseInt(randomPlaceCountInput.value);
-        if (numPlaces < 1) return;
-
-        // Créer une copie des noms disponibles pour cette génération
-        const availableNames = JSON.parse(JSON.stringify(placeNames));
-        for (const type in availableNames) {
-            availableNames[type].sort(() => Math.random() - 0.5); // Mélanger
-        }
-
-        const strategy = placementStrategySelect.value;
-        currentRegion.places = []; // Clear existing places
-        const occupiedCoords = new Set();
-        const MAX_TRIES = 100;
-
-        let placeTypesToAssign = [
-            'Capitale',
-            ...Array(numPlaces - 1).fill(0).map(() => ['Ville', 'Bourg', 'Village', 'Hameau'][Math.floor(Math.random() * 4)])
-        ].sort(() => Math.random() - 0.5); // Randomize order, but Capital is always there
-
-        const getNewName = (type) => {
-            if (availableNames[type] && availableNames[type].length > 0) {
-                return availableNames[type].pop();
-            }
-            return `${type} ${currentRegion.places.length + 1}`; // Fallback
-        };
-
-        if (strategy === 'random') {
-            const radius = Math.ceil(Math.sqrt(numPlaces) * 1.5) + 2;
-            for (let i = 0; i < numPlaces; i++) {
-                let coords;
-                let tries = 0;
-                do {
-                    const q = Math.floor(Math.random() * (2 * radius + 1)) - radius;
-                    const r = Math.floor(Math.random() * (2 * radius + 1)) - radius;
-                    coords = { q, r };
-                    tries++;
-                } while (occupiedCoords.has(`${coords.q},${coords.r}`) && tries < MAX_TRIES);
-
-                if (tries < MAX_TRIES) {
-                    const type = placeTypesToAssign.pop() || 'Village';
-                    const name = getNewName(type);
-                    currentRegion.places.push({ id: Date.now() + i, name: name, type, coords });
-                    occupiedCoords.add(`${coords.q},${coords.r}`);
-                }
-            }
-        } else { // Ranged strategy
-            const min = parseInt(minRangeInput.value);
-            const max = parseInt(maxRangeInput.value);
-            if (min > max) {
-                alert("La distance minimale ne peut pas être supérieure à la maximale.");
-                return;
-            }
-
-            // Place first one (Capital) at 0,0
-            let firstCoords = { q: 0, r: 0 };
-            const capitalType = 'Capitale';
-            const capitalName = getNewName(capitalType);
-            currentRegion.places.push({ id: Date.now(), name: capitalName, type: capitalType, coords: firstCoords });
-            occupiedCoords.add(`0,0`);
-            placeTypesToAssign = placeTypesToAssign.filter(t => t !== 'Capitale');
-
-            for (let i = 1; i < numPlaces; i++) {
-                let found = false;
-                let tries = 0;
-                while (!found && tries < MAX_TRIES) {
-                    const refPlace = currentRegion.places[Math.floor(Math.random() * currentRegion.places.length)];
-                    const dist = Math.floor(Math.random() * (max - min + 1)) + min;
-                    
-                    let ringCoords = getHexRing(refPlace.coords, dist);
-                    ringCoords = ringCoords.sort(() => Math.random() - 0.5); // Shuffle
-
-                    for(const potentialCoords of ringCoords) {
-                         if (!occupiedCoords.has(`${potentialCoords.q},${potentialCoords.r}`)) {
-                            const type = placeTypesToAssign.pop() || 'Village';
-                            const name = getNewName(type);
-                            currentRegion.places.push({ id: Date.now() + i, name: name, type, coords: potentialCoords });
-                            occupiedCoords.add(`${potentialCoords.q},${potentialCoords.r}`);
-                            found = true;
-                            break;
-                         }
-                    }
-                    tries++;
-                }
-            }
+        for(let i=0; i<count; i++) {
+            let q, r;
+            do {
+                q = Math.floor(Math.random() * (radius * 2 + 1)) - radius;
+                r = Math.floor(Math.random() * (radius * 2 + 1)) - radius;
+            } while (occupied.has(`${q},${r}`));
+            
+            occupied.add(`${q},${r}`);
+            const name = RANDOM_NAMES[Math.floor(Math.random() * RANDOM_NAMES.length)];
+            const type = Object.keys(PLACE_TYPES)[Math.floor(Math.random() * Object.keys(PLACE_TYPES).length)];
+            
+             currentRegion.places.push({
+                id: Date.now() + i,
+                name: `${name} ${i+1}`,
+                type: type,
+                coords: {q, r}
+            });
         }
         
         saveData();
-        updateUIForRegion();
-        if (currentRegion.places.length > 0) {
-            animatePanAndPulse(currentRegion.places[0].id);
-        }
-    }
-
-    function getHexRing(center, radius) {
-        const results = [];
-        if (radius === 0) {
-            results.push(center);
-            return results;
-        }
-        let hex = {q: center.q + radius, r: center.r}; // Start at one corner
-
-        for (let i = 0; i < 6; i++) {
-            for (let j = 0; j < radius; j++) {
-                results.push(hex);
-                 // Move to the next hex on the ring edge
-                const directions = [{q:0, r:-1}, {q:-1, r:0}, {q:-1, r:+1}, {q:0, r:+1}, {q:+1, r:0}, {q:+1, r:-1}];
-                const dir = directions[i];
-                hex = {q: hex.q + dir.q, r: hex.r + dir.r};
-            }
-        }
-        return results;
-    }
-
-
-    // --- ÉCOUTEURS D'ÉVÉNEMENTS ---
-    
-    placesList.addEventListener('click', (event) => {
-        const target = event.target;
-        const li = target.closest('li');
-        if (!li || !li.dataset.placeId || !currentRegion) return;
-    
-        const actionElement = target.closest('[data-action]');
-        if (!actionElement) return;
-    
-        const placeId = parseInt(li.dataset.placeId, 10);
-        const action = actionElement.dataset.action;
-    
-        if (action === 'delete') {
-            handleDeletePlace(placeId);
-        } else if (action === 'select') {
-            const place = currentRegion.places.find(p => p.id === placeId);
-            if (selectedPlaceForLines && selectedPlaceForLines.id === placeId) {
-                selectedPlaceForLines = null; // Unselect if clicked again
-            } else {
-                selectedPlaceForLines = place;
-            }
-            hoveredPlace = null; // Clear hover when selecting
-            drawMap();
-        } else if (action === 'center') {
-            animatePanAndPulse(placeId);
-        } else if (action === 'edit') {
-            openEditPlaceModal(placeId);
-        }
-    });
-
-    createRegionBtn.addEventListener('click', handleCreateRegion);
-    deleteRegionBtn.addEventListener('click', handleDeleteRegion);
-    regionSelect.addEventListener('change', handleRegionChange);
-    hexDistanceInput.addEventListener('change', handleHexDistanceChange);
-    placeForm.addEventListener('submit', handlePlaceFormSubmit);
-    cancelPlaceBtn.addEventListener('click', () => placeModal.close());
-    showDistancesToggle.addEventListener('change', drawMap);
-    
-    // --- New Event Listeners ---
-    generateMapBtn.addEventListener('click', handleGenerateMap);
-    placementStrategySelect.addEventListener('change', () => {
-        rangedOptionsDiv.hidden = placementStrategySelect.value !== 'ranged';
-    });
-
-    canvas.addEventListener('wheel', (event) => {
-        event.preventDefault();
-        if (!currentRegion) return;
-    
-        const rect = canvas.getBoundingClientRect();
-        const mouseX = event.clientX - rect.left;
-        const mouseY = event.clientY - rect.top;
-    
-        const oldHexSize = hexSize;
-        const zoomFactor = event.deltaY > 0 ? 0.9 : 1.1;
-        const newHexSize = Math.max(15, Math.min(60, oldHexSize * zoomFactor));
-    
-        if (newHexSize === oldHexSize) return;
-    
-        const mapX = (mouseX - offsetX);
-        const mapY = (mouseY - offsetY);
-        
-        offsetX = mouseX - mapX * (newHexSize / oldHexSize);
-        offsetY = mouseY - mapY * (newHexSize / oldHexSize);
-    
-        hexSize = newHexSize;
+        updatePlacesList();
         drawMap();
-    }, { passive: false });
-
-
-    canvas.addEventListener('dblclick', (event) => {
-        if (!currentRegion || isMapDragging || isPlaceDragging) return;
-        
-        const rect = canvas.getBoundingClientRect();
-        const x = event.clientX - rect.left;
-        const y = event.clientY - rect.top;
-        const hexCoords = pixelToHex(x, y);
-
-        if (!getPlaceAtHex(hexCoords)) {
-            openCreatePlaceModal(hexCoords);
-        }
-    });
+    }
     
-    canvas.addEventListener('mousedown', (event) => {
-        if (!currentRegion || event.button !== 0) return;
-        
-        if (animationFrameId) {
-            cancelAnimationFrame(animationFrameId);
-            animationFrameId = null;
+    // NOUVELLE FONCTION : Vérifie si tous les lieux de la région ont été validés à l'étape 2
+    function checkAllPlacesValidated(region) {
+        if (!region || !region.places || region.places.length === 0) {
+            return false;
         }
-        pulseEffect = null;
+        // La méthode .every() vérifie si TOUS les éléments d'un tableau passent un test.
+        // Ici, on vérifie si chaque lieu a une configuration et si cette config est marquée comme valide.
+        return region.places.every(place => place.config && place.config.isValidated === true);
+    }
 
-        isMouseDown = true;
-        lastMouseX = event.clientX;
-        lastMouseY = event.clientY;
-        
-        const rect = canvas.getBoundingClientRect();
-        const clickX = event.clientX - rect.left;
-        const clickY = event.clientY - rect.top;
-        const hexCoords = pixelToHex(clickX, clickY);
-        const clickedPlace = getPlaceAtHex(hexCoords);
+    // FONCTION MISE A JOUR : Gère l'état actif/inactif des liens de navigation
+    function updateNavLinksState() {
+        const isStep2Ready = currentRegion && currentRegion.places.length > 0;
+        const isStep3Ready = checkAllPlacesValidated(currentRegion);
 
-        if (clickedPlace) {
-            isPlaceDragging = true;
-            draggedPlace = clickedPlace;
-            dragStartCoords = { ...clickedPlace.coords };
-            selectedPlaceForLines = null; // Clear selection when dragging
-            hoveredPlace = null;
-            canvas.style.cursor = 'grabbing';
+        // Gère le lien vers l'Étape 2
+        if (isStep2Ready) {
+            navStep2.classList.remove('nav-disabled');
         } else {
-            isMapDragging = true;
-            canvas.style.cursor = 'grabbing';
+            navStep2.classList.add('nav-disabled');
         }
-    });
+        
+        // Gère le lien vers l'Étape 3 basé sur la validation de tous les lieux
+        if (isStep3Ready) {
+            navStep3.classList.remove('nav-disabled');
+        } else {
+            navStep3.classList.add('nav-disabled');
+        }
+    }
 
-    window.addEventListener('mousemove', (event) => {
-        if (!currentRegion) return;
-
-        if (isMouseDown) { // Logic for when dragging
-            const dx = event.clientX - lastMouseX;
-            const dy = event.clientY - lastMouseY;
-            lastMouseX = event.clientX;
-            lastMouseY = event.clientY;
-    
-            if (isPlaceDragging && draggedPlace) {
-                const rect = canvas.getBoundingClientRect();
-                const mouseX = event.clientX - rect.left;
-                const mouseY = event.clientY - rect.top;
-                const newHexCoords = pixelToHex(mouseX, mouseY);
-    
-                if (newHexCoords.q !== draggedPlace.coords.q || newHexCoords.r !== draggedPlace.coords.r) {
-                     draggedPlace.coords = newHexCoords;
-                     drawMap();
+    // --- EVENT LISTENERS ---
+    function setupEventListeners() {
+        window.addEventListener('resize', resizeCanvas);
+        createRegionBtn.addEventListener('click', handleCreateRegion);
+        deleteRegionBtn.addEventListener('click', handleDeleteRegion);
+        regionSelect.addEventListener('change', handleRegionChange);
+        generateMapBtn.addEventListener('click', handleGenerateMap);
+        placesList.addEventListener('click', handlePlaceListClick);
+        placeForm.addEventListener('submit', handlePlaceFormSubmit);
+        cancelPlaceBtn.addEventListener('click', () => placeModal.close());
+        
+        floatingMenu.addEventListener('click', (e) => {
+            const link = e.target.closest('a');
+            if (link && link.classList.contains('nav-disabled')) {
+                e.preventDefault();
+                if (link.id === 'nav-step-3') {
+                     alert("Veuillez d'abord configurer et valider TOUS les lieux dans l'Étape 2 pour accéder à la simulation.");
+                } else {
+                     alert("Veuillez d'abord créer une région et y ajouter au moins un lieu pour accéder à cette étape.");
                 }
-            } else if (isMapDragging) {
-                offsetX += dx;
-                offsetY += dy;
+            }
+        });
+        
+        canvas.addEventListener('mousedown', (e) => {
+            // Arrête toutes les animations en cours si l'utilisateur interagit
+            if (pulseInterval) clearInterval(pulseInterval);
+            if (panAnimationId) cancelAnimationFrame(panAnimationId);
+            pulseInterval = null;
+            panAnimationId = null;
+            pulsingPlaceId = null;
+
+            if (e.button !== 0) return;
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            lastMouse = { x: mouseX, y: mouseY };
+            
+            const hexCoords = getPixelToHex(mouseX, mouseY);
+            const place = getPlaceAt(hexCoords);
+
+            if (place) {
+                isDraggingPlace = true;
+                draggedPlace = place;
+                selectedPlaceForDistance = place;
+            } else {
+                isPanning = true;
+                canvas.classList.add('is-dragging');
+            }
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+             
+            if (isPanning) {
+                view.x += mouseX - lastMouse.x;
+                view.y += mouseY - lastMouse.y;
+                drawMap();
+            } else if (isDraggingPlace) {
+                lastMouse = { x: mouseX, y: mouseY };
+                drawMap();
+            } else {
+                 const hexCoords = getPixelToHex(mouseX, mouseY);
+                 const place = getPlaceAt(hexCoords);
+                 
+                 let needsRedraw = false;
+                 if (hoveredPlace !== place) {
+                     hoveredPlace = place;
+                     needsRedraw = true;
+                 }
+
+                 const currentHex = getPixelToHex(mouseX,mouseY);
+                 if(!hoveredHex || hoveredHex.q !== currentHex.q || hoveredHex.r !== currentHex.r) {
+                     hoveredHex = currentHex;
+                     needsRedraw = true;
+                 }
+                 
+                 if(needsRedraw) drawMap();
+            }
+            
+            if (!isDraggingPlace) {
+                lastMouse = { x: mouseX, y: mouseY };
+            }
+        });
+
+        window.addEventListener('mouseup', (e) => {
+            if (isPanning) {
+                isPanning = false;
+                canvas.classList.remove('is-dragging');
+            }
+            if (isDraggingPlace && draggedPlace) {
+                const rect = canvas.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                const mouseY = e.clientY - rect.top;
+                const targetHex = getPixelToHex(mouseX, mouseY);
+                
+                if (!getPlaceAt(targetHex)) {
+                    draggedPlace.coords = targetHex;
+                }
+
+                isDraggingPlace = false;
+                draggedPlace = null;
+                saveData();
+                updatePlacesList(); 
                 drawMap();
             }
-        } else { // Logic for when just moving the mouse (not dragging)
-             const rect = canvas.getBoundingClientRect();
-             const mouseX = event.clientX - rect.left;
-             const mouseY = event.clientY - rect.top;
-             const hexCoords = pixelToHex(mouseX, mouseY);
-             const placeUnderMouse = getPlaceAtHex(hexCoords);
+        });
 
-             // Handle hover for distances
-             if (hoveredPlace?.id !== placeUnderMouse?.id) {
-                 hoveredPlace = placeUnderMouse;
-                 drawMap();
-             }
-             
-             // Handle cursor style
-             if (placeUnderMouse) {
-                 canvas.style.cursor = 'move';
-             } else {
-                 canvas.style.cursor = 'grab';
-             }
-        }
-    });
-
-    window.addEventListener('mouseup', (event) => {
-        if (!isMouseDown || !currentRegion) return;
-
-        const wasDragging = isMapDragging || (isPlaceDragging && (draggedPlace.coords.q !== dragStartCoords.q || draggedPlace.coords.r !== dragStartCoords.r));
-        
-        if (isPlaceDragging && draggedPlace) {
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
             const rect = canvas.getBoundingClientRect();
-            const mouseX = event.clientX - rect.left;
-            const mouseY = event.clientY - rect.top;
-            const finalHexCoords = pixelToHex(mouseX, mouseY);
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
             
-            const occupyingPlace = getPlaceAtHex(finalHexCoords);
-            if(occupyingPlace && occupyingPlace.id !== draggedPlace.id) {
-                draggedPlace.coords = dragStartCoords; // Revert position
-                alert("Vous ne pouvez pas déplacer un lieu sur un autre.");
-            } else {
-                draggedPlace.coords = finalHexCoords;
-                saveData();
-            }
-            // After dropping, this place becomes the selected one for lines
-            selectedPlaceForLines = draggedPlace;
-        }
+            const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
+            const oldZoom = view.zoom;
+            view.zoom = Math.max(0.02, Math.min(5, view.zoom * zoomFactor));
 
-        if (!wasDragging) { // This was a simple click, not a drag
-             const rect = canvas.getBoundingClientRect();
-             const clickX = event.clientX - rect.left;
-             const clickY = event.clientY - rect.top;
-             const hexCoords = pixelToHex(clickX, clickY);
-             const clickedPlace = getPlaceAtHex(hexCoords);
-             
-             if(clickedPlace){
-                if(selectedPlaceForLines && selectedPlaceForLines.id === clickedPlace.id){
-                    selectedPlaceForLines = null; // Unselect if clicked again
-                } else {
-                    selectedPlaceForLines = clickedPlace;
-                }
-             } else {
-                 selectedPlaceForLines = null; // Clicked on empty space
-             }
-        }
-        
-        hoveredPlace = null;
-        isMouseDown = false;
-        isMapDragging = false;
-        isPlaceDragging = false;
-        draggedPlace = null;
-        canvas.style.cursor = 'grab';
-        drawMap();
-    });
+            view.x = mouseX - (mouseX - view.x) * (view.zoom / oldZoom);
+            view.y = mouseY - (mouseY - view.y) * (view.zoom / oldZoom);
 
-    canvas.addEventListener('mouseout', () => {
-        if (hoveredPlace) {
-            hoveredPlace = null;
             drawMap();
-        }
-    });
+        }, { passive: false });
 
-    zoomInBtn.addEventListener('click', () => { hexSize = Math.min(60, hexSize + 5); drawMap(); });
-    zoomOutBtn.addEventListener('click', () => { hexSize = Math.max(15, hexSize - 5); drawMap(); });
-    window.addEventListener('resize', resizeCanvas);
+        canvas.addEventListener('dblclick', (e) => {
+             if (!currentRegion) {
+                 alert("Veuillez créer ou sélectionner une région avant d'ajouter un lieu.");
+                 return;
+             }
+             const rect = canvas.getBoundingClientRect();
+             const mouseX = e.clientX - rect.left;
+             const mouseY = e.clientY - rect.top;
+             const hexCoords = getPixelToHex(mouseX, mouseY);
+             if (!getPlaceAt(hexCoords)) {
+                 openPlaceModal(hexCoords);
+             }
+        });
+        
+        canvas.addEventListener('click', (e) => {
+            setTimeout(() => {
+                if (isDraggingPlace || isPanning) return;
+                
+                const rect = canvas.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                const mouseY = e.clientY - rect.top;
+                const hexCoords = getPixelToHex(mouseX, mouseY);
+                const place = getPlaceAt(hexCoords);
+                
+                if (place) {
+                     if (selectedPlaceForDistance && selectedPlaceForDistance.id === place.id) {
+                        selectedPlaceForDistance = null; 
+                     } else {
+                        selectedPlaceForDistance = place;
+                     }
+                } else {
+                    selectedPlaceForDistance = null; 
+                }
+                drawMap();
+            }, 50); 
+        });
 
-    async function initialize() {
-        await loadPlaceNames();
-        preloadPlaceImages();
-        loadData();
-        if (regionSelect.options.length > 1) {
-            regionSelect.value = 0; // Select the first region on load if it exists
-        }
-        handleRegionChange();
+        canvas.addEventListener('mouseleave', () => {
+            if(hoveredHex) {
+                hoveredHex = null;
+                drawMap();
+            }
+        });
+    }
+    
+    // --- INITIALISATION ---
+    async function init() {
+        await preloadAssets();
+        loadData(); 
+        handleRegionChange(); 
         resizeCanvas();
-        placementStrategySelect.dispatchEvent(new Event('change'));
+        setupEventListeners();
+        view.x = canvas.width / 2;
+        view.y = canvas.height / 2;
+        view.zoom = 0.15;
+        drawMap();
+        updateNavLinksState(); 
     }
 
-    initialize();
+    init();
 });

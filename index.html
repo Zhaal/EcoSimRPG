@@ -3,50 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Accueil - EcoSimRPG</title>
-    <link rel="stylesheet" href="style.css">
+    <title>EcoSimRPG - Étape 1 : Carte</title>
+    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
     <nav class="floating-menu">
         <div class="menu-title">EcoSimRPG</div>
-        <a href="index.html" class="active">Accueil</a>
-        <a href="map.html">Étape 1<br><small>(Carte)</small></a>
-        <a href="conflieux.html">Étape 2<br><small>(Configuration Lieux)</small></a>
-        <a href="#">Étape 3<br><small>(Simulation)</small></a>
-        <a href="#">Étape 4<br><small>(Données)</small></a>
+        <a href="#">Accueil</a>
+        <a href="#" class="active">Étape 1<br><small>(Carte)</small></a>
+        <a href="step2.html" id="nav-step-2">Étape 2<br><small>(Conf. Lieux)</small></a>
+        <a href="step3.html" id="nav-step-3">Étape 3<br><small>(Gen.0)</small></a>
     </nav>
 
-    <div class="page-container">
-        <div id="top-band">
-            <div id="top-band-left"></div>
-            <div id="top-band-right"></div>
-        </div>
-
-        <main id="main-content" class="home-main">
-            <div class="home-content-panel">
-                <header class="home-header">
-                    <h1>EcoSimRPG</h1>
-                    <h2>Simulateur de Monde et d'Économie</h2>
-                </header>
-                
-                <p class="home-intro">
-                    Bienvenue, stratège. Cet outil vous est destiné pour forger des mondes, ériger des cités et insuffler la vie à des économies complexes pour vos récits et campagnes. De la plus humble bourgade à la plus majestueuse des capitales, chaque décision influe sur le destin de votre peuple.
-                </p>
-
-                <div class="home-features">
-                    <h3>Informations</h3>
-                    <p class="feature-info-text">
-                        Pour le moment, seule la configuration d'une "Capitale" avec un système économique "Libéral" est pleinement intégrée.
-                    </p>
+    <div class="main-content">
+        <header id="top-bar">
+            <div class="control-group">
+                <label for="region-select">Région:</label>
+                <div class="input-group">
+                    <select id="region-select"><option>Aucune région</option></select>
+                    <button id="delete-region-btn" class="btn-delete" disabled title="Supprimer la région">-</button>
                 </div>
-
-                <a href="map.html" class="cta-button">Forger votre Région &rarr;</a>
+                <div class="input-group">
+                    <input type="text" id="new-region-name" placeholder="Nom de la nouvelle région...">
+                    <button id="create-region-btn" class="btn-primary" title="Créer une nouvelle région">+</button>
+                </div>
             </div>
-        </main>
+            <div class="control-group">
+                <label for="random-place-count">Générer:</label>
+                <input type="number" id="random-place-count" value="10" min="1" max="100" style="width: 70px;">
+                <button id="generate-map-btn" class="btn-primary" disabled>Carte Aléatoire</button>
+            </div>
+        </header>
+
+        <div class="workspace">
+            <main id="map-container">
+                <canvas id="hex-map"></canvas>
+            </main>
+            <aside id="right-panel">
+                <h3>Lieux de la Région</h3>
+                <ul id="places-list">
+                </ul>
+            </aside>
+        </div>
     </div>
 
+    <dialog id="place-modal">
+        <form id="place-form" method="dialog">
+            <h3 id="modal-title">Créer un Nouveau Lieu</h3>
+            <div class="modal-form-group">
+                <label for="place-name">Nom du lieu :</label>
+                <input type="text" id="place-name" required>
+            </div>
+            <div class="modal-form-group">
+                <label for="place-type">Type de lieu :</label>
+                <select id="place-type" required>
+                    <option value="" disabled selected>Choisir un type...</option>
+                    <option value="Capitale">Capitale</option>
+                    <option value="Ville">Ville</option>
+                    <option value="Bourg">Bourg</option>
+                    <option value="Village">Village</option>
+                    <option value="Hameau">Hameau</option>
+                </select>
+            </div>
+            <div class="modal-actions">
+                <button type="button" id="cancel-place-btn" class="btn">Annuler</button>
+                <button type="submit" id="confirm-place-btn" class="btn-primary">Créer</button>
+            </div>
+        </form>
+    </dialog>
+
+    <script src="script.js" defer></script>
 </body>
 </html>

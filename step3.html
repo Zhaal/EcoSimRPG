@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoSimRPG - Étape 3 : Simulation</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="step3-style.css">
+</head>
+<body>
+
+    <nav class="floating-menu">
+        <div class="menu-title">EcoSimRPG</div>
+        <a href="#">Accueil</a>
+        <a href="index.html">Étape 1<br><small>(Carte)</small></a>
+        <a href="step2.html">Étape 2<br><small>(Conf. Lieux)</small></a>
+        <a href="step3.html" class="active">Étape 3<br><small>(Simu)</small></a>
+    </nav>
+
+    <div class="main-content">
+        <header id="top-bar">
+            <div class="control-group">
+                <label for="region-select">Région Actuelle :</label>
+                <select id="region-select" disabled><option>Chargement...</option></select>
+            </div>
+            <div id="sim-controls" class="control-group">
+                <button id="run-sim-btn" class="btn" disabled>Lancer</button>
+                <button id="advance-month-btn" class="btn" disabled>Avancer 1 Mois</button>
+                <div class="speed-control">
+                    <label for="speed-slider">Vitesse :</label>
+                    <input type="range" id="speed-slider" min="100" max="2000" value="1000" step="50">
+                </div>
+                <div id="search-container" class="control-group">
+                    <label for="person-search">Rechercher :</label>
+                    <input type="text" id="person-search" placeholder="Nom ou Prénom...">
+                    <div id="search-results"></div>
+                </div>
+            </div>
+            <div id="sim-stats" class="control-group">
+                <span>Date: Mois <strong id="stat-month">0</strong>, Année <strong id="stat-year">0</strong></span>
+                <span>Population: <strong id="stat-population">0</strong></span>
+            </div>
+        </header>
+
+        <main id="simulation-workspace">
+             <div id="results-panel">
+                </div>
+        </main>
+    </div>
+
+    <div id="person-modal" class="modal-backdrop" style="display: none;">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h3 id="modal-title">Détails du Personnage</h3>
+                <button id="modal-close-btn" class="modal-close-btn">&times;</button>
+            </div>
+            <div id="modal-body" class="modal-body">
+                </div>
+        </div>
+    </div>
+
+    <div id="details-modal" class="draggable-modal" style="display: none;">
+        <div class="modal-header">
+            <h3 id="details-modal-title">Détails</h3>
+            <button id="details-modal-close-btn" class="close-btn">&times;</button>
+        </div>
+        <div id="details-modal-content" class="modal-content">
+            </div>
+    </div>
+
+    <script> var EcoSimData = window.EcoSimData || {}; </script>
+    <script src="building.js"></script>
+    <script src="races.js"></script>
+    
+    <script src="simulation-engine.js"></script>
+    <script src="step3-ui.js"></script>
+
+</body>
+</html>

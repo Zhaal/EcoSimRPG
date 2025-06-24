@@ -1,0 +1,256 @@
+/* --- Héritage de style.css --- */
+:root {
+    --color-parchment: #F4EBD0;
+    --color-gold: #D4A017;
+    --color-forest-green: #2E7D32;
+    --color-royal-blue: #1E3A8A;
+    --color-dark-text: #3E2723;
+    --color-border: #A1887F;
+    --color-error: #B71C1C;
+    --job-color: #c97b0a;
+}
+
+/* --- Espace de travail de la simulation --- */
+#simulation-workspace {
+    display: flex;
+    flex-direction: column;
+    padding: 25px;
+    overflow-y: auto;
+    flex-grow: 1;
+    height: calc(100vh - 70px);
+}
+
+#results-panel {
+    background: var(--color-parchment);
+    border: 1px solid var(--color-border);
+    border-radius: 5px;
+    padding: 20px;
+    min-height: 200px;
+}
+
+#loading-container { text-align: center; font-family: var(--font-body); }
+#loading-container h3 { font-family: var(--font-title); color: var(--color-royal-blue); }
+#loading-container .sim-explanation { font-size: 0.9em; font-style: italic; color: var(--color-dark-text); margin-top: 15px; max-width: 600px; margin-left: auto; margin-right: auto; opacity: 0.8; }
+
+/* --- Grille principale de la simulation --- */
+#sim-container { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; flex-grow: 1; overflow: hidden; height: 100%; }
+#sim-display-panel { display: flex; flex-direction: column; overflow: hidden; background: #fff; padding: 15px; border-radius: 4px; border: 1px solid var(--color-border); }
+#history-panel { display: flex; flex-direction: column; background: #fff; padding: 15px; border-radius: 4px; border: 1px solid var(--color-border); overflow: hidden; }
+#history-panel h4 { margin: 0 0 10px 0; padding-bottom: 10px; border-bottom: 2px solid var(--color-border); font-family: var(--font-title); }
+#history-log-content { flex-grow: 1; overflow-y: auto; padding-right: 10px; }
+#history-log-content h3 { font-size: 1.1em; margin: 15px 0 5px 0; color: var(--color-royal-blue); }
+#history-log-content p { font-size: 0.9em; margin: 0 0 8px 0; border-bottom: 1px dashed #eee; padding-bottom: 8px; }
+
+/* Styles pour les panneaux de statistiques */
+#stats-container { display: flex; gap: 30px; flex-shrink: 0; margin-top: 15px; padding-top: 15px; border-top: 2px solid var(--color-border); }
+#stats-container > div { flex: 1; }
+#stats-container h4 { margin: 0 0 10px 0; font-family: var(--font-body); }
+#stats-container ul { list-style: none; padding: 0; margin: 0; font-size: 0.95em; }
+#stats-container ul li { margin-bottom: 5px; }
+
+/* --- Contrôles de simulation --- */
+#sim-controls .speed-control { display: flex; align-items: center; gap: 8px; margin-left: 15px; }
+#speed-slider { cursor: pointer; }
+
+/* --- RECHERCHE --- */
+#search-container { position: relative; margin-left: 20px; }
+#person-search { width: 200px; }
+#search-results { display: none; position: absolute; top: 100%; left: 0; right: 0; background: var(--color-parchment); border: 1px solid var(--color-border); border-top: none; max-height: 200px; overflow-y: auto; z-index: 1100; }
+.search-item { padding: 8px 12px; cursor: pointer; border-bottom: 1px solid rgba(161, 136, 127, 0.4); }
+.search-item:last-child { border-bottom: none; }
+.search-item:hover { background-color: var(--color-gold); color: var(--color-dark-text); }
+.search-item-name { font-weight: bold; }
+.search-item-details { font-size: 0.8em; color: #555; display: block; }
+
+/* --- Système d'onglets --- */
+.tab-nav { display: flex; border-bottom: 2px solid var(--color-border); flex-shrink: 0; flex-wrap: wrap;}
+.tab-button { padding: 10px 15px; border: none; background: none; cursor: pointer; font-size: 1em; color: var(--color-dark-text); font-family: var(--font-body); }
+.tab-button.active { font-weight: bold; color: var(--color-royal-blue); border-bottom: 3px solid var(--color-royal-blue); margin-bottom: -2px; }
+.tab-panels { flex-grow: 1; display: flex; overflow: hidden; padding-top: 15px;}
+.tab-panel { display: none; flex-direction: column; flex-grow: 1; overflow-y: auto; }
+.tab-panel.active { display: flex; }
+
+/* --- Style pour les conteneurs de famille --- */
+details { border: 1px solid #ddd; border-radius: 4px; margin-bottom: 8px; background-color: #fcfcfc; }
+summary { padding: 10px; cursor: pointer; font-weight: bold; background: #f1f1f1; font-family: var(--font-title); }
+
+/* ============================================= */
+/* --- STYLE ARBRE GÉNÉALOGIQUE (SVG V3) --- */
+/* ============================================= */
+.family-tree-container {
+    position: relative;
+    padding: 20px;
+    overflow: auto;
+    cursor: grab;
+    user-select: none; /* Empêche la sélection de texte pendant le drag */
+}
+.family-tree-container.dragging {
+    cursor: grabbing;
+}
+
+/* NOUVEAU : Conteneur SVG pour les lignes */
+.family-tree-container .tree-connector-svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none; /* Permet de cliquer à travers */
+    z-index: 1;
+}
+
+/* NOUVEAU : Style pour les lignes SVG */
+.family-tree-container .tree-connector-svg path {
+    fill: none;
+    stroke: #b0b0b0; /* Un gris neutre */
+    stroke-width: 1.5px;
+}
+
+
+.tree {
+    position: relative; /* Contexte de positionnement pour les enfants */
+    display: inline-block;
+    padding: 20px;
+    white-space: nowrap;
+    transform-origin: top left;
+    transition: transform 0.2s ease-out;
+    z-index: 2; /* S'assurer que les noeuds sont au-dessus du SVG */
+}
+
+.tree ul {
+    padding-top: 50px; /* AJUSTEMENT : Augmenté de 40px à 50px pour plus d'espace */
+    position: relative;
+    display: flex;
+    justify-content: center;
+}
+
+.tree li {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    list-style-type: none;
+    position: relative;
+    padding: 0 5px; 
+}
+
+/* Couple de noeuds */
+.node-couple {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    position: relative;
+}
+
+/* Plaques d'information */
+.node-plate {
+    padding: 6px 12px;
+    color: var(--color-dark-text);
+    background-color: var(--color-parchment);
+    font-family: var(--font-body);
+    font-size: 0.8em;
+    border: 1px solid var(--color-border);
+    border-radius: 5px;
+    display: inline-block;
+    min-width: 140px;
+    max-width: 180px;
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+    text-align: center;
+    position: relative; 
+    z-index: 2;
+}
+.node-plate .person-name-clickable { font-weight: bold; font-size: 1.1em; color: var(--color-royal-blue); }
+.node-plate .person-job { font-style: italic; color: var(--job-color); }
+.node-plate.deceased { background-color: #e9ecef; border-color: #adb5bd; opacity: 0.7; }
+.node-plate.deceased .person-name-clickable { text-decoration: line-through; color: #495057; }
+
+/* Barre d'outils de l'arbre (Zoom/Pan) */
+.tree-controls {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    z-index: 10;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 5px;
+    padding: 2px 5px;
+    display: flex;
+    align-items: center;
+}
+.tree-btn { background-color: var(--color-dark-text); color: white; border: 1px solid var(--color-border); padding: 2px 8px; font-weight: bold; cursor: pointer; }
+.tree-btn:hover { background-color: var(--color-royal-blue); }
+.tree-controls .zoom-text {
+    font-size: 0.8em;
+    margin-right: 10px;
+    color: var(--color-dark-text);
+    font-style: italic;
+}
+
+
+.person-name-clickable { cursor: pointer; text-decoration: underline; }
+.person-name-clickable:hover { color: var(--color-gold); }
+
+#population-display { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; }
+.extinct-family summary { text-decoration: line-through; opacity: 0.6; font-style: italic; }
+
+/* --- PANNEAU DE STATS DE VILLE --- */
+#city-stats-panel { padding-bottom: 10px; margin-bottom: 10px; border-bottom: 2px solid var(--color-border); }
+#city-stats-panel h4 { margin: 0 0 10px 0; font-family: var(--font-title); color: var(--color-dark-text); }
+.city-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 5px 15px; font-size: 0.9em; }
+.city-stats-grid strong { font-family: var(--font-body); font-weight: 600; }
+.stat-tooltip-trigger { display: inline-block; width: 16px; height: 16px; line-height: 16px; border-radius: 50%; background-color: var(--color-dark-text); color: var(--color-parchment); text-align: center; font-weight: bold; font-style: italic; font-size: 0.8em; cursor: pointer; margin-left: 5px; vertical-align: middle; }
+
+/* --- MODALES --- */
+.modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+.modal-dialog { background: var(--color-parchment); padding: 0; border-radius: 8px; border: 3px solid var(--color-gold); width: 90%; max-width: 850px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); max-height: 90vh; display: flex; flex-direction: column; }
+.modal-header { background: var(--color-dark-text); color: var(--color-gold); display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; }
+.modal-header h3 { margin: 0; font-family: var(--font-title); }
+.modal-close-btn { background: none; border: none; font-size: 2.5rem; cursor: pointer; color: var(--color-parchment); line-height: 1; }
+.modal-body { overflow-y: auto; padding: 20px; }
+.modal-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+.modal-section { background: rgba(0,0,0,0.03); border: 1px solid var(--color-border); border-radius: 4px; padding: 15px; }
+.modal-section h4 { font-family: var(--font-title); color: var(--color-royal-blue); margin: 0 0 10px 0; border-bottom: 1px solid var(--color-border); padding-bottom: 5px; }
+.modal-section ul { list-style: none; padding: 0; font-size: 0.9em; }
+.modal-section li { margin-bottom: 8px; }
+.modal-section li strong { font-weight: bold; color: var(--color-dark-text); }
+.modal-full-width { grid-column: 1 / -1; }
+
+/* Style pour les panneaux d'historique et d'achats dans la modale */
+.modal-section .tab-panel {
+    max-height: 250px;
+    overflow-y: auto;
+    width: 100%;
+}
+
+.history-entry { border-bottom: 1px dashed var(--color-border); padding: 5px 0; font-size: 0.85em; }
+.history-entry strong { display: inline-block; width: 100px; text-align: right; margin-right: 10px; font-family: var(--font-title); }
+
+.draggable-modal { position: fixed; z-index: 1010; border: 3px solid var(--color-gold); border-radius: 8px; padding: 0; background-color: var(--color-parchment); box-shadow: 0 5px 20px rgba(0,0,0,0.5); width: 90%; max-width: 500px; }
+.draggable-modal .modal-header { background-color: var(--color-royal-blue); color: var(--color-gold); padding: 10px 20px; font-family: var(--font-title); cursor: move; display: flex; justify-content: space-between; align-items: center; }
+.draggable-modal .modal-header h3 { margin: 0; font-size: 1.2em; }
+.draggable-modal .close-btn { background: none; border: none; color: var(--color-parchment); font-size: 2em; cursor: pointer; line-height: 1; }
+.draggable-modal .modal-content { padding: 20px; max-height: 60vh; overflow-y: auto; }
+.draggable-modal .modal-content h4 { font-family: var(--font-title); margin-top: 0; margin-bottom: 10px; border-bottom: 1px solid var(--color-border); padding-bottom: 5px; }
+.draggable-modal .modal-content ul { list-style: disc; padding-left: 20px; margin: 0; }
+.draggable-modal .modal-content li { margin-bottom: 5px; }
+
+/* Sections familiales (Ancêtres, Log) */
+.family-content { padding: 10px; }
+.family-section { border: none; margin-bottom: 5px; }
+.family-section > .section-summary { padding: 8px; background: #e9e9e9; border-radius: 3px; font-size: 0.9em; font-weight: bold; cursor: pointer; }
+.family-section[open] > .section-summary { border-bottom: 2px solid var(--color-gold); }
+.ancestor-container, .family-log-container { padding: 10px; max-height: 200px; overflow-y: auto;}
+.ancestor-entry, .family-log-container li { padding: 5px; font-size: 0.9em; border-bottom: 1px dashed #ccc; }
+.family-log-container { list-style: none; padding: 0; }
+
+/* NOUVEAU : Règles à ajouter à votre fichier step3-style.css */
+
+/* Style pour une personne mariée en dehors de sa famille d'origine */
+.node-plate.married-out {
+    border-color: #8E44AD; /* Une couleur pourpre pour la distinction */
+    background-color: #f5f0f7; /* Un fond légèrement violacé */
+}
+
+/* Style pour la note textuelle indiquant la nouvelle famille */
+.remarried-note {
+    font-style: italic;
+    color: #800080; /* Violet */
+    font-weight: bold;
+    font-size: 0.9em;
+}
