@@ -1,14 +1,9 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- Clés de stockage et gestion utilisateur ---
-    const USER_KEY = 'ecoSimRPG_user';
     const CUSTOM_TAG_DEFINITIONS_KEY = 'ecoSimRPG_custom_tag_definitions';
 
     // --- Sélecteurs DOM ---
-    const loginView = document.getElementById('login-view');
     const editorView = document.getElementById('editor-view');
-    const loginForm = document.getElementById('login-form');
-    const userInfoDisplay = document.getElementById('user-info-display'); // Correction: utilisation de l'ID réel de votre HTML
-    const logoutBtn = document.getElementById('logout-btn');
     const categoryTreeList = document.getElementById('category-tree-list');
     const newCategoryPathInput = document.getElementById('new-category-path');
     const addCategoryBtn = document.getElementById('add-category-btn');
@@ -16,56 +11,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const welcomePanel = document.getElementById('welcome-panel');
     const tagDetailsContent = document.getElementById('tag-details-content');
     const feedbackMessage = document.getElementById('feedback-message');
-    // La variable saveAllBtn a été supprimée
 
-    let currentUser = null;
     let customTagDefinitions = {};
     let activeCategoryPath = null;
     const SEPARATOR = ' > ';
     
-    // --- Gestion de l'utilisateur ---
-    function checkUser() {
-        const storedUser = localStorage.getItem(USER_KEY);
-        if (storedUser) {
-            currentUser = JSON.parse(storedUser);
-            showEditor();
-        } else {
-            showLogin();
-        }
-    }
-
-    function handleLogin(e) {
-        e.preventDefault();
-        currentUser = {
-            pseudo: document.getElementById('user-pseudo').value,
-            lastname: document.getElementById('user-lastname').value,
-            password: document.getElementById('user-password').value
-        };
-        localStorage.setItem(USER_KEY, JSON.stringify(currentUser));
-        showEditor();
-    }
-
-    function handleLogout() {
-        currentUser = null;
-        localStorage.removeItem(USER_KEY);
-        showLogin();
-    }
-
-    function showLogin() {
-        loginView.classList.remove('hidden');
-        editorView.classList.add('hidden');
-        if(loginForm) loginForm.reset();
-    }
-
-    function showEditor() {
-        loginView.classList.add('hidden');
-        editorView.classList.remove('hidden');
-        // Mise à jour pour correspondre au HTML qui contient un div #user-info
-        document.getElementById('user-info').innerHTML = `Connecté : <br><strong>${currentUser.pseudo} ${currentUser.lastname}</strong>`;
-        loadDefinitions();
-        renderCategoryTree();
-    }
-
     // --- Gestion des définitions de Tags ---
     function loadDefinitions() {
         const storedDefinitions = localStorage.getItem(CUSTOM_TAG_DEFINITIONS_KEY);
@@ -288,9 +238,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
-    // L'écouteur pour le bouton de sauvegarde manuelle a été supprimé.
-    if(loginForm) loginForm.addEventListener('submit', handleLogin);
-    if(logoutBtn) logoutBtn.addEventListener('click', handleLogout);
-
-    checkUser();
+    // Initialisation
+    loadDefinitions();
+    renderCategoryTree();
 });

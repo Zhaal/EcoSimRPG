@@ -1,6 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
     // Clés de stockage local
-    const USER_KEY = 'ecoSimRPG_user';
     const CUSTOM_BUILDINGS_KEY = 'ecoSimRPG_custom_buildings';
     const CUSTOM_TAG_DEFINITIONS_KEY = 'ecoSimRPG_custom_tag_definitions';
 
@@ -18,17 +17,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // Sélecteurs DOM
-    const loginView = document.getElementById('login-view');
     const editorView = document.getElementById('editor-view');
-    const loginForm = document.getElementById('login-form');
-    const userInfoDisplay = document.getElementById('user-info');
-    const logoutBtn = document.getElementById('logout-btn');
     const customBuildingsList = document.getElementById('custom-buildings-list');
     const newBuildingBtn = document.getElementById('new-building-btn');
     const buildingForm = document.getElementById('building-form');
     const welcomeEditor = document.getElementById('welcome-editor');
 
-    let currentUser = null;
     let customBuildings = [];
     let currentlyEditingBuildingId = null;
     let activeFilter = 'All';
@@ -155,47 +149,6 @@ document.addEventListener('DOMContentLoaded', () => {
             saveCurrentBuildingData(); // Cette fonction contient déjà toute la logique de sauvegarde
             displayTemporaryMessage(`Bâtiment "${buildingName}" sauvegardé !`, "success");
         }
-    }
-    
-    function checkUser() {
-        const storedUser = localStorage.getItem(USER_KEY);
-        if (storedUser) {
-            currentUser = JSON.parse(storedUser);
-            showEditor();
-        } else {
-            showLogin();
-        }
-    }
-
-    function handleLogin(e) {
-        e.preventDefault();
-        currentUser = {
-            pseudo: document.getElementById('user-pseudo').value,
-            lastname: document.getElementById('user-lastname').value,
-            password: document.getElementById('user-password').value
-        };
-        localStorage.setItem(USER_KEY, JSON.stringify(currentUser));
-        showEditor();
-    }
-
-    function handleLogout() {
-        currentUser = null;
-        localStorage.removeItem(USER_KEY);
-        showLogin();
-    }
-
-    function showLogin() {
-        loginView.classList.remove('hidden');
-        editorView.classList.add('hidden');
-        loginForm.reset();
-    }
-
-    function showEditor() {
-        loginView.classList.add('hidden');
-        editorView.classList.remove('hidden');
-        userInfoDisplay.innerHTML = `Connecté : <br><strong>${currentUser.pseudo} ${currentUser.lastname}</strong>`;
-        loadCustomBuildings();
-        renderBuildingList();
     }
     
     function loadCustomTagDefinitions() {
@@ -803,13 +756,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // --- Initialisation ---
-    loginForm.addEventListener('submit', handleLogin);
-    logoutBtn.addEventListener('click', handleLogout);
     newBuildingBtn.addEventListener('click', handleNewBuilding);
     customBuildingsList.addEventListener('click', handleSelectBuilding);
 
     loadCustomTagDefinitions();
     extractAndCategorizeTags();
     setupFilterListeners();
-    checkUser();
+    
+    // Lancement direct de l'éditeur
+    loadCustomBuildings();
+    renderBuildingList();
 });
