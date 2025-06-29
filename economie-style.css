@@ -1,0 +1,260 @@
+/* economie-style.css - NOUVELLE VERSION UNIFORMISÉE */
+
+/* --- Layout Principal (Hérité de bibliotheque-style.css) --- */
+/* Le .main-content-wrapper et #editor-view sont maintenant gérés par bibliotheque-style.css */
+
+/* --- Panneau de Gauche (Arborescence) --- */
+#category-tree-panel {
+    width: 320px;
+    min-width: 320px;
+    background: linear-gradient(135deg, #4E4030, #2B231A);
+    border-right: 3px solid var(--color-gold);
+    box-shadow: inset -5px 0 15px rgba(0,0,0,0.4);
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    color: #E8E0D2;
+    padding: 20px;
+}
+
+/* Titre du panneau, aligné sur bibliotheque-style.css */
+#category-tree-panel h3 {
+    font-family: var(--font-title);
+    color: var(--color-gold);
+    text-align: center;
+    font-size: 2em;
+    margin: 0 0 20px 0;
+    padding-bottom: 15px;
+    border: none;
+    border-bottom: 2px solid rgba(212, 160, 23, 0.8);
+    border-radius: 0;
+    background-color: transparent;
+    text-shadow: 1px 1px 4px rgba(0,0,0,0.5);
+    letter-spacing: 1px;
+}
+
+/* Conteneur pour les actions (formulaire d'ajout) */
+#category-actions {
+    margin-bottom: 15px;
+    flex-shrink: 0;
+}
+#category-actions p {
+    font-size: 0.85em;
+    opacity: 0.7;
+    margin: 0 0 10px 0;
+    text-align: center;
+}
+
+.add-category-form {
+    display: flex;
+    gap: 10px;
+    background-color: rgba(0,0,0,0.2);
+    padding: 10px;
+    border-radius: 6px;
+}
+#new-category-path {
+    flex-grow: 1;
+    background-color: #E8E0D2;
+    color: #3E2723;
+    border: 1px solid rgba(212, 160, 23, 0.5);
+}
+#add-category-btn {
+    flex-shrink: 0;
+    font-size: 1.2em; /* Taille ajustée */
+    padding: 0 12px;
+}
+
+/* Liste principale de l'arborescence */
+#category-tree-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    flex-grow: 1; 
+    overflow-y: auto; 
+    min-height: 0;
+}
+.category-node {
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    position: relative;
+    border-left: 3px solid transparent;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: var(--font-body);
+    font-size: 0.95em;
+    transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+}
+.category-node:hover {
+    background: rgba(212, 160, 23, 0.15);
+}
+.category-node:hover .add-child-btn {
+    opacity: 1;
+}
+
+.category-node.active {
+    background-color: rgba(212, 160, 23, 0.25);
+    border-left-color: var(--color-gold);
+    color: white;
+    font-weight: bold;
+}
+.category-node-name {
+    pointer-events: none; 
+    flex-grow: 1; 
+}
+
+.add-child-btn {
+    background-color: var(--color-gold);
+    color: #3E2723;
+    border: none;
+    border-radius: 50%;
+    width: 22px;
+    height: 22px;
+    font-weight: bold;
+    font-size: 16px;
+    line-height: 22px;
+    text-align: center;
+    cursor: pointer;
+    opacity: 0; 
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    flex-shrink: 0;
+    margin-left: 10px;
+}
+.add-child-btn:hover {
+    transform: scale(1.1);
+}
+
+.inline-input-node {
+    border-radius: 4px;
+    background: rgba(212, 160, 23, 0.25);
+    padding: 4px 8px;
+    margin-top: 4px;
+}
+.inline-input {
+    width: 100%;
+    background-color: #E8E0D2;
+    color: #3E2723;
+    border: 1px solid var(--color-gold);
+    padding: 6px 10px;
+    border-radius: 3px;
+    outline: none;
+}
+
+/* Section des actions en bas du panneau, utilise .list-panel-actions de bibliotheque-style.css */
+.list-panel-actions .feedback { 
+    font-weight: bold; 
+    transition: opacity 0.5s ease; 
+    opacity: 0; 
+    text-align: center; 
+    width: 100%;
+    padding: 8px 0;
+}
+.list-panel-actions .feedback.success { color: #81C784; }
+.list-panel-actions .feedback.error { color: #E57373; }
+
+
+/* --- Panneau de Droite (Détails) --- */
+#tag-details-panel {
+    flex-grow: 1;
+    padding: 0 40px 30px 40px;
+    overflow-y: auto;
+    background-color: var(--color-parchment);
+    background-image: radial-gradient(circle at top right, rgba(212,198,168,0.5), transparent), linear-gradient(rgba(255,255,255,0.2), rgba(255,255,255,0.2));
+}
+
+#welcome-panel {
+    text-align: center; 
+    padding-top: 50px; 
+    color: var(--color-dark-text); 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    justify-content: center; 
+    height: 100%; 
+}
+#welcome-panel::before { 
+    content: ''; 
+    display: block; 
+    width: 150px; 
+    height: 150px; 
+    margin-bottom: 30px; 
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%233E2723' opacity='0.5' viewBox='0 0 24 24'%3E%3Cpath d='M19.5 6.5c-1.38 0-2.5 1.12-2.5 2.5s1.12 2.5 2.5 2.5 2.5-1.12 2.5-2.5-1.12-2.5-2.5-2.5zm0 3c-.28 0-.5-.22-.5-.5s.22-.5.5-.5.5.22.5.5-.22.5-.5.5zM18 14h-4.28c-.3 1.2-1.42 2-2.72 2s-2.42-.8-2.72-2H4c-1.1 0-2 .9-2 2v2c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-2c0-1.1-.9-2-2-2zM4.5 6.5c-1.38 0-2.5 1.12-2.5 2.5s1.12 2.5 2.5 2.5 2.5-1.12 2.5-2.5S5.88 6.5 4.5 6.5zm0 3c-.28 0-.5-.22-.5-.5s.22-.5.5-.5.5.22.5.5-.22.5-.5.5zM11 6.5c-1.38 0-2.5 1.12-2.5 2.5s1.12 2.5 2.5 2.5 2.5-1.12 2.5-2.5S12.38 6.5 11 6.5zm0 3c-.28 0-.5-.22-.5-.5s.22-.5.5-.5.5.22.5.5-.22.5-.5.5z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-size: contain; 
+    opacity: 0.6;
+}
+#welcome-panel h2 { 
+    font-family: var(--font-title); 
+    font-size: 2.8em; 
+    text-shadow: 1px 1px 0px var(--color-parchment); 
+}
+#welcome-panel p { 
+    font-size: 1.2em; 
+}
+
+.hidden { display: none !important; }
+
+#tag-details-content .category-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 20px;
+    border-bottom: 2px solid var(--color-gold);
+    margin-bottom: 30px;
+}
+#tag-details-content .category-header h2 {
+    font-family: var(--font-title);
+    font-size: 2.2em;
+    color: var(--color-dark-text);
+    margin: 0;
+}
+.tags-container {
+    list-style: none;
+    padding: 0;
+    margin-bottom: 30px;
+    max-width: 600px;
+}
+.tag-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 15px;
+    background: white;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    margin-bottom: 8px;
+    font-size: 1em;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+.delete-tag-btn {
+    background: none;
+    border: none;
+    color: var(--color-error);
+    font-size: 1.5em;
+    cursor: pointer;
+    padding: 0 5px;
+    opacity: 0.5;
+    transition: opacity 0.2s;
+}
+.delete-tag-btn:hover { opacity: 1; }
+
+.add-tag-form {
+    display: flex;
+    gap: 15px;
+    padding-top: 20px;
+    border-top: 1px solid var(--color-border);
+    max-width: 600px;
+}
+.add-tag-form input {
+    flex-grow: 1;
+}
+.empty-message {
+    font-style: italic;
+    color: #777;
+    text-align: center;
+    padding: 40px;
+}

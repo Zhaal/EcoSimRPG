@@ -1,533 +1,584 @@
-/* --- Variables & Base (Héritées de style.css) --- */
-:root {
-    --color-parchment: #F4EBD0;
-    --color-gold: #D4A017;
-    --color-forest-green: #2E7D32;
-    --color-error: #B71C1C;
-    --color-dark-text: #3E2723;
-    --color-border: #A1887F;
-    --font-title: 'Cinzel', serif;
-    --font-body: 'Lora', serif;
-}
+/* --- Variables de Thème (Rappel) --- */
+/* :root est défini dans step1-style.css */
 
-/* --- Structure générale de l'Étape 2 --- */
-.workspace-step2 {
+/* --- MODIFICATION : Layout principal pour accueillir le panneau latéral --- */
+.main-content-wrapper {
     display: flex;
-    flex-grow: 1;
-    overflow: hidden;
+    height: calc(100vh - 58px); /* Hauteur de la barre de navigation */
 }
-
-#places-panel {
-    width: 300px;
-    flex-shrink: 0;
-    background-color: var(--color-parchment);
-    border-right: 2px solid var(--color-border);
+.main-content {
+    flex-grow: 1;
     display: flex;
     flex-direction: column;
+    position: relative;
+    transition: width 0.3s ease-in-out;
 }
 
-#places-panel h3 {
-    font-family: var(--font-title);
-    padding: 15px;
-    text-align: center;
-    background-color: rgba(0,0,0,0.05);
-    border-bottom: 1px solid var(--color-border);
+/* --- Style Général pour Étape 2 --- */
+
+/* Ajout pour garantir le bon positionnement de l'overlay */
+.main-content {
+    position: relative;
 }
 
-#places-list {
-    list-style: none;
-    overflow-y: auto;
-    padding: 0;
-}
-
-#places-list li {
-    padding: 15px;
-    cursor: pointer;
-    border-bottom: 1px solid var(--color-border);
-    transition: background-color 0.2s;
-}
-
-#places-list li:hover {
-    background-color: rgba(0,0,0,0.05);
-}
-
-#places-list li.active {
-    background-color: var(--color-gold) !important;
-    color: var(--color-dark-text);
-    font-weight: bold;
-    border-left: 5px solid var(--color-forest-green);
-}
-
-#places-list li.no-places {
-    text-align: center;
-    color: var(--color-stone-gray);
-    cursor: default;
-}
-
-#config-panel {
-    flex-grow: 1;
-    padding: 25px;
-    overflow-y: auto;
-    background-color: #e8e2c7; /* Parchemin légèrement plus sombre */
-}
-
-/* --- Panneau de Bienvenue --- */
-#welcome-panel {
-    text-align: center;
-    padding: 50px;
-    font-size: 1.1em;
-}
-#welcome-panel h2 {
-    font-family: var(--font-title);
-    color: var(--color-royal-blue);
-    margin-bottom: 20px;
-}
-
-/* --- Barre de statistiques (header) --- */
-#place-stats-summary {
-    gap: 20px;
-    font-family: var(--font-body);
-    font-weight: 600;
-}
-#place-stats-summary span strong {
-    font-family: var(--font-title);
-    color: var(--color-royal-blue);
-}
-
-/* --- Styles du panneau de configuration --- */
-#config-panel h2 {
-    font-family: var(--font-title);
-    margin-bottom: 20px;
+#top-bar-step2 {
+    padding: 15px 25px;
+    background: rgba(0,0,0,0.1);
     border-bottom: 2px solid var(--color-border);
-    padding-bottom: 10px;
-}
-
-.place-type-badge {
-    font-size: 0.7em;
-    padding: 4px 8px;
-    background-color: var(--color-stone-gray);
-    color: white;
-    border-radius: 10px;
-    vertical-align: middle;
-    margin-left: 10px;
-}
-
-.config-section {
-    background: var(--color-parchment);
-    border: 1px solid var(--color-border);
-    border-radius: 5px;
-    padding: 20px;
-    margin-bottom: 25px;
-}
-
-.config-section legend {
-    font-family: var(--font-title);
-    font-weight: 700;
-    font-size: 1.2em;
-    padding: 0 10px;
-    color: var(--color-royal-blue);
-}
-
-.form-group {
-    margin-bottom: 15px;
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    gap: 10px;
-}
-.form-group label {
-    font-weight: 600;
-    width: 150px;
-}
-
-/* --- Organisation en colonnes --- */
-.config-columns {
-    display: flex;
+    flex-wrap: wrap;
     gap: 20px;
 }
-.config-col-main {
-    flex: 3;
-}
-.config-col-side {
-    flex: 1;
-    min-width: 250px;
-}
 
-/* --- Styles pour la Démographie --- */
-#demographics-total {
-    margin-top: 15px;
-    text-align: right;
-    font-weight: bold;
-    font-family: var(--font-title);
-}
-#demographics-total.invalid {
-    color: var(--color-error);
-}
-
-.race-row {
+.header-title-group {
     display: flex;
     align-items: center;
     gap: 15px;
-    margin-bottom: 8px;
-}
-.race-row label {
-    font-weight: 600;
-    width: 120px;
-    flex-shrink: 0;
-}
-.race-row .race-percentage-num {
-    width: 60px;
-    text-align: center;
-}
-.race-row .race-percentage-slider {
-    flex-grow: 1;
-    -webkit-appearance: none;
-    appearance: none;
-    height: 8px;
-    background: rgba(0,0,0,0.1);
-    border-radius: 5px;
-    outline: none;
-}
-.race-row .race-percentage-slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: var(--color-forest-green);
-    cursor: pointer;
-    border: 2px solid var(--color-parchment);
-}
-.race-row .race-percentage-slider::-moz-range-thumb {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: var(--color-forest-green);
-    cursor: pointer;
-    border: 2px solid var(--color-parchment);
 }
 
+#top-bar-step2 h1 {
+    font-family: var(--font-title);
+    color: var(--color-dark-text);
+    font-size: 1.8em;
+    margin: 0;
+}
 
-/* --- Styles pour les bâtiments --- */
-.building-row {
+#top-bar-step2 .header-info {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 8px 0;
-    border-bottom: 1px dashed rgba(161, 136, 127, 0.4);
-}
-.building-row:last-of-type {
-    border-bottom: none;
+    gap: 20px;
 }
 
-/* Cases à cocher personnalisées */
-.building-row input[type="checkbox"] {
-    appearance: none;
-    -webkit-appearance: none;
-    width: 18px;
-    height: 18px;
-    background-color: #fff;
-    border: 2px solid var(--color-border);
-    border-radius: 3px;
-    cursor: pointer;
-    margin-right: 4px;
-    position: relative;
-    top: -2px;
-    flex-shrink: 0;
-}
-.building-row input[type="checkbox"]:checked {
-    background-color: var(--color-forest-green);
-    border-color: #1b5e20;
-}
-.building-row input[type="checkbox"]:checked::after {
-    content: '✔';
-    color: white;
-    font-size: 14px;
-    position: absolute;
-    left: 1px;
-    top: -2px;
-}
-
-.building-row label {
-    font-size: 1.1em;
-}
-
-.tooltip-trigger {
-    display: inline-block;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background-color: var(--color-stone-gray);
-    color: white;
-    text-align: center;
-    line-height: 20px;
-    font-weight: bold;
-    cursor: help;
-    font-style: italic;
-    flex-shrink: 0;
-}
-
-.building-count-wrapper {
-    margin-left: auto;
-}
-
-/* Custom Number Input pour les bâtiments */
-.custom-number-input {
+#reroll-region-btn, #manual-config-btn {
     display: flex;
     align-items: center;
     gap: 5px;
 }
-.btn-adjust {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    padding: 0;
-    border-radius: 5px;
-    font-family: var(--font-body);
-    font-weight: bold;
-    font-size: 1.2rem;
-    line-height: 1;
-    background-color: var(--color-border);
-    color: var(--color-parchment);
-    border: 1px solid var(--color-dark-text);
-    cursor: pointer;
-    transition: background-color 0.2s;
+#manual-config-btn {
+    background-color: var(--color-forest-green);
+    border-color: #2e7d32;
 }
-.btn-adjust:hover {
-    background-color: var(--color-dark-text);
-}
-.building-count-display {
-    display: inline-block;
-    width: 40px;
-    padding: 4px;
-    text-align: center;
-    font-size: 1.1em;
-    font-weight: 600;
-    background-color: #fff;
-    border: 1px solid var(--color-border);
-    border-radius: 3px;
+#manual-config-btn:hover {
+    background-color: #388e3c;
 }
 
-.building-actions {
+
+#region-name-display {
+    font-family: var(--font-body);
+    font-style: italic;
+    font-size: 1.1em;
+    color: var(--color-dark-text);
+}
+
+#places-container {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 25px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(350px, 400px));
+    justify-content: center;
+    gap: 25px;
+    background: radial-gradient(circle, rgba(212,198,168,1) 0%, var(--color-parchment) 100%);
+}
+
+
+/* --- Style pour l'Overlay de Génération ("Waouh Effect") --- */
+#generation-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(244, 235, 208, 0.97); /* Parchemin semi-transparent */
+    z-index: 100;
+    display: none; /* Initialement masqué, géré par JS */
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    text-align: center;
+    color: var(--color-dark-text);
+    cursor: wait;
+}
+
+#generation-overlay .overlay-content {
+    animation: fadeIn 1s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+#generation-overlay .overlay-icon {
+    font-size: 5em;
+    animation: pulse 2s infinite ease-in-out;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); color: var(--color-royal-blue); }
+    100% { transform: scale(1); }
+}
+
+#generation-overlay h1 {
+    font-family: var(--font-title);
+    font-size: 2.5em;
+    color: var(--color-royal-blue);
+    margin-top: 20px;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+}
+
+#generation-overlay p {
+    font-family: var(--font-body);
+    font-style: italic;
+    font-size: 1.2em;
+    margin-top: 10px;
+}
+
+#generation-overlay .spinner {
+    margin-top: 30px;
+    width: 50px;
+    height: 50px;
+    border-width: 6px;
+    border-left-color: var(--color-gold);
+}
+
+
+/* --- Style des Cartes de Lieux --- */
+.place-card {
+    background-color: var(--color-parchment);
+    border: 2px solid var(--color-border);
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1), 0 0 1px rgba(0,0,0,0.2);
     display: flex;
-    gap: 10px;
-    margin-bottom: 15px;
-    padding-bottom: 10px;
+    flex-direction: column;
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border-top: 5px solid var(--color-royal-blue);
+}
+
+.place-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15), 0 0 5px var(--color-gold);
+}
+
+.place-card-header {
+    padding: 15px;
+    background: rgba(0,0,0,0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     border-bottom: 1px solid var(--color-border);
 }
-.btn-sm {
-    padding: 4px 10px;
-    font-size: 0.8em;
+
+.place-card-header h2 {
+    font-family: var(--font-title);
+    font-size: 1.4em;
+    margin: 0;
+    color: var(--color-royal-blue);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.place-card-header h2 small {
+    font-size: 0.7em;
+    font-family: var(--font-body);
+    font-style: italic;
+    color: var(--color-stone-gray);
+    display: block;
 }
 
-/* --- Styles pour la modale de simulation et détails --- */
-.draggable-modal {
-    border: 3px solid var(--color-gold);
-    border-radius: 8px;
-    padding: 0;
-    background-color: var(--color-parchment);
-    box-shadow: 0 5px 20px rgba(0,0,0,0.5);
-    width: 90%;
-    max-width: 800px;
+
+.place-card-body {
+    padding: 15px;
+    flex-grow: 1;
+    overflow-y: auto;
 }
-.modal-header {
-    background-color: var(--color-royal-blue);
-    color: var(--color-gold);
-    padding: 10px 20px;
+
+/* --- Style des Catégories de Bâtiments --- */
+.building-category {
+    margin-bottom: 20px;
+}
+.building-category:last-child {
+    margin-bottom: 0;
+}
+
+.building-category h3 {
     font-family: var(--font-title);
-    cursor: move;
+    font-weight: 700;
+    color: var(--color-dark-text);
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--color-gold);
+    padding-bottom: 5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.building-category h3 .icon {
+    font-size: 1.2em;
+}
+.building-category h3 .mandatory-badge {
+    font-size: 0.7em;
+    font-family: var(--font-body);
+    background-color: var(--color-error);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: normal;
+}
+
+
+.building-list {
+    list-style: none;
+    padding-left: 10px;
+}
+
+.building-item {
+    padding: 8px;
+    margin-bottom: 5px;
+    border-left: 3px solid var(--color-stone-gray);
+    background: rgba(0,0,0,0.02);
+    transition: background-color 0.3s;
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
-.modal-header h3 {
-    margin: 0;
-}
-.close-btn {
-    background: none;
-    border: none;
-    color: var(--color-parchment);
-    font-size: 2em;
-    cursor: pointer;
-    line-height: 1;
-}
-.modal-content {
-    padding: 20px;
+
+.building-item:hover {
+    background-color: rgba(212, 160, 23, 0.1);
 }
 
-.sim-params h4, .sim-results h4 {
-    font-family: var(--font-title);
-    margin-top: 15px;
-    margin-bottom: 10px;
-    border-bottom: 1px solid var(--color-border);
-    padding-bottom: 5px;
-}
-.sim-param-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 15px;
-}
-.sim-param-grid .form-group {
-    flex-direction: column;
-    align-items: flex-start;
-}
-.sim-param-grid label { width: auto; }
-.sim-param-grid input { width: 100%; }
-
-.key-indicators, .tax-details, .financial-summary {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 15px;
-    background: rgba(0,0,0,0.03);
-    padding: 15px;
-    border-radius: 4px;
-    margin-bottom: 15px;
-}
-.key-indicators > div, .tax-details > div, .financial-summary > div {
-    flex: 1 1 180px;
-}
-.total {
-    font-weight: bold;
-    font-size: 1.1em;
+.building-item .name-desc {
+    flex-grow: 1;
 }
 
-.text-success { color: var(--color-forest-green); }
-.text-error { color: var(--color-error); }
-
-.table-container {
-    max-height: 250px;
-    overflow-y: auto;
-    border: 1px solid var(--color-border);
-}
-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-th, td {
-    padding: 8px 12px;
-    text-align: left;
-    border-bottom: 1px solid var(--color-border);
-}
-th {
-    font-family: var(--font-title);
-    background-color: rgba(0,0,0,0.05);
-}
-tr:nth-child(even) {
-    background-color: rgba(0,0,0,0.02);
+.building-item .name {
+    font-weight: 600;
+    font-family: var(--font-body);
 }
 
-.details-actions {
-    margin-top: 20px;
-}
-.salary-details-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-}
-
-
-/* --- Infobulle (Tooltip) --- */
-.tooltip {
-    position: fixed;
-    background: #2a251e;
-    color: var(--color-parchment);
-    border: 2px solid var(--color-gold);
-    border-radius: 5px;
-    padding: 15px;
-    z-index: 1001;
-    display: none;
-    max-width: 350px;
+.building-item .desc {
     font-size: 0.9em;
-    pointer-events: none; /* Important pour éviter que l'infobulle ne bloque les événements de la souris */
-}
-.tooltip h4 {
-    font-family: var(--font-title);
-    color: var(--color-gold);
-    margin-bottom: 10px;
-}
-.tooltip p {
-    margin-bottom: 10px;
+    color: #5d4037;
+    padding-left: 10px;
     font-style: italic;
-    opacity: 0.9;
 }
-.tooltip hr {
-    border: none;
-    border-top: 1px solid var(--color-gold);
-    margin: 10px 0;
+
+/* Effet de "flash" pour le reroll */
+.card-flash {
+    animation: flash 0.8s ease-out;
 }
-.tooltip ul {
+
+@keyframes flash {
+    0% {
+        box-shadow: 0 8px 20px rgba(0,0,0,0.15), 0 0 5px var(--color-gold);
+        transform: scale(1.02);
+    }
+    50% {
+        box-shadow: 0 8px 25px rgba(212, 160, 23, 0.7), 0 0 15px var(--color-gold);
+        transform: scale(1.03);
+    }
+    100% {
+        box-shadow: 0 8px 20px rgba(0,0,0,0.15), 0 0 5px var(--color-gold);
+        transform: scale(1.02);
+    }
+}
+
+/* --- Modale et Spinner --- */
+.spinner {
+    margin: 20px auto;
+    border: 5px solid rgba(0,0,0,0.1);
+    border-left-color: var(--color-royal-blue);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* --- STYLES AJOUTÉS POUR LA MODALE D'ANALYSE --- */
+.info-icon {
+    font-size: 0.8em;
+    cursor: pointer;
+    color: var(--color-stone-gray);
+    border: 1px solid var(--color-stone-gray);
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    transition: all 0.3s;
+}
+.info-icon:hover {
+    background-color: var(--color-royal-blue);
+    color: white;
+    border-color: var(--color-royal-blue);
+    transform: scale(1.1);
+}
+
+#analysis-modal, #add-building-modal {
+    max-width: 800px;
+    max-height: 80vh;
+}
+
+#analysis-modal-content, #add-building-modal-content {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    overflow-y: auto;
+}
+
+.analysis-section {
+    background: rgba(0,0,0,0.02);
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    padding: 15px;
+}
+
+.analysis-section h4 {
+    font-family: var(--font-title);
+    border-bottom: 2px solid var(--color-gold);
+    padding-bottom: 5px;
+    margin-bottom: 10px;
+    color: var(--color-royal-blue);
+}
+
+.analysis-details ul {
     list-style: none;
     padding: 0;
 }
-.tooltip li {
-    margin-bottom: 5px;
+.analysis-details li {
+    padding: 5px 0;
+    border-bottom: 1px dashed rgba(0,0,0,0.1);
+}
+.analysis-details li strong {
+    font-weight: bold;
+    font-family: var(--font-body);
 }
 
-/* --- NOUVEAUX STYLES POUR LE PANNEAU DISTANCE --- */
-#distance-table {
+.tag-provides { color: var(--color-forest-green); }
+.tag-requires { color: var(--color-error); }
+.tag-source { font-style: italic; color: #555; font-size: 0.9em; }
+
+
+/* --- NOUVEAUX STYLES : MODE MANUEL ET PANNEAU D'ÉTAT --- */
+
+.hidden {
+    display: none !important;
+}
+
+#status-panel {
+    width: 350px;
+    min-width: 350px;
+    background-color: #e8e0c9;
+    border-left: 2px solid var(--color-border);
+    padding: 20px;
+    overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    transition: min-width 0.3s ease-in-out, width 0.3s ease-in-out;
 }
-.distance-entry {
+
+#status-panel.hidden {
+    width: 0;
+    min-width: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+
+#status-panel h3 {
+    font-family: var(--font-title);
+    color: var(--color-royal-blue);
+    text-align: center;
+    margin-top: 0;
+    border-bottom: 2px solid var(--color-gold);
+    padding-bottom: 10px;
+}
+
+#status-content ul {
+    list-style: none;
+    padding: 0;
     font-size: 0.9em;
+}
+
+#status-content li {
+    padding: 8px;
+    margin-bottom: 5px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+#status-content .status-valid {
+    background-color: #e8f5e9;
+    border-left: 4px solid var(--color-forest-green);
+}
+#status-content .status-invalid {
+    background-color: #ffcdd2;
+    border-left: 4px solid var(--color-error);
+}
+#status-content .status-valid::before {
+    content: '✅';
+}
+#status-content .status-invalid::before {
+    content: '❌';
+}
+
+.btn-add-building, .btn-remove-building {
+    padding: 5px 10px;
+    font-size: 0.9em;
+    cursor: pointer;
+    border-radius: 4px;
+    border: 1px solid;
+    font-weight: bold;
+}
+.btn-add-building {
+    background-color: var(--color-royal-blue);
+    border-color: #2c387e;
+    color: white;
+    width: 100%;
+    margin-top: 10px;
+}
+.btn-remove-building {
+    background-color: #fbe9e7;
+    border-color: #ffab91;
+    color: var(--color-error);
+    margin-left: 10px;
+    flex-shrink: 0;
+}
+
+#add-building-modal-content .building-list-item {
     padding: 10px;
     border: 1px solid var(--color-border);
+    margin-bottom: 10px;
     border-radius: 4px;
-    background: rgba(0,0,0,0.02);
-}
-.distance-info {
-    font-family: var(--font-title);
-    margin-bottom: 8px;
-}
-.distance-info strong {
-    font-size: 1.1em;
-}
-.distance-times {
     display: flex;
     justify-content: space-between;
-    font-size: 0.9em;
-    margin-bottom: 10px;
+    align-items: center;
 }
-.distance-times b {
-    color: var(--color-forest-green);
-}
-.distance-slider-group {
-    display: flex;
-    flex-direction: column;
-}
-.route-type-label {
-    font-size: 0.85em;
+#add-building-modal-content .building-list-item .name {
     font-weight: bold;
-    margin-bottom: 5px;
-    text-align: center;
 }
-.route-modifier-slider {
-    width: 100%;
+#add-building-modal-content .building-list-item .desc {
+    font-style: italic;
+    font-size: 0.9em;
+    color: #555;
+    margin: 5px 0;
+}
+#add-building-modal-content .building-list-item .tags {
+    font-size: 0.8em;
+    color: #333;
+}
+#add-building-modal-content .building-list-item .btn-add-this-building {
+    padding: 5px 10px;
+    background-color: var(--color-forest-green);
+    color: white;
+    border: none;
+    border-radius: 4px;
     cursor: pointer;
-    -webkit-appearance: none;
-    appearance: none;
-    height: 8px;
-    background: rgba(0,0,0,0.1);
+}
+
+#status-content li > div {
+    flex-grow: 1;
+    word-break: break-word; /* Permet de couper les mots si nécessaire pour éviter le débordement */
+}
+
+#add-building-modal-content h3 {
+    font-family: var(--font-title);
+    color: var(--color-royal-blue);
+    border-bottom: 2px solid var(--color-gold);
+    padding-bottom: 5px;
+}
+
+#add-building-modal-content .recommended-building {
+    background-color: #e8f5e9; /* Vert très clair */
+    border-color: var(--color-forest-green);
+}
+
+#add-building-modal-content .recommended-building .name {
+    color: var(--color-forest-green);
+    font-weight: bold;
+}
+
+/* --- NOUVEAU : Styles pour la Pagination --- */
+#pagination-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 15px 0;
+    gap: 20px;
+    background-color: rgba(0,0,0,0.05);
+    border-top: 1px solid var(--color-border);
+}
+
+#pagination-controls button {
+    padding: 8px 16px;
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 1em;
+    border: 2px solid var(--color-border);
     border-radius: 5px;
-    outline: none;
-}
-.route-modifier-slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background: var(--color-royal-blue);
     cursor: pointer;
-    border: 2px solid var(--color-parchment);
+    background-color: #f1e9d6;
+    color: var(--color-dark-text);
+    transition: background-color 0.2s;
 }
-.route-modifier-slider::-moz-range-thumb {
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background: var(--color-royal-blue);
-    cursor: pointer;
-    border: 2px solid var(--color-parchment);
+
+#pagination-controls button:hover {
+    background-color: #d4c6a8;
+}
+
+#pagination-controls button:disabled {
+    background-color: #d1cbbc;
+    color: #888;
+    cursor: not-allowed;
+    border-color: #b0a897;
+}
+
+#page-info {
+    font-family: var(--font-body);
+    font-size: 1.1em;
+    font-weight: bold;
+    color: var(--color-dark-text);
+}
+
+/* --- ... autres styles --- */
+
+#add-building-modal-content h3 {
+    font-family: var(--font-title);
+    color: var(--color-royal-blue);
+    border-bottom: 2px solid var(--color-gold);
+    padding-bottom: 5px;
+}
+
+#add-building-modal-content .recommended-building {
+    background-color: #e8f5e9; /* Vert très clair */
+    border-color: var(--color-forest-green);
+}
+
+/* NOUVEAU STYLE POUR LES RECOMMANDATIONS EXCEPTIONNELLES */
+#add-building-modal-content .exceptional-recommendation {
+    background-color: #fff8e1; /* Jaune/Or très clair */
+    border: 1px solid #ffcc80; /* Bordure Or */
+    border-left: 4px solid var(--color-gold); /* Bordure gauche Or plus épaisse */
+}
+
+#add-building-modal-content .recommended-building .name {
+    color: var(--color-forest-green);
+    font-weight: bold;
+}
+
+/* NOUVEAU STYLE POUR LE TEXTE DES RECOMMANDATIONS EXCEPTIONNELLES */
+#add-building-modal-content .exceptional-recommendation .name {
+    color: #c08b00; /* Or un peu plus foncé */
+    font-weight: bold;
 }

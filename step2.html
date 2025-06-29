@@ -3,55 +3,114 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EcoSimRPG - Étape 2 : Configuration</title>
+    <title>EcoSimRPG - Étape 2 : Configuration des Lieux</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
     
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="step1-style.css">
     <link rel="stylesheet" href="step2-style.css">
 </head>
 <body>
 
-    <nav class="floating-menu">
-        <div class="menu-title">EcoSimRPG</div>
-        <a href="#">Accueil</a>
-        <a href="index.html">Étape 1<br><small>(Carte)</small></a>
-        <a href="step2.html" class="active">Étape 2<br><small>(Conf. Lieux)</small></a>
-        <a href="step3.html" id="nav-step-3" class="nav-disabled">Étape 3<br><small>(Gen.0)</small></a>
-    </nav>
+<nav class="floating-menu">
+    <div class="menu-title">EcoSimRPG</div>
+    <a href="index.html">Accueil</a>
+    <a href="step1.html">Étape 1<br><small>(Carte)</small></a>
+    <a href="step2.html" class="active">Étape 2<br><small>(Conf. Lieux)</small></a>
+    <a href="step3.html" id="nav-step-3">Étape 3<br><small>(Gen.0)</small></a>
+    
+    <a href="bibliotheque.html" id="nav-bibliotheque">Bibliothèque<br><small>(Bâtiments)</small></a> 
+    
+    <a href="economie.html" id="nav-economie">Livre (Economie)<br><small>(Tags Perso)</small></a>
+    
+    <a href="communaute.html" id="nav-communaute">Page (Communauté)<br><small>(Partage)</small></a>
+</nav>
 
-    <div class="main-content">
-        <header id="top-bar">
-            <div class="control-group">
-                <label for="region-select">Région Actuelle :</label>
-                <select id="region-select"><option>Chargement...</option></select>
+    <div class="main-content-wrapper">
+        <div class="main-content" id="main-content">
+            <header id="top-bar-step2">
+                <div class="header-title-group">
+                    <h1>Configuration des Lieux</h1>
+                    <button id="reroll-region-btn" class="btn-edit" title="Relancer la génération automatique pour toute la région">🎲 Relancer Région (Automatique)</button>
+                    <button id="manual-config-btn" class="btn-edit" title="Configurer manuellement les bâtiments de la région">✍️ Région Personnalisée</button>
+                </div>
+                <div class="header-info">
+                    <span id="region-name-display"></span>
+                    <button id="validate-all-btn" class="btn-primary">Tout Valider et Passer à l'Étape 3</button>
+                </div>
+            </header>
+
+            <div id="generation-overlay">
+                <div class="overlay-content">
+                    <div class="overlay-icon">🏛️</div>
+                    <h1>Les architectes sont à l'œuvre...</h1>
+                    <p>Création d'un monde cohérent et organique.</p>
+                    <div class="spinner"></div>
+                </div>
             </div>
-            <div id="place-stats-summary" class="control-group">
-                </div>
-        </header>
 
-        <div class="workspace-step2">
-            <aside id="places-panel">
-                <h3>Lieux de la Région</h3>
-                <ul id="places-list">
-                    </ul>
-            </aside>
-            <main id="config-panel">
-                <div id="welcome-panel">
-                    <h2>Bienvenue à l'Étape 2</h2>
-                    <p>Veuillez sélectionner une région et un lieu à gauche pour commencer la configuration.</p>
-                    <p>Si aucun lieu n'est disponible, retournez à l'<strong>Étape 1</strong> pour en créer sur votre carte.</p>
-                </div>
+            <main id="places-container">
                 </main>
+
+            <div id="pagination-controls">
+                <button id="prev-page-btn" class="btn-secondary">Précédent</button>
+                <span id="page-info"></span>
+                <button id="next-page-btn" class="btn-secondary">Suivant</button>
+            </div>
         </div>
+
+        <aside id="status-panel" class="hidden">
+            <h3>État de la Région</h3>
+            <div id="status-content">
+                <p>Ajoutez des bâtiments pour vérifier les prérequis.</p>
+            </div>
+        </aside>
     </div>
 
-    <script> var EcoSimData = window.EcoSimData || {}; </script>
-    <script src="building.js"></script>
-    <script src="races.js"></script>
-    <script src="step2.js"></script>
 
+    <dialog id="validation-modal">
+        <div class="modal-header">
+            <h3 id="validation-modal-title">Validation en cours...</h3>
+            <button class="modal-close-btn" onclick="this.closest('dialog').close()">&times;</button>
+        </div>
+        <div id="validation-modal-content" style="padding: 20px; text-align: center;">
+            <p>Tous les lieux ont été validés avec succès !</p>
+            <p>Vous allez être redirigé vers l'étape de simulation.</p>
+            <div class="spinner"></div>
+        </div>
+    </dialog>
+
+    <dialog id="analysis-modal">
+        <div class="modal-header" id="analysis-modal-header">
+            <h3 id="analysis-modal-title">Analyse du Lieu</h3>
+            <button class="modal-close-btn" onclick="this.closest('dialog').close()">&times;</button>
+        </div>
+        <div id="analysis-modal-content">
+            <div class="analysis-section" id="internal-analysis">
+                <h4>Logique Interne et Synergies</h4>
+                <div class="analysis-details"></div>
+            </div>
+            <div class="analysis-section" id="external-analysis">
+                <h4>Commerce et Dépendances (Import/Export)</h4>
+                <div class="analysis-details"></div>
+            </div>
+        </div>
+    </dialog>
+
+    <dialog id="add-building-modal">
+        <div class="modal-header">
+            <h3 id="add-building-modal-title">Ajouter un Bâtiment</h3>
+            <button class="modal-close-btn" onclick="this.closest('dialog').close()">&times;</button>
+        </div>
+        <div id="add-building-modal-content">
+            </div>
+    </dialog>
+
+
+    <script src="races.js"></script>
+    <script src="buildings.js"></script>
+    <script src="step2.js"></script>
 </body>
 </html>

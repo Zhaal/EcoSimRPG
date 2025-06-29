@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoSimRPG - Communauté</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="step1-style.css">
+    <link rel="stylesheet" href="step2-style.css">
+    <link rel="stylesheet" href="bibliotheque-style.css">
+    <link rel="stylesheet" href="economie-style.css">
+    <link rel="stylesheet" href="communaute.css">
+</head>
+<body>
+
+    <nav class="floating-menu">
+        <div class="menu-title">EcoSimRPG</div>
+        <a href="index.html">Accueil</a>
+        <a href="step1.html">Étape 1<br><small>(Carte)</small></a>
+        <a href="step2.html">Étape 2<br><small>(Conf. Lieux)</small></a>
+        <a href="step3.html" id="nav-step-3">Étape 3<br><small>(Gen.0)</small></a>
+        <a href="bibliotheque.html" id="nav-bibliotheque">Bibliothèque<br><small>(Bâtiments)</small></a>
+        <a href="economie.html" id="nav-economie">Livre (Economie)<br><small>(Tags Perso)</small></a>
+        <a href="communaute.html" id="nav-communaute" class="active">Page (Communauté)<br><small>(Partage)</small></a>
+    </nav>
+    
+    <div class="main-content-wrapper">
+        <div id="login-view" class="main-content" style="padding: 40px; text-align: center;">
+            <h1>Portail de la Communauté</h1>
+            <p style="max-width: 600px; margin: 20px auto;">Identifiez-vous pour partager vos créations et découvrir celles des autres architectes du royaume.</p>
+            <form id="login-form" style="max-width: 400px; margin: 30px auto; background: var(--color-parchment); padding: 20px; border-radius: 8px; border: 1px solid var(--color-border);">
+                <div class="modal-form-group">
+                    <label for="user-pseudo">Pseudo / Prénom RP :</label>
+                    <input type="text" id="user-pseudo" required>
+                </div>
+                <div class="modal-form-group">
+                    <label for="user-lastname">Nom de Famille RP :</label>
+                    <input type="text" id="user-lastname" required>
+                </div>
+                <div class="modal-form-group">
+                    <label for="user-password">Mot de passe :</label>
+                    <input type="password" id="user-password" required>
+                </div>
+                <button type="submit" class="btn-primary" style="margin-top: 20px;">Ouvrir le Portail</button>
+            </form>
+        </div>
+
+        <div id="editor-view" class="hidden">
+            <aside id="community-actions-panel">
+                <h3>Mon Espace</h3>
+                <div id="user-info"></div>
+
+                <div class="action-section">
+                    <h4>Exporter mes Créations</h4>
+                    <p>Générez un fichier JSON contenant tous vos bâtiments et tags personnalisés. Partagez ce fichier sur GitHub (ou autre) pour que d'autres puissent s'y abonner.</p>
+                    <button id="export-btn" class="btn-primary" style="width:100%">Exporter mes données</button>
+                </div>
+
+                <div class="action-section">
+                    <h4>Éditer un Partage</h4>
+                    <p>Importez un fichier que vous avez précédemment exporté pour mettre à jour vos données locales. Seuls les fichiers dont vous êtes l'auteur peuvent être importés.</p>
+                    <input type="file" id="import-input" accept=".json" style="display:none;">
+                    <button id="import-btn" class="btn-secondary" style="width:100%">Importer et Remplacer mes données</button>
+                </div>
+                 
+                <div class="list-panel-actions">
+                    <div id="feedback-message" class="feedback"></div>
+                    <button id="logout-btn" class="btn" style="width: 100%; margin-top: 10px;">Se Déconnecter</button>
+                </div>
+            </aside>
+
+            <main id="subscriptions-panel">
+                <div class="subscriptions-header">
+                    <h2>Abonnements de la Communauté</h2>
+                    <div class="subscription-form">
+                        <input type="url" id="subscription-url-input" placeholder="Coller l'URL brute du fichier JSON d'un autre créateur...">
+                        <button id="subscribe-btn" class="btn-primary">S'abonner</button>
+                    </div>
+                </div>
+
+                <div id="subscriptions-list">
+                    <div class="welcome-panel">
+                        <h3>Découvrez les créations d'autres joueurs</h3>
+                        <p>Collez l'URL d'un fichier de partage (un lien brut vers un fichier `.json` sur GitHub, Gist, etc.) pour voir les bâtiments et tags créés par d'autres utilisateurs.</p>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="communaute.js" defer></script>
+
+</body>
+</html>

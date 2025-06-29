@@ -3,81 +3,127 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EcoSimRPG - Étape 1 : Carte</title>
+    <title>EcoSimRPG - Accueil</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
     
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="step1-style.css"> 
+    <link rel="stylesheet" href="index-style.css">
 </head>
 <body>
 
-    <nav class="floating-menu">
-        <div class="menu-title">EcoSimRPG</div>
-        <a href="#">Accueil</a>
-        <a href="#" class="active">Étape 1<br><small>(Carte)</small></a>
-        <a href="step2.html" id="nav-step-2">Étape 2<br><small>(Conf. Lieux)</small></a>
-        <a href="step3.html" id="nav-step-3">Étape 3<br><small>(Gen.0)</small></a>
-    </nav>
+<nav class="floating-menu">
+    <div class="menu-title">EcoSimRPG</div>
+    <a href="index.html" class="active">Accueil</a>
+    <a href="step1.html">Étape 1<br><small>(Carte)</small></a>
+    <a href="step2.html">Étape 2<br><small>(Conf. Lieux)</small></a>
+    <a href="step3.html" id="nav-step-3">Étape 3<br><small>(Gen.0)</small></a>
+    
+    <a href="bibliotheque.html" id="nav-bibliotheque">Bibliothèque<br><small>(Bâtiments)</small></a> 
+    
+    <a href="economie.html" id="nav-economie">Livre (Economie)<br><small>(Tags Perso)</small></a>
+    
+    <a href="communaute.html" id="nav-communaute">Page (Communauté)<br><small>(Partage)</small></a>
+</nav>
 
-    <div class="main-content">
-        <header id="top-bar">
-            <div class="control-group">
-                <label for="region-select">Région:</label>
-                <div class="input-group">
-                    <select id="region-select"><option>Aucune région</option></select>
-                    <button id="delete-region-btn" class="btn-delete" disabled title="Supprimer la région">-</button>
-                </div>
-                <div class="input-group">
-                    <input type="text" id="new-region-name" placeholder="Nom de la nouvelle région...">
-                    <button id="create-region-btn" class="btn-primary" title="Créer une nouvelle région">+</button>
-                </div>
-            </div>
-            <div class="control-group">
-                <label for="random-place-count">Générer:</label>
-                <input type="number" id="random-place-count" value="10" min="1" max="100" style="width: 70px;">
-                <button id="generate-map-btn" class="btn-primary" disabled>Carte Aléatoire</button>
-            </div>
+    <div class="main-content-index">
+        <header class="index-header">
+            <h1 class="main-title">EcoSimRPG</h1>
+            <p class="subtitle">Votre Outil de Création de Mondes Économiques et Vivants</p>
         </header>
 
-        <div class="workspace">
-            <main id="map-container">
-                <canvas id="hex-map"></canvas>
-            </main>
-            <aside id="right-panel">
-                <h3>Lieux de la Région</h3>
-                <ul id="places-list">
-                </ul>
-            </aside>
-        </div>
+        <main class="index-main">
+            <section class="intro-section">
+                <h2>Bienvenue, Maître du Monde !</h2>
+                <p>EcoSimRPG est une suite d'outils conçue pour vous aider à générer des régions fantastiques cohérentes, dotées d'une économie crédible et de lieux qui interagissent de manière organique. Suivez les étapes ci-dessous pour donner vie à votre propre univers, de la première pierre de la capitale au dernier sentier du hameau le plus reculé.</p>
+            </section>
+
+            <div class="steps-container">
+                <div class="step-card" id="card-step1">
+                    <div class="step-card-header">
+                        <span class="step-number">1</span>
+                        <h3>Étape 1 : Sculpter la Carte</h3>
+                    </div>
+                    <div class="step-card-body">
+                        <p>C'est ici que votre monde prend forme. L'Étape 1 est un éditeur de carte interactif où vous dessinez les contours de votre royaume.</p>
+                        
+                        <h4>Gestion de la Région</h4>
+                        <ul>
+                            <li><strong>Créer &amp; Sélectionner :</strong> Utilisez les contrôles en haut à gauche pour créer une nouvelle région ou en sélectionner une existante.</li>
+                            <li><strong>Échelle :</strong> Définissez la distance en kilomètres pour chaque hexagone de la carte.</li>
+                        </ul>
+
+                        <h4>Interagir avec la Carte</h4>
+                        <ul>
+                            <li><strong>Navigation :</strong> Maintenez le clic gauche pour vous déplacer (panning) et utilisez la molette de la souris pour zoomer.</li>
+                            <li><strong>Placer un Lieu :</strong> Double-cliquez sur un hexagone vide pour ouvrir la fenêtre de création.</li>
+                            <li><strong>Déplacer un Lieu :</strong> Cliquez sur l'image d'un lieu et faites-la glisser vers un autre hexagone.</li>
+                        </ul>
+
+                        <h4>Gestion des Lieux et Routes</h4>
+                        <ul>
+                            <li><strong>Liste des Lieux :</strong> Le panneau de droite affiche tous les lieux de la région. Vous pouvez les éditer, les supprimer ou centrer la carte sur eux.</li>
+                            <li><strong>Routes Automatiques :</strong> Les routes sont créées automatiquement entre tous les lieux, affichant la distance et les temps de trajet estimés.</li>
+                            <li><strong>Modifier une Route :</strong> Cliquez sur l'icône <strong>⚙️</strong> située au milieu d'une route pour changer son type (de "Sentier de montagne" à "Route Royale") et ainsi affecter sa vitesse.</li>
+                            <li><strong>Filtrer les Routes :</strong> Pour plus de clarté, cliquez sur l'icône <strong>↔️</strong> qui apparaît au-dessus d'un lieu sur la carte pour n'afficher que les routes qui y sont connectées.</li>
+                        </ul>
+                    </div>
+                    <div class="step-card-footer">
+                        <a href="step1.html" class="btn btn-primary">Commencer à Cartographier</a>
+                    </div>
+                </div>
+
+                <div class="step-card" id="card-step2">
+                    <div class="step-card-header">
+                        <span class="step-number">2</span>
+                        <h3>Étape 2 : Bâtir l'Économie</h3>
+                    </div>
+                    <div class="step-card-body">
+                        <p>Une fois la carte établie, il est temps de donner vie à vos cités. Cette étape peuple vos lieux de bâtiments, créant une économie dynamique et des interdépendances logiques.</p>
+                        
+                        <h4>Mode Automatique (Recommandé)</h4>
+                        <ul>
+                            <li><strong>Génération Intelligente :</strong> Par défaut, le programme analyse votre région et tente de construire une économie viable.</li>
+                            <li><strong>Objectif de Viabilité :</strong> L'algorithme s'assure que chaque ressource (`tag`) requise par un bâtiment est produite quelque part dans la région.</li>
+                            <li><strong>Analyse Approfondie :</strong> Cliquez sur l'icône <strong>ℹ️</strong> sur la carte d'un lieu pour ouvrir une analyse détaillée de ses importations, exportations et de sa logique interne.</li>
+                        </ul>
+
+                        <h4>Mode Personnalisé (Contrôle total)</h4>
+                        <ul>
+                            <li><strong>Activation :</strong> Cliquez sur le bouton "✍️ Région Personnalisée".</li>
+                            <li><strong>Construction Manuelle :</strong> Utilisez le bouton "Ajouter un Bâtiment" sur chaque lieu pour choisir dans une liste de constructions possibles. Le système vous recommandera les bâtiments ⭐ qui comblent un manque dans la région.</li>
+                            <li><strong>Validation en Temps Réel :</strong> Le panneau de droite "État de la Région" vous montre en direct les prérequis économiques non satisfaits (par exemple, "Source introuvable pour 'minerai_de_fer'").</li>
+                            <li><strong>Finalisation :</strong> Le bouton "Tout Valider et Passer à l'Étape 3" ne devient cliquable que lorsque tous les besoins de la région sont comblés.</li>
+                        </ul>
+                    </div>
+                    <div class="step-card-footer">
+                        <a href="step2.html" class="btn btn-primary">Configurer les Lieux</a>
+                    </div>
+                </div>
+
+                <div class="step-card" id="card-step3">
+                    <div class="step-card-header">
+                        <span class="step-number">3</span>
+                        <h3>Étape 3 : La Génération 0 (Bientôt)</h3>
+                    </div>
+                    <div class="step-card-body">
+                        <p>L'étape ultime. Une fois votre monde validé, la Génération 0 donnera naissance à la population initiale de votre royaume.</p>
+                        <ul>
+                            <li><strong>Peuples & Races :</strong> Des individus uniques seront créés (Humains, Elfes, Nains, Orcs...) en se basant sur une base de données de noms et de caractéristiques propres à chaque race.</li>
+                            <li><strong>Démographie Réaliste :</strong> Chaque race aura sa propre espérance de vie, son âge de départ au travail et sa durée de gestation, influençant l'évolution de la population.</li>
+                            <li><strong>Relations Inter-raciales :</strong> Le système gérera les compatibilités entre races pour la procréation, permettant la naissance naturelle de <strong>Demi-Elfes</strong> (Humain-Elfe) et de <strong>Demi-Orcs</strong> (Humain-Orc).</li>
+                            <li><strong>Le Point de Départ :</strong> Cette étape figera l'état initial de votre monde, prêt pour que vous puissiez lancer vos propres simulations, campagnes de JDR ou écrire vos récits.</li>
+                        </ul>
+                    </div>
+                    <div class="step-card-footer">
+                        <a href="#" class="btn btn-disabled" aria-disabled="true">Prochainement...</a>
+                    </div>
+                </div>
+            </div>
+        </main>
     </div>
 
-    <dialog id="place-modal">
-        <form id="place-form" method="dialog">
-            <h3 id="modal-title">Créer un Nouveau Lieu</h3>
-            <div class="modal-form-group">
-                <label for="place-name">Nom du lieu :</label>
-                <input type="text" id="place-name" required>
-            </div>
-            <div class="modal-form-group">
-                <label for="place-type">Type de lieu :</label>
-                <select id="place-type" required>
-                    <option value="" disabled selected>Choisir un type...</option>
-                    <option value="Capitale">Capitale</option>
-                    <option value="Ville">Ville</option>
-                    <option value="Bourg">Bourg</option>
-                    <option value="Village">Village</option>
-                    <option value="Hameau">Hameau</option>
-                </select>
-            </div>
-            <div class="modal-actions">
-                <button type="button" id="cancel-place-btn" class="btn">Annuler</button>
-                <button type="submit" id="confirm-place-btn" class="btn-primary">Créer</button>
-            </div>
-        </form>
-    </dialog>
-
-    <script src="script.js" defer></script>
 </body>
 </html>

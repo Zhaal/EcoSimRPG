@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoSimRPG - Étape 1 : Carte</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="step1-style.css">
+</head>
+<body>
+
+<nav class="floating-menu">
+    <div class="menu-title">EcoSimRPG</div>
+    <a href="index.html">Accueil</a>
+    <a href="step1.html" class="active">Étape 1<br><small>(Carte)</small></a>
+    <a href="step2.html">Étape 2<br><small>(Conf. Lieux)</small></a>
+    <a href="step3.html" id="nav-step-3">Étape 3<br><small>(Gen.0)</small></a>
+    
+    <a href="bibliotheque.html" id="nav-bibliotheque">Bibliothèque<br><small>(Bâtiments)</small></a> 
+    
+    <a href="economie.html" id="nav-economie">Livre (Economie)<br><small>(Tags Perso)</small></a>
+    
+    <a href="communaute.html" id="nav-communaute">Page (Communauté)<br><small>(Partage)</small></a>
+</nav>
+
+    <div class="main-content">
+        <div id="notification-banner" class="notification-banner" aria-live="polite"></div>
+        <header id="top-bar">
+            <div class="control-group">
+                <label for="region-select">Région:</label>
+                <div class="input-group">
+                    <select id="region-select"><option>Aucune région</option></select>
+                    <button id="delete-region-btn" class="btn-delete" disabled title="Supprimer la région">-</button>
+                </div>
+                <div class="input-group">
+                    <input type="text" id="new-region-name" placeholder="Nom de la nouvelle région...">
+                    <button id="create-region-btn" class="btn-primary" title="Créer une nouvelle région">+</button>
+                </div>
+            </div>
+            <div class="control-group">
+                <label for="scale-input">Échelle (km/hex):</label>
+                <input type="number" id="scale-input" value="10" min="0.1" step="0.1" style="width: 80px;" disabled>
+            </div>
+             <div class="control-group">
+                <label for="show-roads-toggle" title="Afficher ou masquer toutes les routes">Afficher routes:</label>
+                <input type="checkbox" id="show-roads-toggle" checked style="height: 18px; width: 18px;">
+                <button id="clear-road-filter-btn" class="btn" style="display:none;" title="Retirer le filtre et afficher toutes les routes">Voir toutes</button>
+            </div>
+            <div class="control-group">
+                <label for="random-place-count">Générer:</label>
+                <input type="number" id="random-place-count" value="10" min="1" max="100" style="width: 70px;">
+                <button id="generate-map-btn" class="btn-primary" disabled>Carte Aléatoire</button>
+            </div>
+        </header>
+
+        <div class="workspace">
+            <main id="map-container">
+                <canvas id="hex-map"></canvas>
+                <div id="road-legend"></div>
+            </main>
+            <aside id="right-panel">
+                <h3>Lieux de la Région</h3>
+                <ul id="places-list">
+                </ul>
+            </aside>
+        </div>
+    </div>
+
+    <dialog id="place-modal">
+        <div class="modal-header" id="place-modal-header">
+            <h3 id="modal-title">Créer un Nouveau Lieu</h3>
+            <button class="modal-close-btn" onclick="this.closest('dialog').close()">&times;</button>
+        </div>
+        <form id="place-form" method="dialog">
+            <div class="modal-form-group">
+                <label for="place-name">Nom du lieu :</label>
+                <input type="text" id="place-name" required>
+            </div>
+            <div class="modal-form-group">
+                <label for="place-type">Type de lieu :</label>
+                <select id="place-type" required>
+                    <option value="" disabled selected>Choisir un type...</option>
+                    <option value="Capitale">Capitale</option>
+                    <option value="Ville">Ville</option>
+                    <option value="Bourg">Bourg</option>
+                    <option value="Village">Village</option>
+                    <option value="Hameau">Hameau</option>
+                </select>
+            </div>
+            <div class="modal-actions">
+                <button type="button" id="cancel-place-btn" class="btn">Annuler</button>
+                <button type="submit" id="confirm-place-btn" class="btn-primary">Créer</button>
+            </div>
+        </form>
+    </dialog>
+
+    <dialog id="road-modal">
+        <div class="modal-header" id="road-modal-header">
+            <h3 id="road-modal-title">Modifier le Type de Route</h3>
+            <button class="modal-close-btn" onclick="this.closest('dialog').close()">&times;</button>
+        </div>
+        <form id="road-form" method="dialog">
+            <div class="modal-form-group">
+                <label for="road-type-select">Type de route :</label>
+                <select id="road-type-select" required>
+                </select>
+            </div>
+            <div id="road-info" style="font-size: 0.9em; margin-top: 15px; background: rgba(0,0,0,0.05); padding: 10px; border-radius: 4px;">
+            </div>
+            <div class="modal-actions">
+                <button type="button" id="delete-road-btn" class="btn-delete" style="margin-right: auto;">Supprimer Route</button>
+                <button type="button" id="cancel-road-btn" class="btn">Annuler</button>
+                <button type="submit" id="confirm-road-btn" class="btn-primary">Appliquer</button>
+            </div>
+        </form>
+    </dialog>
+
+    <script src="step1.js" defer></script>
+</body>
+</html>

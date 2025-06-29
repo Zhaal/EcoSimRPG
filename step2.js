@@ -1,779 +1,929 @@
+/**
+ * EcoSimRPG - step2.js
+ * VERSION 7.6 - Génération minimaliste mais dense
+ * - MODIFIÉ : La génération automatique s'arrête maintenant seulement si la région est viable ET que chaque lieu possède au moins 3 bâtiments non administratifs.
+ * - MODIFIÉ : Le scoring des bâtiments candidats a été ajusté pour d'abord chercher la viabilité, puis pour combler les lieux manquant de bâtiments.
+ */
 document.addEventListener('DOMContentLoaded', () => {
-    // --- MODULE DE CALCUL (fusionné et nettoyé depuis sim-formulas.js) ---
-    const Formula = (() => {
-        function parseSalaryString(jobString) {
-            // "Tiers 0 : Roi/Reine (1 poste, 100 prestige requis, 50 prestige/mois, mixte)"
-            const tierMatch = jobString.match(/Tiers (\d+|0)/);
-            const postsMatch = jobString.match(/(\d+)\s+poste/);
-    
-            return {
-                tier: tierMatch ? `Tiers ${tierMatch[1]}` : 'N/A',
-                posts: postsMatch ? parseInt(postsMatch[1]) : 0,
-            };
-        }
-        
-        function calculateGlobalStats(place, buildingData) {
-            let totalPrestige = 0;
-            let totalMenace = 0;
-            let totalJobs = 0;
-            let foodBalance = 0; // Simplification: +1 pour prod, -1 pour non-prod
-    
-            if (!place.config || !place.config.buildings) {
-                return { totalPrestige, totalMenace, totalJobs, foodBalance };
-            }
-    
-            const placeBuildings = buildingData[place.type] || {};
-    
-            for (const buildingName in place.config.buildings) {
-                const config = place.config.buildings[buildingName];
-                if (!config.active) continue;
-    
-                let buildingInfo = null;
-                for(const category in placeBuildings) {
-                    if(placeBuildings[category][buildingName]) {
-                        buildingInfo = placeBuildings[category][buildingName];
-                        
-                        // Calcul du bilan alimentaire simplifié
-                        if(category === 'Bâtiments Agricoles' || category === 'Chasse/Nature') {
-                            foodBalance += config.count;
-                        } else if (category === 'Bâtiments de Production' || category === 'Bâtiments Administratifs') {
-                            foodBalance -= config.count;
-                        }
-                        break;
-                    }
-                }
-                
-                if (buildingInfo) {
-                    totalPrestige += (buildingInfo.prestige || 0) * config.count;
-                    totalMenace += (buildingInfo.menace || 0) * config.count;
-                    if(buildingInfo.emplois) {
-                        buildingInfo.emplois.forEach(jobString => {
-                            const jobInfo = parseSalaryString(jobString);
-                            totalJobs += jobInfo.posts * config.count;
-                        });
-                    }
-                }
-            }
-            return { totalPrestige, totalMenace, totalJobs, foodBalance };
-        }
-
-        return {
-            calculateGlobalStats
-        };
-    })();
-
-    // --- MODULE TOOLTIP (fusionné depuis tooltips.js) ---
-    const TooltipManager = (() => {
-        let tooltipElement;
-
-        function createTooltipElement() {
-            if (document.getElementById('dynamic-tooltip')) return;
-            tooltipElement = document.createElement('div');
-            tooltipElement.id = 'dynamic-tooltip';
-            tooltipElement.className = 'tooltip';
-            document.body.appendChild(tooltipElement);
-        }
-
-        function showTooltip(e) {
-            const trigger = e.target;
-            const tooltipType = trigger.dataset.tooltipType;
-
-            let content = 'Information non disponible.';
-            if (tooltipType === 'building') {
-                content = getBuildingTooltipContent(trigger);
-            }
-
-            tooltipElement.innerHTML = content;
-            tooltipElement.style.display = 'block';
-            
-            positionTooltip(e);
-        }
-        
-        function positionTooltip(e) {
-            let x = e.clientX + 15;
-            let y = e.clientY + 15;
-            
-            tooltipElement.style.left = `${x}px`;
-            tooltipElement.style.top = `${y}px`;
-
-            const rect = tooltipElement.getBoundingClientRect();
-            if (rect.right > window.innerWidth) {
-                tooltipElement.style.left = `${window.innerWidth - rect.width - 15}px`;
-            }
-            if (rect.bottom > window.innerHeight) {
-                tooltipElement.style.top = `${window.innerHeight - rect.height - 15}px`;
-            }
-        }
-
-
-        function hideTooltip() {
-            if (tooltipElement) {
-                tooltipElement.style.display = 'none';
-            }
-        }
-
-        function getBuildingTooltipContent(trigger) {
-            const type = trigger.dataset.type;
-            const category = trigger.dataset.category;
-            const buildingName = trigger.dataset.building;
-
-            const buildingData = window.EcoSimData.buildings[type]?.[category]?.[buildingName];
-            if (!buildingData) return "Données du bâtiment introuvables.";
-
-            let content = `<h4>${buildingName}</h4>`;
-            content += `<p>${buildingData.description}</p><hr>`;
-            content += '<ul>';
-            if (buildingData.prestige) content += `<li><strong>Prestige:</strong> ${buildingData.prestige}</li>`;
-            if (buildingData.menace) content += `<li><strong>Menace:</strong> ${buildingData.menace}</li>`;
-            if (buildingData.coutConstruction) content += `<li><strong>Coût:</strong> ${buildingData.coutConstruction}</li>`;
-            if (buildingData.chargeFixe) content += `<li><strong>Charge Fixe:</strong> ${buildingData.chargeFixe}</li>`;
-            if (buildingData.chiffreAffairesMax) content += `<li><strong>CA Max:</strong> ${buildingData.chiffreAffairesMax}</li>`;
-            if (buildingData.beneficeMax) content += `<li><strong>Bénéfice Max:</strong> ${buildingData.beneficeMax}</li>`;
-            content += '</ul>';
-
-            if(buildingData.emplois && buildingData.emplois.length > 0) {
-                 content += '<hr><strong>Emplois:</strong><ul>';
-                 buildingData.emplois.forEach(job => {
-                     content += `<li>${job}</li>`;
-                 });
-                 content += '</ul>';
-            }
-
-            return content;
-        }
-
-        function init() {
-            createTooltipElement();
-            
-            document.body.addEventListener('mouseover', e => {
-                if (e.target.matches('.tooltip-trigger')) {
-                    showTooltip(e);
-                }
-            });
-
-            document.body.addEventListener('mouseout', e => {
-                 if (e.target.matches('.tooltip-trigger')) {
-                    hideTooltip();
-                }
-            });
-            
-             document.body.addEventListener('mousemove', e => {
-                if (tooltipElement && tooltipElement.style.display === 'block') {
-                   positionTooltip(e);
-                }
-            });
-        }
-
-        return {
-            init
-        };
-    })();
-
     // --- CONSTANTES & CONFIGURATION ---
     const STORAGE_KEY = 'ecoSimRPG_map_data';
     const LAST_REGION_KEY = 'ecoSimRPG_last_region_id';
-    const ROUTE_TYPES = [
-        { name: 'Grande Route Marchande', walkModifier: 1.0,  horseModifier: 1.0 },
-        { name: 'Route Normale',          walkModifier: 1.25, horseModifier: 1.25 },
-        { name: 'Chemin de Terre',        walkModifier: 1.75, horseModifier: 2.0 },
-        { name: 'Sentier de Montagne',    walkModifier: 2.5,  horseModifier: 6.0 },
-        { name: 'Marais/Difficile',       walkModifier: 3.5,  horseModifier: 13.5 }
-    ];
+    const BUILDING_DATA = window.EcoSimData.buildings;
+    const RAW_RESOURCE_TAGS = ["grain", "légumes", "fruits", "raisins", "miel", "cire", "laine_brute", "lait", "bétail", "bois_brut", "gibier", "poisson", "peaux_brutes", "fourrures", "herbes_communes", "herbes_rares", "champignons_communs", "champignons_rares", "minerai_de_fer", "charbon", "pierre"];
+    const ITEMS_PER_PAGE = 3; 
+
+    const PLACE_TYPE_HIERARCHY = { 
+        "Hameau": 1, 
+        "Village": 2, 
+        "Bourg": 3, 
+        "Ville": 4, 
+        "Capitale": 5 
+    };
 
     // --- SELECTEURS DOM ---
-    const regionSelect = document.getElementById('region-select');
-    const placesList = document.getElementById('places-list');
-    const configPanel = document.getElementById('config-panel');
-    const placeStatsSummary = document.getElementById('place-stats-summary');
+    const placesContainer = document.getElementById('places-container');
+    const generationOverlay = document.getElementById('generation-overlay');
+    const regionNameDisplay = document.getElementById('region-name-display');
+    const navStep3 = document.getElementById('nav-step-3');
+    const validateAllBtn = document.getElementById('validate-all-btn');
+    const rerollRegionBtn = document.getElementById('reroll-region-btn');
+    const manualConfigBtn = document.getElementById('manual-config-btn');
+    const validationModal = document.getElementById('validation-modal');
+    const analysisModal = document.getElementById('analysis-modal');
+    const analysisModalTitle = document.getElementById('analysis-modal-title');
+    const internalAnalysisContainer = document.querySelector('#internal-analysis .analysis-details');
+    const externalAnalysisContainer = document.querySelector('#external-analysis .analysis-details');
+    const statusPanel = document.getElementById('status-panel');
+    const statusContent = document.getElementById('status-content');
+    const addBuildingModal = document.getElementById('add-building-modal');
+    const addBuildingModalTitle = document.getElementById('add-building-modal-title');
+    const addBuildingModalContent = document.getElementById('add-building-modal-content');
+    const paginationControls = document.getElementById('pagination-controls');
+    const prevPageBtn = document.getElementById('prev-page-btn');
+    const nextPageBtn = document.getElementById('next-page-btn');
+    const pageInfo = document.getElementById('page-info');
 
     // --- ETAT DE L'APPLICATION ---
     let regions = [];
     let currentRegion = null;
-    let selectedPlace = null;
-    let buildingData = window.EcoSimData.buildings;
-    let raceData = window.EcoSimData.racesData.races;
+    let isManualMode = false;
+    let unmetRegionalTags = new Set(); 
+    let currentPage = 1;
 
-    // --- INITIALISATION ---
-    function init() {
-        loadData();
-        setupEventListeners();
-        TooltipManager.init();
-        if (regions.length > 0) {
-            populateRegionSelect();
-            const lastRegionId = localStorage.getItem(LAST_REGION_KEY);
-            if (lastRegionId) {
-                regionSelect.value = lastRegionId;
-            }
-            handleRegionChange();
-        } else {
-            showWelcomeMessage("Aucune donnée de région trouvée.", "Veuillez retourner à l'Étape 1 pour créer une carte et des lieux.");
-        }
+    // --- FONCTIONS UTILITAIRES ---
+    function axialDistance(a, b) {
+        if (!a || !b) return Infinity;
+        const dq = a.q - b.q;
+        const dr = a.r - b.r;
+        const ds = -dq - dr;
+        return (Math.abs(dq) + Math.abs(dr) + Math.abs(ds)) / 2;
     }
 
-    // --- GESTION DES DONNÉES ---
+    function getBuildingData(buildingName) {
+        for (const type in BUILDING_DATA) {
+            for (const category in BUILDING_DATA[type]) {
+                if (BUILDING_DATA[type][category][buildingName]) {
+                    return { ...BUILDING_DATA[type][category][buildingName], category: category, originalType: type };
+                }
+            }
+        }
+        return null; 
+    }
+
+    function calculatePlaceStats(place) {
+        let buildingCount = 0;
+        let jobCount = 0;
+    
+        if (place.config && place.config.buildings) {
+            for (const category in place.config.buildings) {
+                for (const building of place.config.buildings[category]) {
+                    buildingCount++;
+                    const buildingData = getBuildingData(building.name);
+                    if (buildingData && buildingData.emplois) {
+                        for (const emploi of buildingData.emplois) {
+                            jobCount += emploi.postes;
+                        }
+                    }
+                }
+            }
+        }
+        return { buildingCount, jobCount };
+    }
+    
+    function getTagsForPlace(place, tagType) {
+        const tags = new Set();
+        if (!place.config || !place.config.buildings) return tags;
+        for (const category in place.config.buildings) {
+            for (const building of place.config.buildings[category]) {
+                const buildingData = getBuildingData(building.name);
+                if (!buildingData) continue;
+                if (tagType === 'providesTags' && buildingData.providesTags) {
+                    buildingData.providesTags.forEach(tag => tags.add(tag));
+                } else if (tagType === 'requiresTags' && buildingData.requiresTags) {
+                    Object.keys(buildingData.requiresTags).forEach(tag => tags.add(tag));
+                }
+            }
+        }
+        return tags;
+    }
+    
+    // --- LOGIQUE DE GÉNÉRATION (Automatique) ---
+
+    function generateRegionConfiguration() {
+        if (!currentRegion) return;
+        
+        const placeTypeHierarchy = { "Hameau": 1, "Village": 2, "Bourg": 3, "Ville": 4, "Capitale": 5 };
+    
+        const placeConfigs = new Map();
+        currentRegion.places.forEach(place => {
+            placeConfigs.set(place.id, {
+                buildings: {},
+                providedTags: new Set(),
+                totalBuildings: 0,
+                maxBuildings: getBuildingQuotaForPlace(place.type)
+            });
+            if (!place.config) place.config = {}; 
+        });
+    
+        currentRegion.places.forEach(place => {
+            const config = placeConfigs.get(place.id);
+            const adminCategory = "Bâtiments Administratifs";
+            const availableBuildings = BUILDING_DATA[place.type];
+            if (availableBuildings && availableBuildings[adminCategory]) {
+                config.buildings[adminCategory] = [];
+                for (const name in availableBuildings[adminCategory]) {
+                    const buildingData = availableBuildings[adminCategory][name];
+                    config.buildings[adminCategory].push({ name, description: buildingData.description });
+                    buildingData.providesTags.forEach(tag => config.providedTags.add(tag));
+                    config.totalBuildings++;
+                }
+            }
+        });
+    
+        let attempts = 0;
+        const maxAttempts = 500; // Augmentation pour donner plus de chances de remplir les conditions
+        while (attempts < maxAttempts) {
+            
+            const regionallyProvidedTags = new Set();
+            const allRequiredTags = new Set();
+    
+            placeConfigs.forEach((config, placeId) => {
+                Object.values(config.buildings).flat().forEach(building => {
+                    const buildingData = getBuildingData(building.name);
+                    if (!buildingData) return;
+                    buildingData.providesTags.forEach(tag => regionallyProvidedTags.add(tag));
+                    if (buildingData.requiresTags) {
+                        Object.keys(buildingData.requiresTags).forEach(tag => allRequiredTags.add(tag));
+                    }
+                });
+            });
+    
+            const unmetRegionalNeeds = new Set([...allRequiredTags].filter(tag => !regionallyProvidedTags.has(tag)));
+    
+            // NOUVEAU : Vérifier si tous les lieux respectent le minimum de bâtiments
+            let allPlacesMeetMinimum = true;
+            for (const place of currentRegion.places) {
+                const config = placeConfigs.get(place.id);
+                let nonAdminCount = 0;
+                for (const category in config.buildings) {
+                    if (category !== "Bâtiments Administratifs") {
+                        nonAdminCount += config.buildings[category].length;
+                    }
+                }
+                if (nonAdminCount < 3) {
+                    allPlacesMeetMinimum = false;
+                    break;
+                }
+            }
+    
+            // MODIFIÉ : La boucle s'arrête si la région est viable ET que le minimum de bâtiments est atteint
+            if (unmetRegionalNeeds.size === 0 && allPlacesMeetMinimum) {
+                console.log("Configuration viable et minimale atteinte. Arrêt de la génération.");
+                break;
+            }
+    
+            let candidatePool = [];
+            const needsExceptionalSearch = unmetRegionalNeeds.size > 0;
+    
+            for (const place of currentRegion.places) {
+                const config = placeConfigs.get(place.id);
+                const placeTier = placeTypeHierarchy[place.type];
+    
+                for (const buildingType in BUILDING_DATA) {
+                    const buildingTier = placeTypeHierarchy[buildingType];
+                    const isNativeType = (buildingType === place.type);
+                    const canBuildExceptionally = (needsExceptionalSearch && placeTier >= buildingTier && !isNativeType);
+    
+                    if (isNativeType || canBuildExceptionally) {
+                        const availableBuildingsForType = BUILDING_DATA[buildingType];
+                        for (const category in availableBuildingsForType) {
+                            if (category === "Bâtiments Administratifs") continue; // On ne rajoute jamais de bâtiments admin
+    
+                            for (const name in availableBuildingsForType[category]) {
+                                const buildingData = availableBuildingsForType[category][name];
+                                const isAlreadyBuilt = Object.values(config.buildings).flat().some(b => b.name === name);
+                                if (isAlreadyBuilt) continue;
+                                
+                                const providesNeededTag = buildingData.providesTags.some(tag => unmetRegionalNeeds.has(tag));
+                                if (canBuildExceptionally && !providesNeededTag) continue;
+    
+                                const dependencyScore = calculateDependencyScore(buildingData, regionallyProvidedTags);
+                                
+                                // NOUVEAU : Logique de scoring pour atteindre le minimum de bâtiments
+                                let priorityScore = 0;
+                                if (providesNeededTag) {
+                                    priorityScore = 100; // Priorité absolue : résoudre un manque
+                                    if (canBuildExceptionally) priorityScore += 50;
+                                } else if (unmetRegionalNeeds.size === 0) {
+                                    // Si la région est viable, on cherche à remplir le minimum de 3 bâtiments
+                                    let nonAdminCount = 0;
+                                    for (const cat in config.buildings) {
+                                        if (cat !== "Bâtiments Administratifs") {
+                                            nonAdminCount += config.buildings[cat].length;
+                                        }
+                                    }
+                                    if (nonAdminCount < 3) {
+                                        priorityScore = 50; // Priorité secondaire : "étoffer" le lieu
+                                    }
+                                }
+                                
+                                if (priorityScore > 0) { // On ajoute seulement les candidats utiles
+                                    candidatePool.push({
+                                        place,
+                                        name,
+                                        category,
+                                        data: buildingData,
+                                        score: priorityScore - (dependencyScore * 10) - (isNativeType ? 0 : 5) + Math.random()
+                                    });
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+    
+            if (candidatePool.length === 0) break;
+    
+            candidatePool.sort((a, b) => b.score - a.score);
+            const bestCandidateToAdd = candidatePool[0];
+    
+            if (bestCandidateToAdd) {
+                const { place, name, category, data } = bestCandidateToAdd;
+                const config = placeConfigs.get(place.id);
+                const isFull = config.totalBuildings >= config.maxBuildings;
+                const isEssential = data.providesTags.some(tag => unmetRegionalNeeds.has(tag));
+    
+                if (!isFull || isEssential) {
+                    if (!config.buildings[category]) config.buildings[category] = [];
+                    config.buildings[category].push({ name, description: data.description });
+                    config.totalBuildings++;
+                    if (isFull && isEssential) {
+                        console.log(`Quota dépassé à ${place.name} pour ajouter le bâtiment essentiel : ${name}`);
+                    }
+                }
+            } else {
+                break; 
+            }
+            attempts++;
+        }
+    
+        currentRegion.places.forEach(place => {
+            place.config.buildings = placeConfigs.get(place.id).buildings;
+        });
+    }
+
+    function calculateDependencyScore(buildingData, regionallyProvidedTags) {
+        if (!buildingData.requiresTags || Object.keys(buildingData.requiresTags).length === 0) {
+            return 0;
+        }
+        let missingDependencies = 0;
+        for (const tag of Object.keys(buildingData.requiresTags)) {
+            if (!regionallyProvidedTags.has(tag)) {
+                missingDependencies++;
+            }
+        }
+        return missingDependencies;
+    }
+
+    function getBuildingQuotaForPlace(placeType) {
+        // Définit un quota "souple" de bâtiments par type de lieu.
+        // La génération s'arrêtera avant si la viabilité est atteinte.
+        // Ce quota peut être dépassé si un bâtiment essentiel doit être ajouté.
+        switch (placeType) {
+            case "Hameau":   return 8;
+            case "Village":  return 15;
+            case "Bourg":    return 25;
+            case "Ville":    return 40;
+            case "Capitale": return 60;
+            default:         return 10;
+        }
+    }
+    
+
+    // --- GESTION DE L'AFFICHAGE ET DES DONNÉES ---
+    
     function loadData() {
         const data = localStorage.getItem(STORAGE_KEY);
         regions = data ? JSON.parse(data) : [];
+        const lastRegionId = localStorage.getItem(LAST_REGION_KEY);
+        if (lastRegionId) {
+            currentRegion = regions.find(r => r.id == lastRegionId) || null;
+        }
     }
 
     function saveData() {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(regions));
-    }
-    
-    function initializePlaceConfig(place) {
-        if (!place.config) {
-             place.config = {};
-        }
-        place.config.demographics = place.config.demographics || { "Humain": 100 };
-        place.config.initialState = place.config.initialState || 'Stable';
-        place.config.buildings = place.config.buildings || {};
-        place.config.isValidated = place.config.isValidated || false;
-
-        const placeTypeBuildings = buildingData[place.type];
-        if (!placeTypeBuildings) return;
-
-        for (const category in placeTypeBuildings) {
-            for (const buildingName in placeTypeBuildings[category]) {
-                if (!place.config.buildings[buildingName]) {
-                    const isAdministrative = category === 'Bâtiments Administratifs';
-                    place.config.buildings[buildingName] = {
-                        active: isAdministrative,
-                        count: 1
-                    };
-                }
-            }
-        }
-    }
-
-    // --- GESTION DE L'UI ---
-    
-    /**
-     * Formate un nombre d'heures en une chaîne de caractères "XhYmin".
-     * @param {number} hours - Le nombre d'heures (peut être décimal).
-     * @returns {string} Le temps formaté.
-     */
-    function formatTravelTime(hours) {
-        if (hours < 0 || !isFinite(hours)) return 'N/A';
-        const totalMinutes = Math.round(hours * 60);
-        const h = Math.floor(totalMinutes / 60);
-        const m = totalMinutes % 60;
-        return `${h}h${m.toString().padStart(2, '0')}min`;
-    }
-
-    function populateRegionSelect() {
-        regionSelect.innerHTML = '';
-        if (regions.length === 0) {
-            regionSelect.innerHTML = '<option>Aucune région</option>';
-            return;
-        }
-        regions.forEach(region => {
-            const option = document.createElement('option');
-            option.value = region.id;
-            option.textContent = region.name;
-            regionSelect.appendChild(option);
-        });
-    }
-
-    function renderPlacesList() {
-        placesList.innerHTML = '';
-        if (!currentRegion || currentRegion.places.length === 0) {
-            placesList.innerHTML = '<li class="no-places">Aucun lieu dans cette région.</li>';
-            updateNavLinksState();
-            return;
-        }
-        currentRegion.places
-            .sort((a, b) => a.name.localeCompare(b.name))
-            .forEach(place => {
-                initializePlaceConfig(place); 
-                const li = document.createElement('li');
-                li.dataset.placeId = place.id;
-                
-                let text = `${place.name} (${place.type})`;
-                if (place.config.isValidated) {
-                    text = `✓ ${text}`;
-                    li.style.color = 'var(--color-forest-green)';
-                }
-                
-                li.textContent = text;
-                
-                if (selectedPlace && place.id === selectedPlace.id) {
-                    li.classList.add('active');
-                }
-                placesList.appendChild(li);
-            });
         updateNavLinksState();
     }
-
-    function showWelcomeMessage(title, message) {
-        configPanel.innerHTML = `
-            <div id="welcome-panel">
-                <h2>${title}</h2>
-                <p>${message}</p>
-            </div>`;
-        placeStatsSummary.innerHTML = '';
-    }
     
-    function renderDemographicsSection() {
-        const placeDemographics = selectedPlace.config.demographics || {};
-        let demographicsHtml = '';
-        let totalPercentage = 0;
-    
-        for (const raceName in raceData) {
-            const percentage = placeDemographics[raceName] || 0;
-            totalPercentage += percentage;
-            demographicsHtml += `
-                 <div class="race-row">
-                    <label for="race-num-${raceName}">${raceName}</label>
-                    <input type="number" id="race-num-${raceName}" class="race-percentage-num" data-race="${raceName}" min="0" max="100" value="${percentage}">
-                    <input type="range" id="race-slider-${raceName}" class="race-percentage-slider" data-race="${raceName}" min="0" max="100" value="${percentage}">
-                    <span>%</span>
-                </div>
-            `;
-        }
-    
-        const totalClass = totalPercentage !== 100 ? 'invalid' : '';
-    
-        return `
-            <fieldset class="config-section">
-                <legend>Démographie Raciale</legend>
-                <div id="demographics-container">
-                    ${demographicsHtml}
-                </div>
-                <div id="demographics-total" class="${totalClass}">Total : ${totalPercentage}%</div>
-            </fieldset>
-        `;
-    }
-
-    function renderConfigPanel() {
-        if (!selectedPlace) {
-            showWelcomeMessage("Prêt à configurer", "Sélectionnez un lieu dans la liste de gauche.");
+    async function displayPlaces() {
+        if (!currentRegion) {
+            placesContainer.innerHTML = `<p>Aucune région sélectionnée. Retournez à l'étape 1.</p>`;
+            paginationControls.style.display = 'none';
             return;
         }
-        
-        initializePlaceConfig(selectedPlace);
 
-        const placeTypeBuildings = buildingData[selectedPlace.type] || {};
-        let buildingsHtml = '';
-        for (const category in placeTypeBuildings) {
-            buildingsHtml += `<fieldset class="config-section"><legend>${category}</legend>`;
-            if (category !== 'Bâtiments Administratifs') {
-                 buildingsHtml += `
-                    <div class="building-actions">
-                        <button class="btn btn-sm" data-action="check-all">Tout cocher</button>
-                        <button class="btn btn-sm" data-action="uncheck-all">Tout décocher</button>
-                        <button class="btn btn-sm" data-action="random-selection">Sélection Aléatoire</button>
-                    </div>`;
+        regionNameDisplay.textContent = `Région : ${currentRegion.name}`;
+        
+        const needsAutoGeneration = !isManualMode && currentRegion.places.some(p => !p.config || !p.config.buildings || Object.keys(p.config.buildings).length === 0 || !p.config.isValidated);
+        
+        if (needsAutoGeneration) {
+            generationOverlay.style.display = 'flex';
+            await new Promise(resolve => setTimeout(resolve, 50));
+            currentRegion.places.forEach(place => {
+                if (!place.config) place.config = {};
+                place.config.isValidated = false;
+            });
+            generateRegionConfiguration();
+            saveData();
+        }
+
+        const sortedPlaces = [...currentRegion.places].sort((a, b) => {
+            const tierA = PLACE_TYPE_HIERARCHY[a.type] || 99;
+            const tierB = PLACE_TYPE_HIERARCHY[b.type] || 99;
+
+            if (tierA !== tierB) {
+                return tierA - tierB;
             }
-           
-            for (const buildingName in placeTypeBuildings[category]) {
-                const config = selectedPlace.config.buildings[buildingName];
-                const isAdministrative = category === 'Bâtiments Administratifs';
-                let countControlHtml = '';
-                if (!isAdministrative) {
-                    countControlHtml = `
-                        <div class="custom-number-input">
-                            <button class="btn-adjust" data-action="decrease" data-building-name="${buildingName}">-</button>
-                            <span class="building-count-display">${config.count}</span>
-                            <button class="btn-adjust" data-action="increase" data-building-name="${buildingName}">+</button>
-                        </div>
-                    `;
-                }
-
-                buildingsHtml += `
-                    <div class="building-row">
-                        <input type="checkbox" id="building-${buildingName.replace(/\s/g, '')}" name="${buildingName}" 
-                               data-building-name="${buildingName}" ${config.active ? 'checked' : ''} ${isAdministrative ? 'disabled' : ''}>
-                        <label for="building-${buildingName.replace(/\s/g, '')}">${buildingName}</label>
-                        <span class="tooltip-trigger" data-tooltip-type="building" data-type="${selectedPlace.type}" data-category="${category}" data-building="${buildingName}">?</span>
-                        <div class="building-count-wrapper">
-                            ${countControlHtml}
-                        </div>
-                    </div>
-                `;
-            }
-            buildingsHtml += `</fieldset>`;
-        }
-        
-        const demographicsSectionHtml = renderDemographicsSection();
-
-        // MODIFICATION ICI : Mise à jour de la liste des états initiaux
-        const initialStateOptions = `
-            <option value="Florissante" ${selectedPlace.config.initialState === 'Florissante' ? 'selected' : ''}>Florissante</option>
-            <option value="Prospère" ${selectedPlace.config.initialState === 'Prospère' ? 'selected' : ''}>Prospère</option>
-            <option value="Stable" ${selectedPlace.config.initialState === 'Stable' ? 'selected' : ''}>Stable</option>
-            <option value="Fragile" ${selectedPlace.config.initialState === 'Fragile' ? 'selected' : ''}>Fragile</option>
-            <option value="En crise" ${selectedPlace.config.initialState === 'En crise' ? 'selected' : ''}>En crise</option>
-            <option value="Sur le déclin" ${selectedPlace.config.initialState === 'Sur le déclin' ? 'selected' : ''}>Sur le déclin</option>
-        `;
-
-        configPanel.innerHTML = `
-            <h2>Configuration de ${selectedPlace.name} <span class="place-type-badge">${selectedPlace.type}</span><span id="place-validation-status"></span></h2>
             
-            <div class="config-columns">
-                <div class="config-col-main">
-                    <fieldset class="config-section">
-                        <legend>Paramètres Généraux</legend>
-                         <div class="form-group">
-                            <label for="initial-state">État Initial :</label>
-                            <select id="initial-state">
-                                ${initialStateOptions}
-                            </select>
-                        </div>
-                    </fieldset>
-                    
-                    ${demographicsSectionHtml}
-
-                     ${buildingsHtml}
-                </div>
-                <div class="config-col-side">
-                    <fieldset class="config-section">
-                        <legend>Distances & Temps de Trajet</legend>
-                        <div id="distance-table"></div>
-                    </fieldset>
-                    <fieldset class="config-section">
-                        <legend>Validation</legend>
-                        <div id="validation-container" style="text-align: center; padding: 10px;">
-                            <button id="validate-place-btn" class="btn">Valider le lieu</button>
-                            <p id="validation-prerequisites" style="font-size: 0.8em; color: var(--color-error); margin-top: 10px; text-align: left;"></p>
-                        </div>
-                    </fieldset>
-                </div>
-            </div>
-        `;
-        
-        updateGlobalStats();
-        renderDistanceTable();
-        updateValidationUI();
-        setupConfigEventListeners();
-    }
-    
-    function renderDistanceTable() {
-        const container = document.getElementById('distance-table');
-        if (!container || !currentRegion || !selectedPlace) return;
-    
-        // Initialiser l'objet des modificateurs de route s'il n'existe pas
-        if (!currentRegion.routeModifiers) {
-            currentRegion.routeModifiers = {};
-        }
-    
-        const otherPlaces = currentRegion.places.filter(p => p.id !== selectedPlace.id);
-        if (otherPlaces.length === 0) {
-            container.innerHTML = '<p>Aucun autre lieu dans la région.</p>';
-            return;
-        }
-    
-        const axialDistance = (a, b) => (Math.abs(a.q - b.q) + Math.abs(a.r - b.r) + Math.abs(a.q + a.r - (b.q + b.r))) / 2;
-        let contentHtml = '';
-    
-        otherPlaces.forEach(other => {
-            const distKm = axialDistance(selectedPlace.coords, other.coords) * (currentRegion.scale || 1);
-            const travelTimeWalkBase = distKm / 5;
-            const travelTimeHorseBase = distKm / 15;
-    
-            // Créer une clé unique et consistante pour la paire de lieux
-            const routeKey = [selectedPlace.id, other.id].sort((a, b) => a - b).join('-');
-            const modifierIndex = currentRegion.routeModifiers[routeKey] || 0;
-            const routeType = ROUTE_TYPES[modifierIndex];
-    
-            const travelTimeWalk = travelTimeWalkBase * routeType.walkModifier;
-            const travelTimeHorse = travelTimeHorseBase * routeType.horseModifier;
-            
-            contentHtml += `
-                <div class="distance-entry" data-other-id="${other.id}" data-route-key="${routeKey}">
-                    <div class="distance-info">
-                        <strong>${other.name}</strong> (${distKm.toFixed(0)} km)
-                    </div>
-                    <div class="distance-times">
-                       <span>Marche: <b id="walk-time-${routeKey}">${formatTravelTime(travelTimeWalk)}</b></span>
-                       <span>Cheval: <b id="horse-time-${routeKey}">${formatTravelTime(travelTimeHorse)}</b></span>
-                    </div>
-                    <div class="distance-slider-group">
-                       <label for="slider-${routeKey}" class="route-type-label" id="label-${routeKey}">${routeType.name}</label>
-                       <input type="range" min="0" max="${ROUTE_TYPES.length - 1}" value="${modifierIndex}" class="route-modifier-slider" id="slider-${routeKey}" data-route-key="${routeKey}">
-                    </div>
-                </div>
-            `;
+            return a.name.localeCompare(b.name);
         });
-        container.innerHTML = contentHtml;
+
+
+        const totalPages = Math.ceil(sortedPlaces.length / ITEMS_PER_PAGE);
+        const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+        const endIndex = startIndex + ITEMS_PER_PAGE;
+        const placesToShow = sortedPlaces.slice(startIndex, endIndex);
+
+        placesContainer.innerHTML = '';
+        placesToShow.forEach(place => {
+            const placeCard = document.createElement('div');
+            placeCard.className = 'place-card';
+            placeCard.id = `place-${place.id}`;
+            placeCard.innerHTML = isManualMode ? createManualPlaceCardHTML(place) : createAutoPlaceCardHTML(place);
+            placesContainer.appendChild(placeCard);
+        });
+        
+        updatePaginationUI(totalPages);
+        
+        if (isManualMode) {
+            validateManualConfiguration();
+        }
+
+        if (needsAutoGeneration) {
+            generationOverlay.style.display = 'none';
+        }
     }
 
-    function updateGlobalStats() {
-        if (!selectedPlace) {
-            placeStatsSummary.innerHTML = '';
+    function updatePaginationUI(totalPages) {
+        if (totalPages <= 1) {
+            paginationControls.style.display = 'none';
             return;
         }
-        const stats = Formula.calculateGlobalStats(selectedPlace, buildingData);
-        placeStatsSummary.innerHTML = `
-            <span><strong>Prestige:</strong> ${stats.totalPrestige}</span>
-            <span><strong>Menace:</strong> ${stats.totalMenace}</span>
-            <span><strong>Postes:</strong> ${stats.totalJobs}</span>
-            <span><strong>Bilan Alimentaire:</strong> ${stats.foodBalance > 0 ? '+' : ''}${stats.foodBalance}</span>
-        `;
+        
+        paginationControls.style.display = 'flex';
+        pageInfo.textContent = `Page ${currentPage} / ${totalPages}`;
+        prevPageBtn.disabled = (currentPage === 1);
+        nextPageBtn.disabled = (currentPage >= totalPages);
+    }
+    
+    function createAutoPlaceCardHTML(place) {
+        const categoryIcons = { "Bâtiments Administratifs": "🏛️", "Bâtiments de Production": "🏭", "Bâtiments Indépendants": "🏘️", "Bâtiments Agricoles": "🌾", "Chasse/Nature": "🌲" };
+        const { buildingCount, jobCount } = calculatePlaceStats(place);
+        const statsHTML = `<small>${place.type} &bull; 🏛️ ${buildingCount} Bâtiments &bull; 👥 ${jobCount} Emplois</small>`;
+        let headerHTML = `<h2><div>${place.name}${statsHTML}</div><span class="info-icon" data-place-id="${place.id}" title="Analyser le lieu">ℹ️</span></h2>`;
+        let buildingsHTML = '';
+        const orderedCategories = ["Bâtiments Administratifs", "Bâtiments Agricoles", "Chasse/Nature", "Bâtiments de Production", "Bâtiments Indépendants"];
+
+        for (const category of orderedCategories) {
+            if (place.config.buildings[category] && place.config.buildings[category].length > 0) {
+                const isMandatory = category === "Bâtiments Administratifs";
+                buildingsHTML += `<div class="building-category"><h3><span class="icon">${categoryIcons[category] || '🏢'}</span>${category}${isMandatory ? '<span class="mandatory-badge">Obligatoire</span>' : ''}</h3><ul class="building-list">${place.config.buildings[category].sort((a,b) => a.name.localeCompare(b.name)).map(b => `<li class="building-item"><div class="name-desc"><div class="name">${b.name}</div><div class="desc">${b.description}</div></div></li>`).join('')}</ul></div>`;
+            }
+        }
+        return `<div class="place-card-header">${headerHTML}</div><div class="place-card-body">${buildingsHTML}</div>`;
     }
 
-    function checkPlaceValidation() {
-        const prerequisites = [];
-        if (!selectedPlace || !selectedPlace.config) {
-            return { isValid: false, prerequisites: ['Aucun lieu sélectionné.'] };
-        }
+    // --- GESTION DU MODE MANUEL ---
+
+    function createManualPlaceCardHTML(place) {
+        const categoryIcons = { "Bâtiments Administratifs": "🏛️", "Bâtiments de Production": "🏭", "Bâtiments Indépendants": "🏘️", "Bâtiments Agricoles": "🌾", "Chasse/Nature": "🌲" };
+        const allCategoriesForType = Object.keys(BUILDING_DATA[place.type] || {});
+        const orderedCategories = [...new Set(["Bâtiments Administratifs", "Bâtiments Agricoles", "Chasse/Nature", "Bâtiments de Production", "Bâtiments Indépendants", ...allCategoriesForType])];
     
-        let totalPercentage = 0;
-        if (selectedPlace.config.demographics) {
-            totalPercentage = Object.values(selectedPlace.config.demographics).reduce((sum, val) => sum + (val || 0), 0);
-        }
-        if (totalPercentage !== 100) {
-            prerequisites.push(`Le total de la démographie doit être de 100% (actuel: ${totalPercentage}%).`);
-        }
+        const { buildingCount, jobCount } = calculatePlaceStats(place);
+        const statsHTML = `<small>${place.type} &bull; 🏛️ ${buildingCount} Bâtiments &bull; 👥 ${jobCount} Emplois</small>`;
+        let headerHTML = `<h2><div>${place.name}${statsHTML}</div></h2>`;
+        let buildingsHTML = '';
+        
+        if (place.config && place.config.buildings) {
+            for (const category of orderedCategories) {
+                if (place.config.buildings[category] && place.config.buildings[category].length > 0) {
+                    const isAdministrative = category === "Bâtiments Administratifs";
+                    
+                    buildingsHTML += `<div class="building-category"><h3><span class="icon">${categoryIcons[category] || '🏢'}</span>${category}${isAdministrative ? '<span class="mandatory-badge">Obligatoire</span>' : ''}</h3>`;
     
-        let nonAdminBuildingChecked = false;
-        const placeTypeBuildings = buildingData[selectedPlace.type] || {};
-        for (const category in placeTypeBuildings) {
-            if (category === 'Bâtiments Administratifs') continue;
-            for (const buildingName in placeTypeBuildings[category]) {
-                if (selectedPlace.config.buildings[buildingName]?.active) {
-                    nonAdminBuildingChecked = true;
-                    break;
+                    buildingsHTML += `<ul class="building-list">${place.config.buildings[category].sort((a,b) => a.name.localeCompare(b.name)).map(b => {
+                        const buildingData = getBuildingData(b.name);
+                        const removeButtonHTML = isAdministrative
+                            ? '' 
+                            : `<button class="btn-remove-building" data-place-id="${place.id}" data-building-name="${b.name}">Retirer</button>`;
+                        
+                        return `<li class="building-item">
+                                    <div class="name-desc">
+                                        <div class="name">${b.name}</div>
+                                        <div class="desc">${buildingData?.description || ''}</div>
+                                    </div>
+                                    ${removeButtonHTML}
+                                </li>`;
+                    }).join('')}</ul></div>`;
                 }
             }
-            if (nonAdminBuildingChecked) break;
-        }
-        if (!nonAdminBuildingChecked) {
-            prerequisites.push('Au moins un bâtiment non-administratif doit être coché.');
         }
     
-        return {
-            isValid: prerequisites.length === 0,
-            prerequisites: prerequisites
-        };
+        buildingsHTML += `<button class="btn-add-building" data-place-id="${place.id}" data-place-type="${place.type}">Ajouter un Bâtiment...</button>`;
+        
+        return `<div class="place-card-header">${headerHTML}</div><div class="place-card-body">${buildingsHTML}</div>`;
+    }
+    
+    function handleManualModeClick() {
+        if (confirm("Passer en mode manuel ? La configuration actuelle des bâtiments sera effacée. Les bâtiments administratifs seront ajoutés par défaut et sont obligatoires.")) {
+            currentPage = 1;
+            isManualMode = true;
+            statusPanel.classList.remove('hidden');
+    
+            currentRegion.places.forEach(place => {
+                place.config = { buildings: {}, isValidated: false }; 
+    
+                const adminCategory = "Bâtiments Administratifs";
+                const availableBuildings = BUILDING_DATA[place.type];
+    
+                if (availableBuildings && availableBuildings[adminCategory]) {
+                    place.config.buildings[adminCategory] = [];
+                    for (const name in availableBuildings[adminCategory]) {
+                        const buildingData = availableBuildings[adminCategory][name];
+                        place.config.buildings[adminCategory].push({ name, description: buildingData.description });
+                    }
+                }
+            });
+    
+            displayPlaces();
+            saveData();
+        }
+    }
+    
+    function openAddBuildingModal(placeId, placeType) {
+        const place = currentRegion.places.find(p => p.id == placeId);
+        if (!place) return;
+    
+        const currentBuildingNames = new Set();
+        if (place.config && place.config.buildings) {
+            for (const cat in place.config.buildings) {
+                place.config.buildings[cat].forEach(b => currentBuildingNames.add(b.name));
+            }
+        }
+    
+        addBuildingModalTitle.textContent = `Ajouter un Bâtiment à ${place.name}`;
+        let nativeRecommendedHTML = '';
+        let otherNativeHTML = '';
+        let exceptionalRecommendedHTML = '';
+    
+        // ÉTAPE 1: Construire les listes pour les bâtiments natifs de ce lieu.
+        const allBuildingsForType = BUILDING_DATA[placeType] || {};
+        for (const category in allBuildingsForType) {
+            let categoryNativeRecommended = '';
+            let categoryOtherNative = '';
+    
+            for (const buildingName in allBuildingsForType[category]) {
+                const data = allBuildingsForType[category][buildingName];
+                
+                if (category === "Bâtiments Administratifs" || currentBuildingNames.has(buildingName)) continue;
+    
+                const providesNeededTag = data.providesTags.some(tag => unmetRegionalTags.has(tag));
+                const buildingItemHTML = `
+                    <div class="building-list-item ${providesNeededTag ? 'recommended-building' : ''}">
+                        <div>
+                            <div class="name">${buildingName} ${providesNeededTag ? '⭐' : ''}</div>
+                            <div class="desc">${data.description}</div>
+                            <div class="tags">
+                                <span class="tag-provides">Produit:</span> ${data.providesTags.join(', ') || 'Rien'}
+                                <br>
+                                <span class="tag-requires">Requiert:</span> ${data.requiresTags ? Object.keys(data.requiresTags).join(', ') : 'Rien'}
+                            </div>
+                        </div>
+                        <button class="btn-add-this-building" data-place-id="${placeId}" data-building-name="${buildingName}">Ajouter</button>
+                    </div>`;
+                
+                if (providesNeededTag) {
+                    categoryNativeRecommended += buildingItemHTML;
+                } else {
+                    categoryOtherNative += buildingItemHTML;
+                }
+            }
+            if (categoryNativeRecommended) nativeRecommendedHTML += `<h4>${category}</h4>${categoryNativeRecommended}`;
+            if (categoryOtherNative) otherNativeHTML += `<h4>${category}</h4>${categoryOtherNative}`;
+        }
+    
+        // ÉTAPE 2: Déterminer si des recommandations exceptionnelles sont nécessaires.
+        // On les montre SEULEMENT si AUCUN lieu dans la région ne peut fournir une solution native.
+        let anyNativeRecommendationExistsInRegion = false;
+        if (unmetRegionalTags.size > 0) {
+            for (const p of currentRegion.places) {
+                const buildingsForPlaceType = BUILDING_DATA[p.type] || {};
+                for (const category in buildingsForPlaceType) {
+                    for (const buildingName in buildingsForPlaceType[category]) {
+                        const buildingData = buildingsForPlaceType[category][buildingName];
+                        if (buildingData.providesTags.some(tag => unmetRegionalTags.has(tag))) {
+                            anyNativeRecommendationExistsInRegion = true;
+                            break;
+                        }
+                    }
+                    if (anyNativeRecommendationExistsInRegion) break;
+                }
+                if (anyNativeRecommendationExistsInRegion) break;
+            }
+        }
+        
+        const showExceptionalRecommendations = !anyNativeRecommendationExistsInRegion;
+    
+        // ÉTAPE 3: Construire la liste des recommandations exceptionnelles si applicable.
+        if (showExceptionalRecommendations && unmetRegionalTags.size > 0) {
+            for (const buildingType in BUILDING_DATA) {
+                if (buildingType === placeType) continue; 
+    
+                const availableBuildings = BUILDING_DATA[buildingType];
+                for (const category in availableBuildings) {
+                    if (category === "Bâtiments Administratifs") continue;
+    
+                    for (const buildingName in availableBuildings[category]) {
+                        if (currentBuildingNames.has(buildingName)) continue;
+                        
+                        const data = availableBuildings[category][buildingName];
+                        const providesCriticalTag = data.providesTags.some(tag => unmetRegionalTags.has(tag));
+    
+                        if (providesCriticalTag) {
+                            exceptionalRecommendedHTML += `
+                                <div class="building-list-item exceptional-recommendation">
+                                    <div>
+                                        <div class="name">${buildingName} ⭐</div>
+                                        <div class="desc">${data.description}</div>
+                                        <div class="tags">
+                                            <span class="tag-provides">Produit:</span> ${data.providesTags.join(', ') || 'Rien'}
+                                            <br>
+                                            <small><i>Ce bâtiment (type: ${buildingType}) n'est pas natif de ce lieu mais peut résoudre un manque critique.</i></small>
+                                        </div>
+                                    </div>
+                                    <button class="btn-add-this-building" data-place-id="${placeId}" data-building-name="${buildingName}">Ajouter</button>
+                                </div>`;
+                        }
+                    }
+                }
+            }
+        }
+    
+        // ÉTAPE 4: NOUVEL ORDRE D'ASSEMBLAGE de la modale.
+        let finalContentHTML = '';
+        
+        if (nativeRecommendedHTML) {
+            finalContentHTML += `<h3>Bâtiments Recommandés (Natifs)</h3>
+                                 <p class="desc">Ces bâtiments produisent des ressources manquantes dans votre région.</p>
+                                 ${nativeRecommendedHTML}`;
+        }
+    
+        // Les recommandations exceptionnelles viennent ici, si elles doivent être affichées.
+        if (showExceptionalRecommendations && exceptionalRecommendedHTML) {
+            finalContentHTML += `<hr><h3>Recommandations Exceptionnelles</h3>
+                                 <p class="desc">Aucun lieu dans votre région ne peut produire nativement certaines ressources manquantes. Les bâtiments suivants sont suggérés pour combler ce manque critique.</p>
+                                 ${exceptionalRecommendedHTML}`;
+        }
+    
+        if (otherNativeHTML) {
+             if (finalContentHTML) finalContentHTML += '<hr>'; // Ajoute un séparateur seulement si quelque chose précède.
+            finalContentHTML += `<h3>Autres Bâtiments Disponibles (Natifs)</h3>
+                                 ${otherNativeHTML}`;
+        }
+    
+        if (!finalContentHTML) {
+            finalContentHTML = "<p>Aucun bâtiment supplémentaire ne peut être ajouté à ce lieu pour le moment.</p>";
+        }
+    
+        addBuildingModalContent.innerHTML = finalContentHTML;
+        addBuildingModal.showModal();
+    }
+    
+    function addBuildingToPlace(placeId, buildingName) {
+        const place = currentRegion.places.find(p => p.id == placeId);
+        const buildingData = getBuildingData(buildingName);
+        if(!place || !buildingData) return;
+
+        const { category, description } = buildingData;
+        if (!place.config.buildings[category]) {
+            place.config.buildings[category] = [];
+        }
+        place.config.buildings[category].push({ name: buildingName, description });
+        
+        addBuildingModal.close();
+        displayPlaces();
+        saveData();
     }
 
-    function checkAllPlacesValidated(region) {
-        if (!region || region.places.length === 0) {
-            return false;
+    function removeBuildingFromPlace(placeId, buildingName) {
+         const place = currentRegion.places.find(p => p.id == placeId);
+         if (!place) return;
+         for(const category in place.config.buildings) {
+            if(category === "Bâtiments Administratifs") continue;
+
+            const index = place.config.buildings[category].findIndex(b => b.name === buildingName);
+            if (index > -1) {
+                place.config.buildings[category].splice(index, 1);
+                displayPlaces();
+                saveData();
+                return;
+            }
+         }
+    }
+
+    // --- GESTION DE LA VALIDATION MANUELLE ---
+    
+    function validateManualConfiguration() {
+        if (!isManualMode) return;
+    
+        unmetRegionalTags.clear();
+        const allProviders = new Map();
+        const allRequirements = [];
+    
+        currentRegion.places.forEach(p => {
+            if (!p.config.buildings) return;
+            for (const category in p.config.buildings) {
+                p.config.buildings[category].forEach(b => {
+                    const buildingData = getBuildingData(b.name);
+                    if (buildingData.providesTags) {
+                        buildingData.providesTags.forEach(tag => {
+                            if (!allProviders.has(tag)) allProviders.set(tag, []);
+                            allProviders.get(tag).push({ placeId: p.id, placeName: p.name });
+                        });
+                    }
+                    if (buildingData.requiresTags) {
+                        for (const tag in buildingData.requiresTags) {
+                            allRequirements.push({
+                                place: p,
+                                buildingName: b.name,
+                                requiredTag: tag,
+                                neededDist: buildingData.requiresTags[tag].distance
+                            });
+                        }
+                    }
+                });
+            }
+        });
+    
+        let isAllValid = true;
+        let errorsHTML = '';
+        let hasErrors = false;
+    
+        allRequirements.forEach(req => {
+            const providers = allProviders.get(req.requiredTag);
+            let isValid = providers && providers.length > 0;
+    
+            if (!isValid) {
+                isAllValid = false;
+                hasErrors = true;
+                unmetRegionalTags.add(req.requiredTag);
+    
+                const sourceText = "Source introuvable !";
+                errorsHTML += `
+                    <li class="status-invalid">
+                        <div>
+                            <strong>${req.buildingName}</strong> (à ${req.place.name}) requiert <strong>${req.requiredTag}</strong>.
+                            <br><small><em>${sourceText}</em></small>
+                        </div>
+                    </li>`;
+            }
+        });
+    
+        let finalStatusHTML = '<ul>';
+        if (!hasErrors) {
+             if (allRequirements.length > 0) {
+                finalStatusHTML += '<li><p style="color: var(--color-forest-green); text-align: center;">✅ Tous les prérequis sont satisfaits !</p></li>';
+             } else {
+                finalStatusHTML += '<li><p>Ajoutez des bâtiments pour vérifier les prérequis.</p></li>';
+             }
+        } else {
+            finalStatusHTML += errorsHTML;
         }
-        return region.places.every(place => place.config && place.config.isValidated === true);
+        
+        finalStatusHTML += '</ul>';
+        statusContent.innerHTML = finalStatusHTML;
+        validateAllBtn.disabled = !isAllValid;
+    }
+
+    // --- GESTION DES MODALES D'ANALYSE ---
+    function openAnalysisModal(placeId) {
+        const place = currentRegion.places.find(p => p.id == placeId);
+        if (!place) return;
+
+        analysisModalTitle.textContent = `Analyse de ${place.name} (${place.type})`;
+        
+        const regionalProviders = getRegionalProviders();
+        const placeProvides = getTagsForPlace(place, 'providesTags');
+        
+        internalAnalysisContainer.innerHTML = generateInternalAnalysisHTML(place, placeProvides, regionalProviders);
+        externalAnalysisContainer.innerHTML = generateExternalAnalysisHTML(place, placeProvides, regionalProviders);
+        
+        analysisModal.showModal();
+    }
+    
+    function getRegionalProviders() {
+        const providersMap = new Map();
+        if (!currentRegion) return providersMap;
+        currentRegion.places.forEach(place => {
+            const provided = getTagsForPlace(place, 'providesTags');
+            provided.forEach(tag => {
+                if (!providersMap.has(tag)) providersMap.set(tag, []);
+                if (!providersMap.get(tag).some(p => p.name === place.name)) {
+                     providersMap.get(tag).push({name: place.name, id: place.id, coords: place.coords});
+                }
+            });
+        });
+        return providersMap;
+    }
+    
+    function getClosestProviderInfo(requiredTag, currentPlace, allPlaces, regionalProviders) {
+        const providerData = regionalProviders.get(requiredTag) || [];
+        const providers = providerData.filter(p => p.id !== currentPlace.id);
+
+        if (providers.length === 0) return { isMet: false, distance: Infinity, providerName: "Aucun" };
+
+        let closestDistance = Infinity;
+        let closestProvider = null;
+        for (const provider of providers) {
+            const dist = axialDistance(currentPlace.coords, provider.coords) * (currentRegion.scale || 10);
+            if (dist < closestDistance) {
+                closestDistance = dist;
+                closestProvider = provider;
+            }
+        }
+        return { isMet: true, distance: closestDistance, providerName: closestProvider.name };
+    }
+
+    function generateInternalAnalysisHTML(place, placeProvides, regionalProviders) {
+        let html = '<ul>';
+        const orderedBuildings = [];
+        if (!place.config.buildings) return '<p>Pas de bâtiments à analyser.</p>';
+
+        for (const category in place.config.buildings) {
+            for (const building of place.config.buildings[category]) {
+                orderedBuildings.push(building);
+            }
+        }
+        orderedBuildings.sort((a,b) => a.name.localeCompare(b.name));
+
+        for (const building of orderedBuildings) {
+            const buildingData = getBuildingData(building.name);
+            if (!buildingData) continue;
+            html += `<li><strong>${building.name}</strong><ul>`;
+            if (buildingData.providesTags.length > 0) {
+                html += `<li><span class="tag-provides">Produit :</span> ${buildingData.providesTags.join(', ')}</li>`;
+            }
+            if (buildingData.requiresTags && Object.keys(buildingData.requiresTags).length > 0) {
+                const satisfactionDetails = Object.keys(buildingData.requiresTags).map(tag => {
+                    const requiredDist = buildingData.requiresTags[tag].distance;
+                    if (placeProvides.has(tag)) {
+                        return `${tag} ✅ (local)`;
+                    }
+                    const providerInfo = getClosestProviderInfo(tag, place, currentRegion.places, regionalProviders);
+                    if (providerInfo.isMet) {
+                        if (providerInfo.distance <= requiredDist) {
+                            return `${tag} ✅ (import: ${providerInfo.providerName} à ${Math.round(providerInfo.distance)}km)`;
+                        } else {
+                            return `${tag} ✅ (import lointain: ${providerInfo.providerName} à <strong>${Math.round(providerInfo.distance)}km</strong>, surcoût)`;
+                        }
+                    }
+                    return `${tag} ❌ (source introuvable!)`;
+                }).join('; ');
+                html += `<li><span class="tag-requires">Requiert :</span> ${satisfactionDetails}</li>`;
+            }
+            html += '</ul></li>';
+        }
+        return html + '</ul>';
+    }
+
+
+    function generateExternalAnalysisHTML(place, placeProvides, regionalProviders) {
+        const placeRequires = getTagsForPlace(place, 'requiresTags');
+        const imports = [...placeRequires].filter(tag => !placeProvides.has(tag));
+        const exports = [...placeProvides];
+        let html = '<ul>';
+        if (imports.length > 0) {
+            html += '<li><strong><span class="tag-requires">Importations Nécessaires</span></strong><ul>';
+            imports.forEach(tag => {
+                const providerInfo = getClosestProviderInfo(tag, place, currentRegion.places, regionalProviders);
+                if (providerInfo.isMet) {
+                    html += `<li>${tag} <span class="tag-source">(Source: <strong>${providerInfo.providerName}</strong> à ${Math.round(providerInfo.distance)}km)</span></li>`;
+                } else {
+                    html += `<li>${tag} <span class="tag-source">(<strong>Aucune source régionale !</strong>) ❌</span></li>`;
+                }
+            });
+            html += '</ul></li>';
+        } else {
+            html += '<li><strong><span class="tag-requires">Importations :</span></strong> Ce lieu est autosuffisant.</li>';
+        }
+        if (exports.length > 0) {
+            html += `<li><strong><span class="tag-provides">Exportations Disponibles</span></strong><ul>${exports.sort().map(tag => `<li>${tag}</li>`).join('')}</ul></li>`;
+        } else {
+            html += '<li><strong><span class="tag-provides">Exportations :</span></strong> Ce lieu ne produit aucun surplus apparent.</li>';
+        }
+        return html + '</ul>';
+    }
+
+    // --- FONCTIONS DE VALIDATION ET NAVIGATION ---
+    function checkAllPlacesValidated() {
+        if (!currentRegion || !currentRegion.places || currentRegion.places.length === 0) return false;
+        if (isManualMode) {
+            return !validateAllBtn.disabled;
+        }
+        return currentRegion.places.every(place => place.config && place.config.isValidated === true);
     }
 
     function updateNavLinksState() {
-        const navStep3 = document.getElementById('nav-step-3');
-        if (!navStep3) return;
-        const allValid = checkAllPlacesValidated(currentRegion);
-        if (allValid) {
+        const isStep3Ready = checkAllPlacesValidated();
+        if (isStep3Ready) {
             navStep3.classList.remove('nav-disabled');
         } else {
             navStep3.classList.add('nav-disabled');
         }
     }
-
-    function updateValidationUI() {
-        if (!selectedPlace) return;
     
-        const { isValid, prerequisites } = checkPlaceValidation();
-        const isPlaceValidated = selectedPlace.config.isValidated;
-    
-        const validateBtn = document.getElementById('validate-place-btn');
-        const validationMsg = document.getElementById('validation-prerequisites');
-        const validationStatusBadge = document.getElementById('place-validation-status');
-    
-        if (validateBtn) {
-            validateBtn.disabled = !isValid;
-            validationMsg.innerHTML = prerequisites.map(p => `&bull; ${p}`).join('<br>');
-    
-            if (isValid) {
-                validateBtn.classList.remove('btn-delete');
-                validateBtn.classList.add('btn-primary');
-            } else {
-                validateBtn.classList.remove('btn-primary');
-                validateBtn.classList.add('btn-delete');
-            }
-        }
-    
-        if (validationStatusBadge) {
-            if (isPlaceValidated && isValid) {
-                validationStatusBadge.textContent = '✓ Lieu enregistré';
-                validationStatusBadge.className = 'place-type-badge';
-                validationStatusBadge.style.backgroundColor = 'var(--color-forest-green)';
-                validationStatusBadge.style.marginLeft = '10px';
-            } else {
-                validationStatusBadge.textContent = '';
-                validationStatusBadge.className = '';
-                validationStatusBadge.style.marginLeft = '0';
-            }
-        }
-        
-        renderPlacesList();
-    }
-
-    function invalidateAndSave() {
-        if (selectedPlace) {
-            selectedPlace.config.isValidated = false;
-            saveData();
-            updateValidationUI();
-        }
-    }
-
-    // --- GESTIONNAIRES D'ÉVÉNEMENTS ---
-    function setupEventListeners() {
-        regionSelect.addEventListener('change', handleRegionChange);
-        placesList.addEventListener('click', handlePlaceSelect);
-    }
-
-    function setupConfigEventListeners() {
-        const distanceTable = configPanel.querySelector('#distance-table');
-
-        configPanel.querySelector('#initial-state')?.addEventListener('change', (e) => {
-            selectedPlace.config.initialState = e.target.value;
-            invalidateAndSave();
-        });
-
-        configPanel.querySelectorAll('.race-percentage-num, .race-percentage-slider').forEach(input => {
-            const eventType = input.type === 'range' ? 'input' : 'change';
-            input.addEventListener(eventType, handleDemographicsChange);
-        });
-
-        configPanel.addEventListener('change', (e) => {
-            if (e.target.matches('.building-row input[type="checkbox"]')) {
-                const buildingName = e.target.dataset.buildingName;
-                selectedPlace.config.buildings[buildingName].active = e.target.checked;
-                updateGlobalStats();
-                invalidateAndSave();
-            }
-        });
-        
-        configPanel.addEventListener('click', (e) => {
-            const button = e.target.closest('button');
-            if (!button) return;
-
-            if (button.classList.contains('btn-adjust')) {
-                const action = button.dataset.action;
-                const buildingName = button.dataset.buildingName;
-                const display = button.parentElement.querySelector('.building-count-display');
-                let count = parseInt(display.textContent);
-    
-                if (action === 'increase') count++;
-                else if (action === 'decrease' && count > 1) count--;
-                
-                display.textContent = count;
-                selectedPlace.config.buildings[buildingName].count = count;
-                updateGlobalStats();
-                invalidateAndSave();
-            }
-
-            if (button.parentElement.classList.contains('building-actions')) {
-                const action = button.dataset.action;
-                const fieldset = button.closest('fieldset');
-                const checkboxes = fieldset.querySelectorAll('input[type="checkbox"]:not(:disabled)');
-                
-                checkboxes.forEach(cb => {
-                    let shouldBeActive;
-                    if (action === 'check-all') shouldBeActive = true;
-                    else if (action === 'uncheck-all') shouldBeActive = false;
-                    else if (action === 'random-selection') shouldBeActive = Math.random() > 0.5;
-                    else return;
-                    cb.checked = shouldBeActive;
-                    selectedPlace.config.buildings[cb.dataset.buildingName].active = shouldBeActive;
-                });
-                updateGlobalStats();
-                invalidateAndSave();
-            }
-
-            if (button.id === 'validate-place-btn' && !button.disabled) {
-                selectedPlace.config.isValidated = true;
+    function handleValidateAll() {
+        if (isManualMode) {
+             if (validateAllBtn.disabled) return alert("Impossible de valider : tous les prérequis ne sont pas satisfaits.");
+             if (confirm("La configuration est valide. Voulez-vous la finaliser et passer à la simulation ?")) {
+                currentRegion.places.forEach(place => place.config.isValidated = true);
                 saveData();
-                updateValidationUI();
+                validationModal.showModal();
+                setTimeout(() => { window.location.href = "step3.html"; }, 2500);
+            }
+        } else { 
+            if (!currentRegion || currentRegion.places.length === 0) return alert("Il n'y a aucun lieu à valider.");
+            if (currentRegion.places.every(p => p.config.isValidated)) { 
+                 window.location.href = 'step3.html';
+                 return;
+            }
+            if (confirm("Valider la configuration auto de TOUS les lieux et passer à la simulation ?")) {
+                currentRegion.places.forEach(place => place.config.isValidated = true);
+                saveData();
+                validationModal.showModal();
+                setTimeout(() => { window.location.href = "step3.html"; }, 2500);
+            }
+        }
+    }
+
+    // --- INITIALISATION ---
+    function init() {
+        loadData();
+        displayPlaces();
+        updateNavLinksState();
+        
+        rerollRegionBtn.addEventListener('click', () => {
+            if (confirm("Relancer la génération automatique ? La configuration actuelle (manuelle ou auto) sera effacée.")) {
+                currentPage = 1; 
+                isManualMode = false;
+                statusPanel.classList.add('hidden');
+                validateAllBtn.disabled = false;
+                if(currentRegion) {
+                    currentRegion.places.forEach(p => { 
+                        p.config = { buildings: {}, isValidated: false };
+                    });
+                }
+                displayPlaces();
+                saveData();
+            }
+        });
+        manualConfigBtn.addEventListener('click', handleManualModeClick);
+        validateAllBtn.addEventListener('click', handleValidateAll);
+        
+        placesContainer.addEventListener('click', (e) => {
+            const target = e.target;
+            if (target.closest('.info-icon')) openAnalysisModal(target.closest('.info-icon').dataset.placeId);
+            if (target.matches('.btn-add-building')) openAddBuildingModal(target.dataset.placeId, target.dataset.placeType);
+            if (target.matches('.btn-remove-building')) removeBuildingFromPlace(target.dataset.placeId, target.dataset.buildingName);
+        });
+
+        addBuildingModal.addEventListener('click', (e) => {
+            if (e.target.matches('.btn-add-this-building')) {
+                addBuildingToPlace(e.target.dataset.placeId, e.target.dataset.buildingName);
             }
         });
 
-        if (distanceTable) {
-            distanceTable.addEventListener('input', handleRouteSliderChange);
-        }
-    }
-
-    function handleRouteSliderChange(e) {
-        if (!e.target.matches('.route-modifier-slider')) return;
-    
-        const slider = e.target;
-        const routeKey = slider.dataset.routeKey;
-        const newIndex = parseInt(slider.value);
-    
-        // Mettre à jour l'état
-        currentRegion.routeModifiers[routeKey] = newIndex;
-        saveData();
-    
-        // Mettre à jour l'UI en temps réel
-        const routeType = ROUTE_TYPES[newIndex];
-        document.getElementById(`label-${routeKey}`).textContent = routeType.name;
-    
-        const otherId = parseInt(slider.closest('.distance-entry').dataset.otherId);
-        const otherPlace = currentRegion.places.find(p => p.id === otherId);
-        if (!otherPlace) return;
-    
-        const axialDistance = (a, b) => (Math.abs(a.q - b.q) + Math.abs(a.r - b.r) + Math.abs(a.q + a.r - (b.q + b.r))) / 2;
-        const distKm = axialDistance(selectedPlace.coords, otherPlace.coords) * (currentRegion.scale || 1);
-        
-        const travelTimeWalkBase = distKm / 5;
-        const travelTimeHorseBase = distKm / 15;
-    
-        const travelTimeWalk = travelTimeWalkBase * routeType.walkModifier;
-        const travelTimeHorse = travelTimeHorseBase * routeType.horseModifier;
-    
-        document.getElementById(`walk-time-${routeKey}`).textContent = formatTravelTime(travelTimeWalk);
-        document.getElementById(`horse-time-${routeKey}`).textContent = formatTravelTime(travelTimeHorse);
-    }
-
-    function handleDemographicsChange(e) {
-        const raceName = e.target.dataset.race;
-        let value = parseInt(e.target.value) || 0;
-
-        if (value < 0) value = 0;
-        if (value > 100) value = 100;
-
-        const numInput = document.getElementById(`race-num-${raceName}`);
-        const sliderInput = document.getElementById(`race-slider-${raceName}`);
-        numInput.value = value;
-        sliderInput.value = value;
-        
-        selectedPlace.config.demographics[raceName] = value;
-        
-        const totalDiv = document.getElementById('demographics-total');
-        const allNumInputs = document.querySelectorAll('.race-percentage-num');
-        let totalPercentage = 0;
-        allNumInputs.forEach(input => {
-            totalPercentage += parseInt(input.value) || 0;
+        nextPageBtn.addEventListener('click', () => {
+            currentPage++;
+            displayPlaces();
         });
-        
-        totalDiv.textContent = `Total : ${totalPercentage}%`;
-        totalDiv.classList.toggle('invalid', totalPercentage !== 100);
-
-        invalidateAndSave();
-    }
-    
-    function handleRegionChange() {
-        const selectedId = parseInt(regionSelect.value);
-        currentRegion = regions.find(r => r.id === selectedId) || null;
-        selectedPlace = null;
-        
-        if (currentRegion) {
-             localStorage.setItem(LAST_REGION_KEY, currentRegion.id);
-        }
-
-        renderPlacesList();
-        renderConfigPanel();
-        updateNavLinksState(); 
+        prevPageBtn.addEventListener('click', () => {
+            currentPage--;
+            displayPlaces();
+        });
     }
 
-    function handlePlaceSelect(e) {
-        if (e.target.tagName !== 'LI' || e.target.classList.contains('no-places')) return;
-        
-        const selectedId = parseInt(e.target.dataset.placeId);
-        selectedPlace = currentRegion.places.find(p => p.id === selectedId);
-
-        placesList.querySelectorAll('li').forEach(li => li.classList.remove('active'));
-        e.target.classList.add('active');
-
-        renderConfigPanel();
-    }
-
-    // --- DÉMARRAGE ---
     init();
 });

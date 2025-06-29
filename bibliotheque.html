@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoSimRPG - Bibliothèque</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="step1-style.css">
+    <link rel="stylesheet" href="step2-style.css">
+    <link rel="stylesheet" href="bibliotheque-style.css">
+</head>
+<body>
+
+<nav class="floating-menu">
+    <div class="menu-title">EcoSimRPG</div>
+    <a href="index.html">Accueil</a>
+    <a href="step1.html">Étape 1<br><small>(Carte)</small></a>
+    <a href="step2.html">Étape 2<br><small>(Conf. Lieux)</small></a>
+    <a href="step3.html" id="nav-step-3">Étape 3<br><small>(Gen.0)</small></a>
+    
+    <a href="bibliotheque.html" id="nav-bibliotheque" class="active">Bibliothèque<br><small>(Bâtiments)</small></a> 
+    
+    <a href="economie.html" id="nav-economie">Livre (Economie)<br><small>(Tags Perso)</small></a>
+    
+    <a href="communaute.html" id="nav-communaute">Page (Communauté)<br><small>(Partage)</small></a>
+</nav>
+
+    <div class="main-content-wrapper">
+        <div id="login-view" class="main-content" style="padding: 40px; text-align: center;">
+            <h1>Accès à la Bibliothèque Personnelle</h1>
+            <p style="max-width: 600px; margin: 20px auto;">Pour sauvegarder et gérer vos créations, veuillez vous identifier. Ces informations sont stockées localement sur votre navigateur.</p>
+            <form id="login-form" style="max-width: 400px; margin: 30px auto; background: var(--color-parchment); padding: 20px; border-radius: 8px; border: 1px solid var(--color-border);">
+                <div class="modal-form-group">
+                    <label for="user-pseudo">Pseudo / Prénom RP :</label>
+                    <input type="text" id="user-pseudo" required>
+                </div>
+                <div class="modal-form-group">
+                    <label for="user-lastname">Nom de Famille RP :</label>
+                    <input type="text" id="user-lastname" required>
+                </div>
+                <div class="modal-form-group">
+                    <label for="user-password">Mot de passe :</label>
+                    <input type="password" id="user-password" required>
+                </div>
+                <button type="submit" class="btn-primary" style="margin-top: 20px;">Entrer dans la Bibliothèque</button>
+            </form>
+        </div>
+
+        <div id="editor-view" class="hidden">
+            <aside id="building-list-panel">
+                <h3>Mes Bâtiments</h3>
+                <div id="user-info"></div>
+
+                <div id="building-filters" class="tabs">
+                    <button class="tab-btn active" data-filter="All">Tous</button>
+                    <button class="tab-btn" data-filter="Hameau">Hameau</button>
+                    <button class="tab-btn" data-filter="Village">Village</button>
+                    <button class="tab-btn" data-filter="Bourg">Bourg</button>
+                    <button class="tab-btn" data-filter="Ville">Ville</button>
+                    <button class="tab-btn" data-filter="Capitale">Capitale</button>
+                </div>
+                
+                <ul id="custom-buildings-list">
+                    </ul>
+                
+                <div class="list-panel-actions">
+                    <button id="new-building-btn" class="btn-primary" style="width: 100%;">+ Nouveau Bâtiment</button>
+                    <button id="logout-btn" class="btn" style="width: 100%; margin-top: 10px;">Se Déconnecter</button>
+                </div>
+
+            </aside>
+            <main id="building-editor-panel">
+                <div id="welcome-editor">
+                    <h2>Bienvenue dans l'Atelier des Architectes</h2>
+                    <p>Sélectionnez un bâtiment à gauche pour le modifier, ou créez-en un nouveau.</p>
+                </div>
+                <form id="building-form" class="hidden">
+                </form>
+            </main>
+        </div>
+    </div>
+
+    <script src="races.js" defer></script>
+    <script src="buildings.js" defer></script>
+    <script src="bibliotheque.js" defer></script>
+
+</body>
+</html>

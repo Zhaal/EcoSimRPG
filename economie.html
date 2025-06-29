@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoSimRPG - Livre d'Économie</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="step1-style.css">
+    <link rel="stylesheet" href="step2-style.css">
+    <link rel="stylesheet" href="bibliotheque-style.css"> 
+    <link rel="stylesheet" href="economie-style.css">
+</head>
+<body>
+
+<nav class="floating-menu">
+    <div class="menu-title">EcoSimRPG</div>
+    <a href="index.html">Accueil</a>
+    <a href="step1.html">Étape 1<br><small>(Carte)</small></a>
+    <a href="step2.html">Étape 2<br><small>(Conf. Lieux)</small></a>
+    <a href="step3.html" id="nav-step-3">Étape 3<br><small>(Gen.0)</small></a>
+    
+    <a href="bibliotheque.html" id="nav-bibliotheque">Bibliothèque<br><small>(Bâtiments)</small></a> 
+    
+    <a href="economie.html" id="nav-economie" class="active">Livre (Economie)<br><small>(Tags Perso)</small></a>
+    
+    <a href="communaute.html" id="nav-communaute">Page (Communauté)<br><small>(Partage)</small></a>
+</nav>
+    
+    <div class="main-content-wrapper">
+        <div id="login-view" class="main-content" style="padding: 40px; text-align: center;">
+            <h1>Accès au Livre d'Économie</h1>
+            <p style="max-width: 600px; margin: 20px auto;">Pour gérer vos catégories et tags économiques personnalisés, veuillez vous identifier. Ces informations sont stockées localement sur votre navigateur.</p>
+            <form id="login-form" style="max-width: 400px; margin: 30px auto; background: var(--color-parchment); padding: 20px; border-radius: 8px; border: 1px solid var(--color-border);">
+                <div class="modal-form-group">
+                    <label for="user-pseudo">Pseudo / Prénom RP :</label>
+                    <input type="text" id="user-pseudo" required>
+                </div>
+                <div class="modal-form-group">
+                    <label for="user-lastname">Nom de Famille RP :</label>
+                    <input type="text" id="user-lastname" required>
+                </div>
+                <div class="modal-form-group">
+                    <label for="user-password">Mot de passe :</label>
+                    <input type="password" id="user-password" required>
+                </div>
+                <button type="submit" class="btn-primary" style="margin-top: 20px;">Accéder au Livre d'Économie</button>
+            </form>
+        </div>
+
+        <div id="editor-view" class="hidden">
+            <aside id="category-tree-panel">
+                <h3>Catégories de Tags</h3>
+                <div id="user-info"></div>
+
+                <div id="category-actions">
+                    <p>Utilisez `Parent > Enfant` pour créer des sous-catégories.</p>
+                    <div class="add-category-form">
+                        <input type="text" id="new-category-path" placeholder="Chemin de la catégorie...">
+                        <button id="add-category-btn" class="btn-primary">+</button>
+                    </div>
+                </div>
+
+                <div id="category-tree-list" class="list-panel-content">
+                    </div>
+
+                 <div class="list-panel-actions">
+                    <div id="feedback-message" class="feedback"></div>
+                    <button id="logout-btn" class="btn" style="width: 100%; margin-top: 10px;">Se Déconnecter</button>
+                </div>
+            </aside>
+
+            <main id="tag-details-panel">
+                <div id="welcome-panel">
+                    <h2>Bienvenue dans votre Livre d'Économie</h2>
+                    <p>Sélectionnez une catégorie à gauche pour voir et modifier ses tags, ou créez-en une nouvelle.</p>
+                </div>
+                <div id="tag-details-content" class="hidden">
+                    </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="economie.js" defer></script>
+
+</body>
+</html>
