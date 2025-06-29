@@ -582,3 +582,46 @@
     color: #c08b00; /* Or un peu plus foncé */
     font-weight: bold;
 }
+
+/* --- NOUVEAUX STYLES : MODALE DE SÉLECTION DE SOURCE --- */
+#source-selection-modal {
+    max-width: 600px;
+    border: 2px solid var(--color-border);
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+#source-selection-modal::backdrop {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+#source-selection-modal h3 {
+    font-family: var(--font-title);
+    color: var(--color-royal-blue);
+    margin: 0;
+    font-size: 1.5em;
+}
+
+#source-selection-modal .modal-header {
+    padding: 15px 20px;
+    border-bottom: 1px solid var(--color-border);
+    text-align: center;
+}
+
+#source-selection-modal-content p {
+    font-family: var(--font-body);
+    font-size: 1.1em;
+    color: var(--color-dark-text);
+}
+
+#source-selection-modal-content p small {
+    font-style: italic;
+    color: #555;
+}
+
+#select-custom-btn:disabled {
+    background-color: #d1cbbc;
+    color: #888;
+    cursor: not-allowed;
+    border-color: #b0a897;
+}

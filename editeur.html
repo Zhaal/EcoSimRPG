@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nouvel Éditeur de Bâtiments - EcoSim</title>
+    <style>
+        :root {
+            --bg-color: #1a1a1a;
+            --primary-color: #2d2d2d;
+            --secondary-color: #3c3c3c;
+            --text-color: #e0e0e0;
+            --accent-color: #4a90e2;
+            --danger-color: #e24a4a;
+            --success-color: #4ae28a;
+            --border-color: #555;
+            --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 1em;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            box-sizing: border-box;
+        }
+        header { text-align: center; margin-bottom: 1em; }
+        h1, h2, h3 { color: var(--accent-color); }
+        .container {
+            display: flex;
+            flex-grow: 1;
+            gap: 1em;
+            height: calc(100% - 100px);
+        }
+        #loader-section, #saver-section {
+            background-color: var(--primary-color);
+            padding: 1.5em;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+        #loader-section textarea, #saver-section textarea {
+            width: 100%;
+            height: 200px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 0.5em;
+            box-sizing: border-box;
+        }
+        #editor-view {
+            display: none;
+            flex-grow: 1;
+            gap: 1em;
+        }
+        #navigation-pane {
+            flex: 0 0 350px;
+            background-color: var(--primary-color);
+            padding: 1em;
+            border-radius: 8px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+        }
+        #navigation-pane ul {
+            list-style-type: none;
+            padding-left: 15px;
+        }
+        #navigation-pane .location-type > span { font-size: 1.2em; font-weight: bold; cursor: pointer; }
+        #navigation-pane .category > span { font-size: 1.1em; font-weight: bold; cursor: pointer; }
+        #navigation-pane .building { color: #ccc; cursor: pointer; padding: 4px 0; }
+        #navigation-pane .building:hover { color: var(--accent-color); }
+        #navigation-pane .selected { color: var(--accent-color); font-weight: bold; }
+        .collapsible-content { display: none; }
+        .expanded > .collapsible-content { display: block; }
+
+        #editor-pane {
+            flex-grow: 1;
+            background-color: var(--primary-color);
+            padding: 1em;
+            border-radius: 8px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+        }
+        form { display: flex; flex-direction: column; gap: 1em; }
+        fieldset {
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 1em;
+            background-color: var(--secondary-color);
+        }
+        legend { font-weight: bold; color: var(--accent-color); padding: 0 0.5em; }
+        label { display: block; margin-bottom: 0.5em; font-weight: 500; }
+        input[type="text"], input[type="number"], textarea {
+            width: 100%;
+            padding: 8px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        textarea { height: 80px; resize: vertical; }
+        .job-container { margin-top: 1em; border-left: 3px solid var(--accent-color); padding-left: 1em; }
+        .grid-2, .grid-3 { display: grid; gap: 1em; }
+        .grid-2 { grid-template-columns: repeat(2, 1fr); }
+        .grid-3 { grid-template-columns: repeat(3, 1fr); }
+
+        button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            color: white;
+            transition: background-color 0.2s;
+        }
+        .btn-primary { background-color: var(--accent-color); }
+        .btn-primary:hover { background-color: #3a80d2; }
+        .btn-danger { background-color: var(--danger-color); }
+        .btn-danger:hover { background-color: #d23a3a; }
+        .btn-success { background-color: var(--success-color); }
+        .btn-success:hover { background-color: #3ad27a; }
+        .btn-secondary { background-color: #6c757d; }
+        .btn-secondary:hover { background-color: #5a6268; }
+
+        .button-group { display: flex; gap: 1em; margin-top: 1em; }
+        #placeholder { text-align: center; margin-top: 3em; color: #888; }
+        
+        .modal {
+            display: none; 
+            position: fixed; 
+            z-index: 1000; 
+            left: 0;
+            top: 0;
+            width: 100%; 
+            height: 100%; 
+            overflow: auto; 
+            background-color: rgba(0,0,0,0.6);
+        }
+        .modal-content {
+            background-color: var(--primary-color);
+            margin: 5% auto; 
+            padding: 25px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            width: 80%;
+            max-width: 900px;
+            color: var(--text-color);
+        }
+        .close-btn {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close-btn:hover,
+        .close-btn:focus {
+            color: white;
+        }
+        #analysis-output h3 {
+            margin-top: 20px;
+            border-bottom: 1px solid var(--accent-color);
+            padding-bottom: 5px;
+        }
+        #analysis-output .tag-list li {
+            padding: 4px 0;
+        }
+        #analysis-output .tag-orphan {
+            color: var(--danger-color);
+            font-weight: bold;
+        }
+        #analysis-output .tag-unused {
+            color: var(--success-color);
+        }
+        #analysis-output .building-list {
+            font-size: 0.9em;
+            color: #ccc;
+            padding-left: 20px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Nouvel Éditeur de Bâtiments - EcoSim</h1>
+        <p>Chargez, modifiez et générez le code de votre bibliothèque en préservant sa structure.</p>
+        <button id="analyze-tags-btn" class="btn-secondary" style="margin-top: 10px;">Analyser les Tags de la Bibliothèque</button>
+    </header>
+
+    <div id="loader-section">
+        <h2>Étape 1: Charger les données</h2>
+        <p>Copiez le contenu entier de votre fichier <code>buildings.js</code> et collez-le ci-dessous.</p>
+        <textarea id="js-input" placeholder="Collez le code de buildings.js ici..."></textarea>
+        <button id="load-data-btn" class="btn-primary" style="margin-top: 1em;">Charger les Données</button>
+    </div>
+
+    <div class="container" id="editor-view">
+        <div id="navigation-pane">
+            <h2>Arborescence</h2>
+            <div id="tree-container"></div>
+             <div class="button-group">
+                <button id="add-building-btn" class="btn-success">Ajouter un Bâtiment</button>
+            </div>
+        </div>
+        <div id="editor-pane">
+            <div id="placeholder">
+                <h2>Bienvenue dans l'éditeur EcoSim</h2>
+                <p>Sélectionnez un bâtiment dans l'arborescence de gauche pour commencer l'édition.</p>
+            </div>
+            <form id="building-form" style="display:none;"></form>
+        </div>
+    </div>
+
+    <div id="saver-section" style="margin-top: 1em;">
+         <h2>Étape 3: Générer et Sauvegarder</h2>
+        <p>Une fois vos modifications terminées, générez le nouveau code structuré à copier dans votre fichier.</p>
+        <button id="reset-all-btn" class="btn-danger" style="margin-right: 1em;">Réinitialiser (Supprimer tout)</button>
+        <button id="generate-js-btn" class="btn-primary">Générer le Fichier JS</button>
+        <textarea id="js-output" readonly placeholder="Le code JavaScript mis à jour apparaîtra ici..."></textarea>
+    </div>
+
+    <div id="analysis-modal" class="modal">
+      <div class="modal-content">
+        <span class="close-btn">&times;</span>
+        <h2>Analyse Globale des Tags</h2>
+        <p>Analyse de tous les bâtiments chargés dans l'éditeur pour identifier les dépendances rompues ou inutilisées.</p>
+        <div id="analysis-output"></div>
+      </div>
+    </div>
+
+
+    <script>
+        let ecoSimData = null;
+        let selectedBuildingPath = null;
+        let preservedCodeBlock = ''; // **NOUVEAU**: Variable globale pour le code à préserver
+
+        // --- DOM Elements ---
+        const loadBtn = document.getElementById('load-data-btn');
+        const jsInput = document.getElementById('js-input');
+        const editorView = document.getElementById('editor-view');
+        const loaderSection = document.getElementById('loader-section');
+        const treeContainer = document.getElementById('tree-container');
+        const editorPane = document.getElementById('editor-pane');
+        const buildingForm = document.getElementById('building-form');
+        const placeholder = document.getElementById('placeholder');
+        const generateBtn = document.getElementById('generate-js-btn');
+        const jsOutput = document.getElementById('js-output');
+        const addBuildingBtn = document.getElementById('add-building-btn');
+        const resetAllBtn = document.getElementById('reset-all-btn');
+        const analyzeTagsBtn = document.getElementById('analyze-tags-btn');
+        const analysisModal = document.getElementById('analysis-modal');
+        const analysisOutput = document.getElementById('analysis-output');
+        const closeBtn = analysisModal.querySelector('.close-btn');
+
+        // --- Event Listeners ---
+        loadBtn.addEventListener('click', loadData);
+        generateBtn.addEventListener('click', generateJS);
+        addBuildingBtn.addEventListener('click', addNewBuilding);
+        resetAllBtn.addEventListener('click', resetAllBuildings);
+        analyzeTagsBtn.addEventListener('click', analyzeAllTags);
+        closeBtn.addEventListener('click', () => analysisModal.style.display = 'none');
+        window.addEventListener('click', (event) => {
+            if (event.target == analysisModal) {
+                analysisModal.style.display = 'none';
+            }
+        });
+
+
+        // --- Fonctions Principales (MODIFIÉES) ---
+
+        /**
+         * **NOUVELLE FONCTION loadData**
+         * Charge les données en isolant le code de données du code de logique (IIFE).
+         */
+        function loadData() {
+            let pastedCode = jsInput.value;
+            if (!pastedCode) {
+                alert("Veuillez coller le contenu du fichier JS.");
+                return;
+            }
+
+            // Regex pour trouver les IIFE (Immediately Invoked Function Expressions)
+            // comme celle utilisée pour le "Bureau de l'Écrivain Public".
+            // Le flag 'gm' (global, multiline) permet de trouver tous les blocs correspondants.
+            const iifeRegex = /^\s*\(\(\) => {[\s\S]*?}\)\(\);/gm;
+            
+            const preservedMatches = pastedCode.match(iifeRegex);
+            if (preservedMatches) {
+                preservedCodeBlock = preservedMatches.join('\n\n');
+                // On retire le bloc du code à évaluer pour ne pas interférer
+                pastedCode = pastedCode.replace(iifeRegex, '').trim();
+                console.log("Bloc(s) de code préservé(s) :", preservedCodeBlock);
+            } else {
+                preservedCodeBlock = '';
+            }
+
+            try {
+                // L'évaluation du code restant (contenant uniquement les données) pour peupler l'objet.
+                const getData = new Function(pastedCode + '; return window.EcoSimData;');
+                window.EcoSimData = {}; // Réinitialiser l'objet global
+                ecoSimData = getData();
+                
+                if (!ecoSimData || !ecoSimData.buildings) {
+                    throw new Error("L'objet EcoSimData.buildings n'a pas été trouvé dans le code.");
+                }
+
+                renderNavigation();
+                loaderSection.style.display = 'none';
+                editorView.style.display = 'flex';
+                alert("Données chargées avec succès ! Les blocs de code spéciaux (IIFE) ont été mis de côté et seront restaurés à la génération.");
+
+            } catch (error) {
+                alert("Erreur lors du chargement des données. Vérifiez la console pour plus de détails et assurez-vous que le code est valide.");
+                console.error("Erreur de chargement:", error);
+                // Restaurer le code préservé en cas d'erreur pour ne pas le perdre
+                if(preservedCodeBlock) pastedCode += '\n\n' + preservedCodeBlock;
+            }
+        }
+
+        /**
+         * **NOUVELLE FONCTION generateJS**
+         * Génère le fichier JS en recréant la structure originale, assignation par assignation.
+         */
+        function generateJS() {
+            if (!ecoSimData) {
+                alert("Aucune donnée à générer. Chargez d'abord votre fichier.");
+                return;
+            }
+
+            // --- Début du code généré ---
+            // On recrée un en-tête similaire à l'original.
+            let outputCode = `// Fichier généré par le Nouvel Éditeur EcoSim le ${new Date().toLocaleString('fr-FR')}
+// Ce fichier est généré pour conserver une structure similaire à l'original.
+// Les modifications sont intégrées et les blocs de code spéciaux (comme les IIFE) sont préservés.
+
+window.EcoSimData = window.EcoSimData || {};
+
+// --- MODIFICATION ICI ---
+EcoSimData.buildings = EcoSimData.buildings || {};
+
+// NOTE: La liste des tags et autres commentaires en haut du fichier original ne sont pas
+// automatiquement reportés. Copiez-les manuellement si nécessaire.
+`;
+
+            // --- Génération des données par bloc de lieu ---
+            // Cela imite la structure EcoSimData.buildings['Hameau'] = {...}; etc.
+            const locations = Object.keys(ecoSimData.buildings).sort();
+
+            locations.forEach(loc => {
+                const locationData = ecoSimData.buildings[loc];
+                
+                // JSON.stringify est utilisé pour sa robustesse. Le formatage est très proche de l'original.
+                // Le seul compromis est que les clés de l'objet seront entre guillemets, ce qui est valide en JS.
+                const locationJson = JSON.stringify(locationData, null, 4);
+                
+                outputCode += `\nEcoSimData.buildings['${loc}'] = ${locationJson};\n`;
+            });
+            
+            // --- Ajout des blocs de code préservés ---
+            if (preservedCodeBlock) {
+                outputCode += `\n\n// --- BLOC(S) DE CODE PRÉSERVÉ(S) DE L'ORIGINAL ---\n${preservedCodeBlock}\n`;
+            }
+
+            jsOutput.value = outputCode;
+            alert("Code JS généré dans la zone de texte ci-dessous. Il est structuré par lieu pour ressembler à l'original.");
+        }
+
+
+        // --- Fonctions d'édition (inchangées) ---
+
+        function renderNavigation() {
+            treeContainer.innerHTML = '';
+            const locations = Object.keys(ecoSimData.buildings).sort();
+
+            locations.forEach(loc => {
+                const locElement = document.createElement('div');
+                locElement.className = 'location-type';
+                locElement.innerHTML = `<span>${loc}</span>`;
+                const catList = document.createElement('ul');
+                catList.className = 'collapsible-content';
+                
+                const categories = Object.keys(ecoSimData.buildings[loc]).sort();
+                categories.forEach(cat => {
+                    const catElement = document.createElement('li');
+                    catElement.className = 'category';
+                    catElement.innerHTML = `<span>${cat}</span>`;
+                    const buildingList = document.createElement('ul');
+                    buildingList.className = 'collapsible-content';
+
+                    const buildings = Object.keys(ecoSimData.buildings[loc][cat]).sort();
+                    buildings.forEach(bld => {
+                        const bldElement = document.createElement('li');
+                        bldElement.className = 'building';
+                        bldElement.textContent = bld;
+                        bldElement.dataset.path = `${loc}|${cat}|${bld}`;
+                        bldElement.addEventListener('click', (e) => {
+                            selectBuilding(e.target.dataset.path);
+                        });
+                        buildingList.appendChild(bldElement);
+                    });
+                    
+                    catElement.appendChild(buildingList);
+                    catElement.querySelector('span').addEventListener('click', () => catElement.classList.toggle('expanded'));
+                    catList.appendChild(catElement);
+                });
+
+                locElement.appendChild(catList);
+                locElement.querySelector('span').addEventListener('click', () => locElement.classList.toggle('expanded'));
+                treeContainer.appendChild(locElement);
+            });
+        }
+        
+        function selectBuilding(path) {
+            selectedBuildingPath = path;
+            const [loc, cat, bld] = path.split('|');
+            const buildingData = ecoSimData.buildings[loc][cat][bld];
+            
+            document.querySelectorAll('.building.selected').forEach(el => el.classList.remove('selected'));
+            const selectedElement = document.querySelector(`[data-path="${path}"]`);
+            if (selectedElement) {
+                selectedElement.classList.add('selected');
+                 // Auto-expand parents
+                let parent = selectedElement.closest('.collapsible-content');
+                while(parent) {
+                    parent.parentElement.classList.add('expanded');
+                    parent = parent.parentElement.closest('.collapsible-content');
+                }
+            }
+            
+            displayBuildingForm(buildingData, loc, cat, bld);
+        }
+
+        function displayBuildingForm(data, loc, cat, bld) {
+            placeholder.style.display = 'none';
+            buildingForm.style.display = 'flex';
+            buildingForm.innerHTML = ''; 
+
+            let formHtml = `<fieldset>
+                <legend>Détails du Bâtiment</legend>
+                <label for="bld-name">Nom du Bâtiment</label>
+                <input type="text" id="bld-name" value="${bld}">
+
+                <label for="bld-desc">Description</label>
+                <textarea id="bld-desc">${data.description || ''}</textarea>
+                
+                <label for="bld-provides">Tags Fournis (séparés par des virgules)</label>
+                <input type="text" id="bld-provides" value="${(data.providesTags || []).join(', ')}">
+            </fieldset>`;
+
+            formHtml += `<fieldset>
+                <legend>Prérequis (Tags Requis)</legend>
+                <div id="requires-tags-container">`;
+            if (data.requiresTags) {
+                Object.entries(data.requiresTags).forEach(([tag, details], index) => {
+                    formHtml += `<div class="grid-2" data-req-index="${index}">
+                        <input type="text" value="${tag}" placeholder="Tag requis">
+                        <input type="number" value="${details.distance}" placeholder="Distance">
+                    </div>`;
+                });
+            }
+            formHtml += `</div><button type="button" id="add-req-btn" class="btn-secondary" style="margin-top:1em;">Ajouter un prérequis</button>
+            </fieldset>`;
+
+            formHtml += `<fieldset>
+                <legend>Emplois</legend>
+                <div id="jobs-container">`;
+            if (data.emplois) {
+                data.emplois.forEach((job, index) => {
+                    formHtml += createJobHtml(job, index);
+                });
+            }
+            formHtml += `</div>
+                <button type="button" id="add-job-btn" class="btn-success" style="margin-top:1em;">Ajouter un emploi</button>
+            </fieldset>`;
+
+            formHtml += `<div class="button-group">
+                <button type="submit" class="btn-success">Sauvegarder les Modifications</button>
+                <button type="button" id="delete-bld-btn" class="btn-danger">Supprimer ce Bâtiment</button>
+            </div>`;
+            
+            buildingForm.innerHTML = formHtml;
+            
+            buildingForm.addEventListener('submit', (e) => saveBuildingChanges(e));
+            document.getElementById('add-req-btn').addEventListener('click', addRequirementRow);
+            document.getElementById('add-job-btn').addEventListener('click', addJob);
+            document.getElementById('delete-bld-btn').addEventListener('click', deleteBuilding);
+            document.querySelectorAll('.remove-job-btn').forEach(btn => btn.addEventListener('click', removeJob));
+        }
+        
+        function createJobHtml(job, index) {
+            const stats = job.gainsMensuels.stats || {};
+            return `<div class="job-container" data-job-index="${index}">
+                <h4>Emploi: ${job.titre || 'Nouvel Emploi'}</h4>
+                <div class="grid-3">
+                    <div><label>Titre</label><input type="text" data-field="titre" value="${job.titre}"></div>
+                    <div><label>Tier</label><input type="number" data-field="tier" value="${job.tier}"></div>
+                    <div><label>Postes</label><input type="number" data-field="postes" value="${job.postes}"></div>
+                    <div><label>Salaire (cuivre)</label><input type="number" data-field="salaire" value="${job.salaire.totalEnCuivre}"></div>
+                    <div><label>Prestige Requis</label><input type="number" data-field="prestige_req" value="${job.prerequis.prestige}"></div>
+                    <div><label>Prestige Gagné</label><input type="number" data-field="prestige_gain" value="${job.gainsMensuels.prestige}"></div>
+                </div>
+                <fieldset>
+                    <legend>Gains de Stats Mensuels</legend>
+                    <div class="grid-3">
+                        <div><label>INT</label><input type="number" step="0.1" data-stat="intelligence" value="${stats.intelligence || 0}"></div>
+                        <div><label>FOR</label><input type="number" step="0.1" data-stat="force" value="${stats.force || 0}"></div>
+                        <div><label>CON</label><input type="number" step="0.1" data-stat="constitution" value="${stats.constitution || 0}"></div>
+                        <div><label>DEX</label><input type="number" step="0.1" data-stat="dexterite" value="${stats.dexterite || 0}"></div>
+                        <div><label>SAG</label><input type="number" step="0.1" data-stat="sagesse" value="${stats.sagesse || 0}"></div>
+                        <div><label>CHA</label><input type="number" step="0.1" data-stat="charisme" value="${stats.charisme || 0}"></div>
+                    </div>
+                </fieldset>
+                <button type="button" class="btn-danger remove-job-btn" data-job-index="${index}" style="margin-top:0.5em;">Supprimer cet emploi</button>
+            </div>`;
+        }
+        
+        function saveBuildingChanges(event) {
+            event.preventDefault();
+            if (!selectedBuildingPath) return;
+
+            const [loc, cat, oldBld] = selectedBuildingPath.split('|');
+            const newBldName = document.getElementById('bld-name').value.trim();
+
+            if (!newBldName) {
+                alert("Le nom du bâtiment ne peut pas être vide.");
+                return;
+            }
+
+            if (oldBld !== newBldName && ecoSimData.buildings[loc][cat][newBldName]) {
+                alert(`Un bâtiment nommé "${newBldName}" existe déjà dans cette catégorie. Veuillez choisir un autre nom.`);
+                return;
+            }
+
+            let updatedBuildingData = {};
+            updatedBuildingData.description = document.getElementById('bld-desc').value;
+            const providesTagsValue = document.getElementById('bld-provides').value;
+            updatedBuildingData.providesTags = providesTagsValue ? providesTagsValue.split(',').map(t => t.trim()).filter(Boolean) : [];
+            if (updatedBuildingData.providesTags.length === 0) {
+                 delete updatedBuildingData.providesTags;
+            }
+
+            const reqContainer = document.getElementById('requires-tags-container');
+            updatedBuildingData.requiresTags = {};
+            reqContainer.querySelectorAll('.grid-2').forEach(row => {
+                const tag = row.children[0].value.trim();
+                const distance = parseFloat(row.children[1].value);
+                if (tag && !isNaN(distance)) {
+                    updatedBuildingData.requiresTags[tag] = { distance: distance };
+                }
+            });
+            if (Object.keys(updatedBuildingData.requiresTags).length === 0) {
+                delete updatedBuildingData.requiresTags;
+            }
+
+            updatedBuildingData.emplois = [];
+            document.querySelectorAll('.job-container').forEach(jobDiv => {
+                let job = {
+                    prerequis: {},
+                    gainsMensuels: { stats: {} },
+                    type: "mixte"
+                };
+                job.titre = jobDiv.querySelector('[data-field="titre"]').value;
+                job.tier = parseInt(jobDiv.querySelector('[data-field="tier"]').value, 10);
+                job.postes = parseInt(jobDiv.querySelector('[data-field="postes"]').value, 10);
+                job.salaire = { totalEnCuivre: parseInt(jobDiv.querySelector('[data-field="salaire"]').value, 10) };
+                job.prerequis.prestige = parseInt(jobDiv.querySelector('[data-field="prestige_req"]').value, 10);
+                job.gainsMensuels.prestige = parseInt(jobDiv.querySelector('[data-field="prestige_gain"]').value, 10);
+                
+                jobDiv.querySelectorAll('[data-stat]').forEach(statInput => {
+                    const value = parseFloat(statInput.value)
+                    if (value) {
+                        job.gainsMensuels.stats[statInput.dataset.stat] = value;
+                    }
+                });
+
+                updatedBuildingData.emplois.push(job);
+            });
+            if (updatedBuildingData.emplois.length === 0) {
+                delete updatedBuildingData.emplois;
+            }
+            
+            if (oldBld !== newBldName) {
+                ecoSimData.buildings[loc][cat][newBldName] = updatedBuildingData;
+                delete ecoSimData.buildings[loc][cat][oldBld];
+                
+                const newPath = `${loc}|${cat}|${newBldName}`;
+                renderNavigation();
+                selectBuilding(newPath); 
+            } else {
+                ecoSimData.buildings[loc][cat][oldBld] = updatedBuildingData;
+            }
+        }
+        
+        function addRequirementRow() {
+            const container = document.getElementById('requires-tags-container');
+            const newIndex = container.children.length;
+            const row = document.createElement('div');
+            row.className = 'grid-2';
+            row.dataset.reqIndex = newIndex;
+            row.innerHTML = `<input type="text" placeholder="Tag requis"><input type="number" placeholder="Distance">`;
+            container.appendChild(row);
+        }
+
+        function addJob() {
+            const container = document.getElementById('jobs-container');
+            const newIndex = container.children.length;
+            const newJobData = {
+                tier: 5, titre: "Nouvel Emploi", postes: 1, 
+                salaire: { totalEnCuivre: 20 }, 
+                prerequis: { prestige: 0 }, 
+                gainsMensuels: { prestige: 1, stats: {} },
+                type: "mixte"
+            };
+            const jobHtml = createJobHtml(newJobData, newIndex);
+            container.insertAdjacentHTML('beforeend', jobHtml);
+            document.querySelector(`.remove-job-btn[data-job-index="${newIndex}"]`).addEventListener('click', removeJob);
+        }
+
+        function removeJob(event) {
+            const index = event.target.dataset.jobIndex;
+            const jobDiv = document.querySelector(`.job-container[data-job-index="${index}"]`);
+            if (jobDiv && confirm(`Êtes-vous sûr de vouloir supprimer cet emploi ?`)) {
+                jobDiv.remove();
+                document.querySelectorAll('.job-container').forEach((div, i) => {
+                    div.dataset.jobIndex = i;
+                    div.querySelector('.remove-job-btn').dataset.jobIndex = i;
+                });
+            }
+        }
+        
+        function deleteBuilding() {
+            if (!selectedBuildingPath || !confirm(`ATTENTION: Vous êtes sur le point de supprimer ce bâtiment DÉFINITIVEMENT. Continuer ?`)) {
+                return;
+            }
+            const [loc, cat, bld] = selectedBuildingPath.split('|');
+            delete ecoSimData.buildings[loc][cat][bld];
+            
+            if (Object.keys(ecoSimData.buildings[loc][cat]).length === 0) {
+                delete ecoSimData.buildings[loc][cat];
+                 if (Object.keys(ecoSimData.buildings[loc]).length === 0) {
+                    delete ecoSimData.buildings[loc];
+                }
+            }
+
+            selectedBuildingPath = null;
+            buildingForm.style.display = 'none';
+            placeholder.style.display = 'block';
+            renderNavigation();
+            alert(`Bâtiment "${bld}" supprimé.`);
+        }
+        
+        function addNewBuilding() {
+            let loc = prompt("Entrez le type de lieu (ex: Hameau, Ville, Capitale):");
+            if(!loc) return;
+            loc = loc.trim();
+            if(!ecoSimData.buildings[loc]) {
+                if(confirm(`Le type de lieu "${loc}" n'existe pas. Voulez-vous le créer ?`)) {
+                    ecoSimData.buildings[loc] = {};
+                } else {
+                    return;
+                }
+            }
+            
+            let cat = prompt(`Entrez la catégorie pour ${loc} (ex: Bâtiments de Production):`);
+            if (!cat) return;
+            cat = cat.trim();
+
+            if (!ecoSimData.buildings[loc][cat]) {
+                 if (confirm(`La catégorie "${cat}" n'existe pas pour "${loc}". Voulez-vous la créer ?`)) {
+                     ecoSimData.buildings[loc][cat] = {};
+                 } else {
+                     return;
+                 }
+            }
+            
+            let bld = prompt("Entrez le nom du nouveau bâtiment:");
+            if (!bld) return;
+            bld = bld.trim();
+
+            if (ecoSimData.buildings[loc][cat][bld]) {
+                alert("Ce bâtiment existe déjà !");
+                return;
+            }
+
+            ecoSimData.buildings[loc][cat][bld] = {
+                description: "Nouvelle description.",
+                providesTags: [],
+                emplois: []
+            };
+            
+            renderNavigation();
+            selectBuilding(`${loc}|${cat}|${bld}`);
+            alert(`Bâtiment "${bld}" créé ! Vous pouvez maintenant remplir ses informations.`);
+        }
+
+        function resetAllBuildings() {
+            if (!ecoSimData || !confirm("ATTENTION : Cette action supprimera TOUS les bâtiments de l'éditeur. Cette action est irréversible. Continuer ?")) {
+                return;
+            }
+            
+            ecoSimData.buildings = {};
+            preservedCodeBlock = ''; // Oublie aussi le code préservé
+            
+            selectedBuildingPath = null;
+            buildingForm.style.display = 'none';
+            placeholder.style.display = 'block';
+            jsOutput.value = '';
+
+            renderNavigation();
+            alert("Tous les bâtiments ont été supprimés.");
+        }
+
+        function analyzeAllTags() {
+            if (!ecoSimData || !ecoSimData.buildings) {
+                alert("Veuillez d'abord charger les données des bâtiments.");
+                return;
+            }
+
+            const tagData = new Map();
+
+            const ensureTag = (tagName) => {
+                if (!tagData.has(tagName)) {
+                    tagData.set(tagName, { providers: [], requirers: [] });
+                }
+            };
+
+            for (const loc in ecoSimData.buildings) {
+                for (const cat in ecoSimData.buildings[loc]) {
+                    for (const bldName in ecoSimData.buildings[loc][cat]) {
+                        const building = ecoSimData.buildings[loc][cat][bldName];
+                        if (building.providesTags) {
+                            building.providesTags.forEach(tag => {
+                                ensureTag(tag);
+                                tagData.get(tag).providers.push(bldName);
+                            });
+                        }
+                        if (building.requiresTags) {
+                            Object.keys(building.requiresTags).forEach(tag => {
+                                ensureTag(tag);
+                                tagData.get(tag).requirers.push(bldName);
+                            });
+                        }
+                    }
+                }
+            }
+
+            let orphansHTML = '';
+            let unusedHTML = '';
+            let fullIndexHTML = '';
+            
+            const sortedTags = Array.from(tagData.keys()).sort();
+
+            sortedTags.forEach(tag => {
+                const data = tagData.get(tag);
+                const providerCount = data.providers.length;
+                const requirerCount = data.requirers.length;
+
+                if (providerCount === 0 && requirerCount > 0) {
+                    orphansHTML += `<li><strong class="tag-orphan">${tag}</strong> (Requis par: ${[...new Set(data.requirers)].join(', ')})</li>`;
+                }
+                
+                if (providerCount > 0 && requirerCount === 0) {
+                    unusedHTML += `<li><strong class="tag-unused">${tag}</strong> (Fourni par: ${[...new Set(data.providers)].join(', ')})</li>`;
+                }
+                
+                fullIndexHTML += `<li>
+                    <strong>${tag}</strong>
+                    <div class="building-list">
+                        <strong>Fourni par (${providerCount}):</strong> ${providerCount > 0 ? [...new Set(data.providers)].join(', ') : '---'}<br>
+                        <strong>Requis par (${requirerCount}):</strong> ${requirerCount > 0 ? [...new Set(data.requirers)].join(', ') : '---'}
+                    </div>
+                </li>`;
+            });
+
+            analysisOutput.innerHTML = `
+                <h3><span class="tag-orphan">🔴 Tags Orphelins</span> (Requis mais jamais fournis)</h3>
+                <ul class="tag-list">${orphansHTML || "<li>Aucun tag orphelin détecté.</li>"}</ul>
+                <h3><span class="tag-unused">🟡 Tags Inutilisés</span> (Fournis mais jamais requis)</h3>
+                <ul class="tag-list">${unusedHTML || "<li>Aucun tag inutilisé détecté.</li>"}</ul>
+                <h3>📖 Index Complet des Tags</h3>
+                <ul class="tag-list">${fullIndexHTML}</ul>
+            `;
+            
+            analysisModal.style.display = 'block';
+        }
+
+    </script>
+
+</body>
+</html>
