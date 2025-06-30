@@ -3,82 +3,249 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EcoSimRPG - Étape 3 : Simulation</title>
+    <title>EcoSimRPG - Étape 3 : Génération 0</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
     
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="step1-style.css"> 
     <link rel="stylesheet" href="step3-style.css">
 </head>
 <body>
 
-    <nav class="floating-menu">
-        <div class="menu-title">EcoSimRPG</div>
-        <a href="#">Accueil</a>
-        <a href="index.html">Étape 1<br><small>(Carte)</small></a>
-        <a href="step2.html">Étape 2<br><small>(Conf. Lieux)</small></a>
-        <a href="step3.html" class="active">Étape 3<br><small>(Simu)</small></a>
-    </nav>
+<nav class="floating-menu">
+    <div class="menu-title">EcoSimRPG</div>
+    <a href="index.html" id="nav-index">Accueil</a>
+    <a href="step1.html" id="nav-step1">Étape 1<br><small>(Carte)</small></a>
+    <a href="step2.html" id="nav-step2">Étape 2<br><small>(Conf. Lieux)</small></a>
+    <a href="step3.html" id="nav-step3" class="active">Étape 3<br><small>(Gen.0)</small></a>
+</nav>
 
-    <div class="main-content">
-        <header id="top-bar">
-            <div class="control-group">
-                <label for="region-select">Région Actuelle :</label>
-                <select id="region-select" disabled><option>Chargement...</option></select>
-            </div>
-            <div id="sim-controls" class="control-group">
-                <button id="run-sim-btn" class="btn" disabled>Lancer</button>
-                <button id="advance-month-btn" class="btn" disabled>Avancer 1 Mois</button>
-                <div class="speed-control">
-                    <label for="speed-slider">Vitesse :</label>
-                    <input type="range" id="speed-slider" min="100" max="2000" value="1000" step="50">
-                </div>
-                <div id="search-container" class="control-group">
-                    <label for="person-search">Rechercher :</label>
-                    <input type="text" id="person-search" placeholder="Nom ou Prénom...">
-                    <div id="search-results"></div>
-                </div>
-            </div>
-            <div id="sim-stats" class="control-group">
-                <span>Date: Mois <strong id="stat-month">0</strong>, Année <strong id="stat-year">0</strong></span>
-                <span>Population: <strong id="stat-population">0</strong></span>
-            </div>
-        </header>
+<div class="page-container-step3">
 
-        <main id="simulation-workspace">
-             <div id="results-panel">
-                </div>
+    <header id="top-dashboard-banner">
+        <div class="dashboard-section">
+            <h4>Démographie Globale</h4>
+            <div id="global-stats-container">
+                <p><strong>Population Totale :</strong> <span id="global-total-population">0</span></p>
+                <p><strong>Nombre de Familles :</strong> <span id="global-family-count">0</span></p>
+            </div>
+        </div>
+
+        <div class="dashboard-section dashboard-section-large">
+            <h4>Distances & Temps de Trajet</h4>
+            <div id="distance-matrix-container">
+                <p>Les données de distance apparaîtront ici.</p>
+            </div>
+        </div>
+
+        <div class="dashboard-section bottom-actions">
+            <button id="finalize-simulation-btn" class="btn btn-primary" disabled>Finaliser et Démarrer la Simulation</button>
+        </div>
+    </header>
+
+    <div class="main-content-wrapper-step3">
+
+        <aside class="side-panel-step3" id="left-panel-step3">
+            <h3>Lieux de la Région</h3>
+            <ul id="places-list-step3">
+            </ul>
+        </aside>
+
+        <main class="main-panel-step3" id="main-panel-step3">
+            <div id="welcome-panel">
+                <h2>Bienvenue à l'Étape 3 : La Génération Originelle</h2>
+                <p>Sélectionnez un lieu dans le panneau de gauche pour commencer à définir sa population initiale.</p>
+                <p>C'est ici que votre monde prend vie. Vous allez façonner la démographie, les familles et les premières générations qui peupleront vos terres.</p>
+                <div class="welcome-icon">🧬</div>
+            </div>
+
+            <div id="config-panel" class="hidden">
+                <h1 id="config-panel-title">Configuration de [Nom du Lieu]</h1>
+
+                <section class="config-section">
+                    <h2>1. Distribution des Races Originelles</h2>
+                    <div id="race-distribution-container">
+                    </div>
+                    <div class="race-total-container">
+                        <span>Total :</span>
+                        <span id="race-total-percentage">0 / 100 %</span>
+                    </div>
+                </section>
+
+                <section class="config-section">
+                    <h2>2. Règles Sociales</h2>
+                    <div class="social-rules-container">
+                        <input type="checkbox" id="interracial-marriage-toggle" checked>
+                        <label for="interracial-marriage-toggle">Autoriser les mariages inter-raciaux (selon compatibilités)</label>
+                    </div>
+                </section>
+
+                <section class="config-section">
+                    <h2>3. Population & Actions</h2>
+                    
+                    <div class="workflow-warning">
+                        <p><strong>Conseil :</strong> Il est recommandé de créer et d'ajouter vos familles personnalisées <em>avant</em> d'utiliser la fonction de "Pré-générer la Population" pour garantir que les emplois que vous assignez sont disponibles.</p>
+                    </div>
+
+                    <div class="population-stats-grid">
+                        <div><strong>Population Totale :</strong> <span id="stat-total-population">0</span></div>
+                        <div><strong>Nombre de Familles :</strong> <span id="stat-family-count">0</span></div>
+                        <div><strong>Postes à Pourvoir :</strong> <span id="stat-total-jobs">0</span></div>
+                        <div><strong>Postes Occupés :</strong> <span id="stat-filled-jobs">0</span></div>
+                    </div>
+                    <div class="action-buttons-container">
+                        <button id="pre-generate-btn" class="btn btn-primary" disabled>🏛️ Pré-générer la Population</button>
+                        <button id="manage-families-btn" class="btn btn-edit">👤 Gérer les Familles Personnalisées</button>
+                    </div>
+                    <div class="action-buttons-container secondary-actions">
+                        <button id="reset-gen0-btn" class="btn btn-warning">♻️ Reset Gen0</button>
+                        <button id="reset-all-btn" class="btn btn-danger">❌ Reset Total</button>
+                    </div>
+                </section>
+                
+                <section class="config-section">
+                    <h2>Population Générée</h2>
+                    <div id="family-list-container">
+                        <p>Aucune population n'a encore été générée pour ce lieu.</p>
+                    </div>
+                </section>
+
+            </div>
         </main>
     </div>
+</div>
 
-    <div id="person-modal" class="modal-backdrop" style="display: none;">
-        <div class="modal-dialog">
-            <div class="modal-header">
-                <h3 id="modal-title">Détails du Personnage</h3>
-                <button id="modal-close-btn" class="modal-close-btn">&times;</button>
+
+<dialog id="family-library-modal">
+    <div class="modal-header">
+        <h3>Bibliothèque de Familles</h3>
+        <button class="modal-close-btn">&times;</button>
+    </div>
+    <div class="modal-content">
+        <p>Gérez vos modèles de familles ici. Chargez un modèle pour l'éditer et l'ajouter au lieu sélectionné.</p>
+        <div id="family-templates-list">
             </div>
-            <div id="modal-body" class="modal-body">
+        <div class="modal-actions">
+            <button id="create-new-template-btn" class="btn btn-primary">Créer un nouveau modèle de famille</button>
+        </div>
+    </div>
+</dialog>
+
+
+<dialog id="family-modal">
+    <div class="modal-header">
+        <h3 id="family-modal-title">Créateur de Famille</h3>
+        <button class="modal-close-btn">&times;</button>
+    </div>
+    <form id="family-form" method="dialog">
+        <input type="hidden" id="editing-family-template-id">
+        <div class="form-group">
+            <label for="family-name">Nom de Famille :</label>
+            <input type="text" id="family-name" required>
+        </div>
+
+        <h4>Membres</h4>
+        <div id="family-members-list"></div>
+        
+        <div id="add-member-section">
+            <h5>Ajouter un Nouveau Membre</h5>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="member-firstname">Prénom :</label>
+                    <input type="text" id="member-firstname">
                 </div>
-        </div>
-    </div>
-
-    <div id="details-modal" class="draggable-modal" style="display: none;">
-        <div class="modal-header">
-            <h3 id="details-modal-title">Détails</h3>
-            <button id="details-modal-close-btn" class="close-btn">&times;</button>
-        </div>
-        <div id="details-modal-content" class="modal-content">
+                <div class="form-group">
+                    <label for="member-race">Race :</label>
+                    <select id="member-race"></select>
+                </div>
+                <div class="form-group">
+                    <label for="member-age">Âge :</label>
+                    <input type="number" id="member-age" min="0">
+                </div>
+                <div class="form-group">
+                    <label for="member-gender">Sexe :</label>
+                    <select id="member-gender">
+                        <option value="Homme">Homme</option>
+                        <option value="Femme">Femme</option>
+                    </select>
+                </div>
             </div>
-    </div>
+            
+            <h5>Assignation Professionnelle (Optionnel)</h5>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="member-work-location">Lieu de travail :</label>
+                    <select id="member-work-location">
+                        <option value="">Aucun</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="member-work-building">Bâtiment :</label>
+                    <select id="member-work-building" disabled></select>
+                </div>
+                <div class="form-group">
+                    <label for="member-work-job">Poste :</label>
+                    <select id="member-work-job" disabled></select>
+                </div>
+            </div>
+            <button type="button" id="add-member-btn" class="btn">Ajouter ce membre</button>
+        </div>
+        
+        <div class="modal-actions">
+            <button type="button" id="cancel-family-btn" class="btn">Annuler</button>
+            <button type="button" id="save-family-template-btn" class="btn btn-secondary">Sauvegarder le modèle</button>
+            <button type="submit" id="confirm-add-family-btn" class="btn-primary" disabled>Ajouter au Lieu</button>
+        </div>
+    </form>
+</dialog>
 
-    <script> var EcoSimData = window.EcoSimData || {}; </script>
-    <script src="building.js"></script>
-    <script src="races.js"></script>
-    
-    <script src="simulation-engine.js"></script>
-    <script src="step3-ui.js"></script>
+<dialog id="character-details-modal">
+    <div class="modal-header">
+        <h3 id="char-modal-title">Détails du Personnage</h3>
+        <button class="modal-close-btn">&times;</button>
+    </div>
+    <div class="char-modal-content">
+        <div class="char-details-grid">
+            <div class="char-detail-item"><strong>Nom Complet :</strong> <span id="char-modal-fullname"></span></div>
+            <div class="char-detail-item"><strong>Race :</strong> <span id="char-modal-race"></span></div>
+            <div class="char-detail-item"><strong>Âge :</strong> <span id="char-modal-age"></span> ans</div>
+            <div class="char-detail-item"><strong>Sexe :</strong> <span id="char-modal-gender"></span></div>
+        </div>
+        
+        <h4>Vie Professionnelle</h4>
+        <div class="char-details-grid">
+             <div class="char-detail-item"><strong>Profession :</strong> <span id="char-modal-job"></span></div>
+             <div class="char-detail-item"><strong>Lieu de travail :</strong> <span id="char-modal-workplace"></span></div>
+             <div class="char-detail-item"><strong>Salaire :</strong> <span id="char-modal-salary"></span> Cu</div>
+             <div class="char-detail-item"><strong>Prestige Actuel :</strong> <span id="char-modal-prestige"></span></div>
+        </div>
+
+        <h4>Gains de Carrière (par mois)</h4>
+        <div id="char-modal-monthly-gains" class="char-details-grid">
+            </div>
+
+        <h4>Attributs Actuels</h4>
+        <ul id="char-modal-stats">
+            </ul>
+
+        <h4>Famille</h4>
+        <div id="char-modal-family-info">
+            </div>
+        
+        <h4>Aspirations Sociales</h4>
+        <div class="char-details-grid">
+            <div class="char-detail-item"><strong>Enfants désirés :</strong> <span id="char-modal-desired-children"></span></div>
+            <div class="char-detail-item"><strong>Amis souhaités :</strong> <span id="char-modal-desired-friends"></span></div>
+            <div class="char-detail-item"><strong>Connaissances souhaitées :</strong> <span id="char-modal-desired-acquaintances"></span></div>
+        </div>
+    </div>
+</dialog>
+
+<script src="races.js"></script>
+<script src="buildings.js"></script>
+<script src="step3.js"></script>
 
 </body>
 </html>

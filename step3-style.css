@@ -1,256 +1,577 @@
-/* --- Héritage de style.css --- */
-:root {
-    --color-parchment: #F4EBD0;
-    --color-gold: #D4A017;
-    --color-forest-green: #2E7D32;
-    --color-royal-blue: #1E3A8A;
-    --color-dark-text: #3E2723;
-    --color-border: #A1887F;
-    --color-error: #B71C1C;
-    --job-color: #c97b0a;
-}
+/* step3-style.css */
 
-/* --- Espace de travail de la simulation --- */
-#simulation-workspace {
+/* MODIFICATION : Structure globale de la page pour le bandeau supérieur */
+.page-container-step3 {
+    margin-left: 160px; /* Largeur du menu flottant */
     display: flex;
     flex-direction: column;
+    height: 100vh;
+    width: calc(100% - 160px);
+}
+
+#top-dashboard-banner {
+    flex-shrink: 0;
+    display: flex;
+    align-items: stretch; /* Les sections s'étirent sur toute la hauteur */
+    gap: 20px;
+    padding: 15px;
+    background-color: #e8e0c9;
+    border-bottom: 2px solid var(--color-border);
+    height: 180px; /* Hauteur fixe pour le bandeau */
+}
+
+/* --- Layout Principal (sous le bandeau) --- */
+.main-content-wrapper-step3 {
+    display: flex;
+    flex-grow: 1; /* Prend la hauteur restante */
+    background-color: var(--color-parchment);
+    overflow-y: hidden; /* Empêche le double scroll */
+}
+
+.side-panel-step3 {
+    flex-shrink: 0;
+    width: 320px;
+    background-color: #e8e0c9; /* Parchemin un peu plus foncé */
+    border-right: 2px solid var(--color-border);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+#left-panel-step3 {
+    border-right: 2px solid var(--color-border);
+}
+
+.side-panel-step3 h3 {
+    font-family: var(--font-title);
+    color: var(--color-royal-blue);
+    text-align: center;
+    padding: 15px;
+    margin: 0;
+    border-bottom: 2px solid var(--color-gold);
+    background-color: rgba(0,0,0,0.05);
+    flex-shrink: 0;
+}
+
+.main-panel-step3 {
+    flex-grow: 1;
     padding: 25px;
     overflow-y: auto;
-    flex-grow: 1;
-    height: calc(100vh - 70px);
 }
 
-#results-panel {
-    background: var(--color-parchment);
-    border: 1px solid var(--color-border);
-    border-radius: 5px;
-    padding: 20px;
-    min-height: 200px;
+/* --- Panneau de Gauche : Liste des Lieux --- */
+#places-list-step3 {
+    list-style: none;
+    padding: 0;
+    margin: 0;
 }
 
-#loading-container { text-align: center; font-family: var(--font-body); }
-#loading-container h3 { font-family: var(--font-title); color: var(--color-royal-blue); }
-#loading-container .sim-explanation { font-size: 0.9em; font-style: italic; color: var(--color-dark-text); margin-top: 15px; max-width: 600px; margin-left: auto; margin-right: auto; opacity: 0.8; }
-
-/* --- Grille principale de la simulation --- */
-#sim-container { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; flex-grow: 1; overflow: hidden; height: 100%; }
-#sim-display-panel { display: flex; flex-direction: column; overflow: hidden; background: #fff; padding: 15px; border-radius: 4px; border: 1px solid var(--color-border); }
-#history-panel { display: flex; flex-direction: column; background: #fff; padding: 15px; border-radius: 4px; border: 1px solid var(--color-border); overflow: hidden; }
-#history-panel h4 { margin: 0 0 10px 0; padding-bottom: 10px; border-bottom: 2px solid var(--color-border); font-family: var(--font-title); }
-#history-log-content { flex-grow: 1; overflow-y: auto; padding-right: 10px; }
-#history-log-content h3 { font-size: 1.1em; margin: 15px 0 5px 0; color: var(--color-royal-blue); }
-#history-log-content p { font-size: 0.9em; margin: 0 0 8px 0; border-bottom: 1px dashed #eee; padding-bottom: 8px; }
-
-/* Styles pour les panneaux de statistiques */
-#stats-container { display: flex; gap: 30px; flex-shrink: 0; margin-top: 15px; padding-top: 15px; border-top: 2px solid var(--color-border); }
-#stats-container > div { flex: 1; }
-#stats-container h4 { margin: 0 0 10px 0; font-family: var(--font-body); }
-#stats-container ul { list-style: none; padding: 0; margin: 0; font-size: 0.95em; }
-#stats-container ul li { margin-bottom: 5px; }
-
-/* --- Contrôles de simulation --- */
-#sim-controls .speed-control { display: flex; align-items: center; gap: 8px; margin-left: 15px; }
-#speed-slider { cursor: pointer; }
-
-/* --- RECHERCHE --- */
-#search-container { position: relative; margin-left: 20px; }
-#person-search { width: 200px; }
-#search-results { display: none; position: absolute; top: 100%; left: 0; right: 0; background: var(--color-parchment); border: 1px solid var(--color-border); border-top: none; max-height: 200px; overflow-y: auto; z-index: 1100; }
-.search-item { padding: 8px 12px; cursor: pointer; border-bottom: 1px solid rgba(161, 136, 127, 0.4); }
-.search-item:last-child { border-bottom: none; }
-.search-item:hover { background-color: var(--color-gold); color: var(--color-dark-text); }
-.search-item-name { font-weight: bold; }
-.search-item-details { font-size: 0.8em; color: #555; display: block; }
-
-/* --- Système d'onglets --- */
-.tab-nav { display: flex; border-bottom: 2px solid var(--color-border); flex-shrink: 0; flex-wrap: wrap;}
-.tab-button { padding: 10px 15px; border: none; background: none; cursor: pointer; font-size: 1em; color: var(--color-dark-text); font-family: var(--font-body); }
-.tab-button.active { font-weight: bold; color: var(--color-royal-blue); border-bottom: 3px solid var(--color-royal-blue); margin-bottom: -2px; }
-.tab-panels { flex-grow: 1; display: flex; overflow: hidden; padding-top: 15px;}
-.tab-panel { display: none; flex-direction: column; flex-grow: 1; overflow-y: auto; }
-.tab-panel.active { display: flex; }
-
-/* --- Style pour les conteneurs de famille --- */
-details { border: 1px solid #ddd; border-radius: 4px; margin-bottom: 8px; background-color: #fcfcfc; }
-summary { padding: 10px; cursor: pointer; font-weight: bold; background: #f1f1f1; font-family: var(--font-title); }
-
-/* ============================================= */
-/* --- STYLE ARBRE GÉNÉALOGIQUE (SVG V3) --- */
-/* ============================================= */
-.family-tree-container {
-    position: relative;
-    padding: 20px;
-    overflow: auto;
-    cursor: grab;
-    user-select: none; /* Empêche la sélection de texte pendant le drag */
-}
-.family-tree-container.dragging {
-    cursor: grabbing;
-}
-
-/* NOUVEAU : Conteneur SVG pour les lignes */
-.family-tree-container .tree-connector-svg {
-    position: absolute;
-    top: 0;
-    left: 0;
-    pointer-events: none; /* Permet de cliquer à travers */
-    z-index: 1;
-}
-
-/* NOUVEAU : Style pour les lignes SVG */
-.family-tree-container .tree-connector-svg path {
-    fill: none;
-    stroke: #b0b0b0; /* Un gris neutre */
-    stroke-width: 1.5px;
-}
-
-
-.tree {
-    position: relative; /* Contexte de positionnement pour les enfants */
-    display: inline-block;
-    padding: 20px;
-    white-space: nowrap;
-    transform-origin: top left;
-    transition: transform 0.2s ease-out;
-    z-index: 2; /* S'assurer que les noeuds sont au-dessus du SVG */
-}
-
-.tree ul {
-    padding-top: 50px; /* AJUSTEMENT : Augmenté de 40px à 50px pour plus d'espace */
-    position: relative;
+.place-item-step3 {
+    padding: 15px 20px;
+    border-bottom: 1px solid var(--color-border);
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
     display: flex;
-    justify-content: center;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1.1em;
 }
 
-.tree li {
+.place-item-step3:hover, .place-item-step3.active {
+    background-color: rgba(212, 160, 23, 0.2); /* Or transparent */
+}
+
+.place-item-step3.active {
+    font-weight: bold;
+    color: var(--color-royal-blue);
+}
+
+.place-item-step3 .status-icon {
+    font-size: 1.2em;
+}
+
+/* --- Panneau Central : Configuration --- */
+#welcome-panel {
+    text-align: center;
+    padding: 50px 20px;
+    height: 100%;
     display: flex;
     flex-direction: column;
+    justify-content: center;
     align-items: center;
-    list-style-type: none;
-    position: relative;
-    padding: 0 5px; 
 }
 
-/* Couple de noeuds */
-.node-couple {
+#welcome-panel h2 {
+    font-family: var(--font-title);
+    font-size: 2.5em;
+    color: var(--color-dark-text);
+}
+
+#welcome-panel p {
+    font-size: 1.2em;
+    line-height: 1.6;
+    max-width: 600px;
+    margin-top: 15px;
+}
+.welcome-icon {
+    font-size: 6em;
+    margin-top: 30px;
+    opacity: 0.5;
+}
+
+#config-panel-title {
+    font-family: var(--font-title);
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.config-section {
+    background: rgba(255, 255, 255, 0.5);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 25px;
+}
+
+.config-section h2 {
+    font-family: var(--font-title);
+    color: var(--color-royal-blue);
+    border-bottom: 2px solid var(--color-gold);
+    padding-bottom: 8px;
+    margin-top: 0;
+    margin-bottom: 20px;
+}
+
+/* Sliders de Race */
+.race-slider-group {
+    display: grid;
+    grid-template-columns: 120px 1fr 60px;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 10px;
+}
+.race-slider-group label { font-weight: 600; }
+input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 8px;
+    background: rgba(0,0,0,0.1);
+    border-radius: 5px;
+    outline: none;
+}
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    background: var(--color-royal-blue);
+    cursor: pointer;
+    border-radius: 50%;
+    border: 2px solid var(--color-parchment);
+}
+input[type="range"]::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    background: var(--color-royal-blue);
+    cursor: pointer;
+    border-radius: 50%;
+    border: 2px solid var(--color-parchment);
+}
+.race-total-container {
+    text-align: right;
+    font-weight: bold;
+    font-size: 1.2em;
+    margin-top: 15px;
+    border-top: 1px dashed var(--color-border);
+    padding-top: 10px;
+}
+
+/* Règles Sociales */
+.social-rules-container {
     display: flex;
     align-items: center;
     gap: 10px;
-    position: relative;
+    font-size: 1.1em;
+}
+#interracial-marriage-toggle {
+    width: 18px;
+    height: 18px;
 }
 
-/* Plaques d'information */
-.node-plate {
-    padding: 6px 12px;
-    color: var(--color-dark-text);
-    background-color: var(--color-parchment);
-    font-family: var(--font-body);
-    font-size: 0.8em;
-    border: 1px solid var(--color-border);
-    border-radius: 5px;
-    display: inline-block;
-    min-width: 140px;
-    max-width: 180px;
-    box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
-    text-align: center;
-    position: relative; 
-    z-index: 2;
+/* Grille de Stats et Boutons d'Action */
+.population-stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 20px;
+    margin-bottom: 20px;
 }
-.node-plate .person-name-clickable { font-weight: bold; font-size: 1.1em; color: var(--color-royal-blue); }
-.node-plate .person-job { font-style: italic; color: var(--job-color); }
-.node-plate.deceased { background-color: #e9ecef; border-color: #adb5bd; opacity: 0.7; }
-.node-plate.deceased .person-name-clickable { text-decoration: line-through; color: #495057; }
-
-/* Barre d'outils de l'arbre (Zoom/Pan) */
-.tree-controls {
-    position: absolute;
-    top: 5px;
-    right: 5px;
-    z-index: 10;
-    background: rgba(255, 255, 255, 0.8);
-    border-radius: 5px;
-    padding: 2px 5px;
+.action-buttons-container {
     display: flex;
-    align-items: center;
+    gap: 15px;
+    margin-top: 20px;
+    flex-wrap: wrap;
 }
-.tree-btn { background-color: var(--color-dark-text); color: white; border: 1px solid var(--color-border); padding: 2px 8px; font-weight: bold; cursor: pointer; }
-.tree-btn:hover { background-color: var(--color-royal-blue); }
-.tree-controls .zoom-text {
-    font-size: 0.8em;
-    margin-right: 10px;
-    color: var(--color-dark-text);
-    font-style: italic;
+.action-buttons-container .btn {
+    padding: 12px 20px;
+    font-size: 1.1em;
 }
 
+/* --- Bandeau Supérieur : Dashboard --- */
+.dashboard-section {
+    background: var(--color-parchment);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    padding: 10px 15px;
+    display: flex;
+    flex-direction: column;
+}
+.dashboard-section.dashboard-section-large {
+    flex-grow: 1; /* La section des distances prend plus de place */
+}
+.dashboard-section h4 {
+    font-family: var(--font-title);
+    margin-top: 0;
+    margin-bottom: 10px;
+    border-bottom: 1px solid var(--color-gold);
+    padding-bottom: 5px;
+}
+.dashboard-section .bottom-actions {
+    margin-top: auto; /* Pousse le bouton en bas */
+    padding-top: 10px;
+}
 
-.person-name-clickable { cursor: pointer; text-decoration: underline; }
-.person-name-clickable:hover { color: var(--color-gold); }
-
-#population-display { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; }
-.extinct-family summary { text-decoration: line-through; opacity: 0.6; font-style: italic; }
-
-/* --- PANNEAU DE STATS DE VILLE --- */
-#city-stats-panel { padding-bottom: 10px; margin-bottom: 10px; border-bottom: 2px solid var(--color-border); }
-#city-stats-panel h4 { margin: 0 0 10px 0; font-family: var(--font-title); color: var(--color-dark-text); }
-.city-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 5px 15px; font-size: 0.9em; }
-.city-stats-grid strong { font-family: var(--font-body); font-weight: 600; }
-.stat-tooltip-trigger { display: inline-block; width: 16px; height: 16px; line-height: 16px; border-radius: 50%; background-color: var(--color-dark-text); color: var(--color-parchment); text-align: center; font-weight: bold; font-style: italic; font-size: 0.8em; cursor: pointer; margin-left: 5px; vertical-align: middle; }
-
-/* --- MODALES --- */
-.modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); display: flex; justify-content: center; align-items: center; z-index: 1000; }
-.modal-dialog { background: var(--color-parchment); padding: 0; border-radius: 8px; border: 3px solid var(--color-gold); width: 90%; max-width: 850px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); max-height: 90vh; display: flex; flex-direction: column; }
-.modal-header { background: var(--color-dark-text); color: var(--color-gold); display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; }
-.modal-header h3 { margin: 0; font-family: var(--font-title); }
-.modal-close-btn { background: none; border: none; font-size: 2.5rem; cursor: pointer; color: var(--color-parchment); line-height: 1; }
-.modal-body { overflow-y: auto; padding: 20px; }
-.modal-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
-.modal-section { background: rgba(0,0,0,0.03); border: 1px solid var(--color-border); border-radius: 4px; padding: 15px; }
-.modal-section h4 { font-family: var(--font-title); color: var(--color-royal-blue); margin: 0 0 10px 0; border-bottom: 1px solid var(--color-border); padding-bottom: 5px; }
-.modal-section ul { list-style: none; padding: 0; font-size: 0.9em; }
-.modal-section li { margin-bottom: 8px; }
-.modal-section li strong { font-weight: bold; color: var(--color-dark-text); }
-.modal-full-width { grid-column: 1 / -1; }
-
-/* Style pour les panneaux d'historique et d'achats dans la modale */
-.modal-section .tab-panel {
-    max-height: 250px;
-    overflow-y: auto;
+#finalize-simulation-btn {
     width: 100%;
+    padding: 12px;
 }
 
-.history-entry { border-bottom: 1px dashed var(--color-border); padding: 5px 0; font-size: 0.85em; }
-.history-entry strong { display: inline-block; width: 100px; text-align: right; margin-right: 10px; font-family: var(--font-title); }
-
-.draggable-modal { position: fixed; z-index: 1010; border: 3px solid var(--color-gold); border-radius: 8px; padding: 0; background-color: var(--color-parchment); box-shadow: 0 5px 20px rgba(0,0,0,0.5); width: 90%; max-width: 500px; }
-.draggable-modal .modal-header { background-color: var(--color-royal-blue); color: var(--color-gold); padding: 10px 20px; font-family: var(--font-title); cursor: move; display: flex; justify-content: space-between; align-items: center; }
-.draggable-modal .modal-header h3 { margin: 0; font-size: 1.2em; }
-.draggable-modal .close-btn { background: none; border: none; color: var(--color-parchment); font-size: 2em; cursor: pointer; line-height: 1; }
-.draggable-modal .modal-content { padding: 20px; max-height: 60vh; overflow-y: auto; }
-.draggable-modal .modal-content h4 { font-family: var(--font-title); margin-top: 0; margin-bottom: 10px; border-bottom: 1px solid var(--color-border); padding-bottom: 5px; }
-.draggable-modal .modal-content ul { list-style: disc; padding-left: 20px; margin: 0; }
-.draggable-modal .modal-content li { margin-bottom: 5px; }
-
-/* Sections familiales (Ancêtres, Log) */
-.family-content { padding: 10px; }
-.family-section { border: none; margin-bottom: 5px; }
-.family-section > .section-summary { padding: 8px; background: #e9e9e9; border-radius: 3px; font-size: 0.9em; font-weight: bold; cursor: pointer; }
-.family-section[open] > .section-summary { border-bottom: 2px solid var(--color-gold); }
-.ancestor-container, .family-log-container { padding: 10px; max-height: 200px; overflow-y: auto;}
-.ancestor-entry, .family-log-container li { padding: 5px; font-size: 0.9em; border-bottom: 1px dashed #ccc; }
-.family-log-container { list-style: none; padding: 0; }
-
-/* NOUVEAU : Règles à ajouter à votre fichier step3-style.css */
-
-/* Style pour une personne mariée en dehors de sa famille d'origine */
-.node-plate.married-out {
-    border-color: #8E44AD; /* Une couleur pourpre pour la distinction */
-    background-color: #f5f0f7; /* Un fond légèrement violacé */
+#distance-matrix-container {
+    flex-grow: 1; /* Permet au tableau de prendre la hauteur disponible */
+    overflow: auto; /* Scroll si nécessaire */
+}
+.distance-matrix-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85em;
+}
+.distance-matrix-table th, .distance-matrix-table td {
+    border: 1px solid var(--color-border);
+    padding: 5px;
+    text-align: center;
+    white-space: nowrap;
+}
+.distance-matrix-table thead {
+    background-color: var(--color-parchment);
+    font-family: var(--font-title);
+    box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.1);
+}
+.distance-matrix-table td:first-child {
+    text-align: left;
 }
 
-/* Style pour la note textuelle indiquant la nouvelle famille */
-.remarried-note {
-    font-style: italic;
-    color: #800080; /* Violet */
+/* --- NOUVEAU : Modale Bibliothèque --- */
+#family-library-modal .modal-content {
+    padding: 20px;
+}
+#family-templates-list {
+    margin-top: 15px;
+    margin-bottom: 25px;
+    max-height: 40vh;
+    overflow-y: auto;
+    border: 1px solid var(--color-border);
+    background: rgba(0,0,0,0.02);
+}
+.family-template-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 15px;
+    border-bottom: 1px solid var(--color-border);
+}
+.family-template-item:last-child {
+    border-bottom: none;
+}
+.family-template-item span {
     font-weight: bold;
+    font-size: 1.1em;
+}
+.family-template-item div {
+    display: flex;
+    gap: 10px;
+}
+
+
+/* --- Fenêtre Modale Famille --- */
+#family-modal { max-width: 700px; }
+#family-form .form-group { margin-bottom: 15px; }
+#family-form label { display: block; margin-bottom: 5px; font-weight: 600; }
+#family-form input, #family-form select { width: 100%; padding: 8px; }
+#family-form h4, #family-form h5 { font-family: var(--font-title); margin-top: 20px; border-bottom: 1px solid var(--color-border); padding-bottom: 5px; }
+.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+#add-member-btn { margin-top: 15px; }
+#family-members-list { margin-top: 15px; background: rgba(0,0,0,0.03); border-radius: 4px; padding: 10px; min-height: 50px; }
+
+/* Divers */
+.hidden { display: none !important; }
+
+
+/* --- NOUVEAU : Styles pour la vue par onglets de la population --- */
+.tabs-nav {
+    display: flex;
+    gap: 5px;
+    border-bottom: 2px solid var(--color-border);
+    margin-bottom: 15px;
+}
+.tab-link {
+    padding: 10px 15px;
+    cursor: pointer;
+    background: #f0e8d6;
+    border: 1px solid var(--color-border);
+    border-bottom: none;
+    border-radius: 5px 5px 0 0;
+    font-family: var(--font-body);
+    font-size: 1em;
+}
+.tab-link:hover {
+    background-color: #f7f1e5;
+}
+.tab-link.active {
+    background: var(--color-parchment);
+    border-bottom: 2px solid var(--color-parchment);
+    position: relative;
+    top: 2px;
+    font-weight: bold;
+    color: var(--color-dark-text);
+}
+.tab-content {
+    display: none;
+    animation: fadeIn 0.5s;
+}
+.tab-content.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.building-category-group {
+    margin-bottom: 20px;
+    padding-left: 10px;
+    border-left: 3px solid rgba(212, 160, 23, 0.3);
+}
+.building-category-group h3 {
+    font-family: var(--font-title);
+    color: var(--color-royal-blue);
+    border-bottom: 1px solid var(--color-gold);
+    padding-bottom: 5px;
+    margin-top: 0;
+    margin-bottom: 15px;
+}
+.building-job-group {
+    margin-bottom: 15px;
+}
+.building-job-group h4 {
+    font-weight: bold;
+    margin: 0 0 10px 0;
+}
+.job-listing {
+    margin-left: 20px;
+    margin-bottom: 10px;
+}
+.job-listing strong {
+    font-weight: 600;
+    color: var(--color-dark-text);
+}
+.employee-list, .unemployed-list {
+    list-style: none;
+    padding-left: 15px;
+    border-left: 2px dotted var(--color-border);
+    margin-top: 5px;
+}
+.employee-list li, .unemployed-list li {
+    margin-bottom: 5px;
+}
+.unemployed-list {
+    padding-left: 0;
+    border-left: none;
+}
+.unemployed-list li {
+    padding: 4px;
+    background-color: rgba(0,0,0,0.02);
+}
+
+/* --- Détails Personnage (Ancien et nouveau style) --- */
+.family-summary-list {
+    margin-bottom: 15px;
+}
+.family-summary-list h4 {
+    font-family: var(--font-title);
+    margin-bottom: 5px;
+}
+.family-summary-list ul {
+    list-style-type: none;
+    padding-left: 15px;
+}
+.character-link {
+    font-weight: bold;
+    color: var(--color-royal-blue);
+    cursor: pointer;
+    text-decoration: underline;
+    text-decoration-color: transparent;
+    transition: text-decoration-color 0.2s;
+}
+.character-link:hover {
+    text-decoration-color: var(--color-royal-blue);
+}
+.family-member-job, .employee-list span, .unemployed-list span {
+    font-style: italic;
+    color: #555;
     font-size: 0.9em;
+}
+
+#character-details-modal {
+    max-width: 600px;
+}
+.char-modal-content {
+    padding: 20px;
+}
+.char-modal-content h4 {
+    font-family: var(--font-title);
+    margin-top: 20px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: 5px;
+}
+.char-details-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+.char-detail-item {
+    background: rgba(0,0,0,0.03);
+    padding: 8px;
+    border-radius: 4px;
+}
+
+#char-modal-stats {
+    list-style: none;
+    padding: 0;
+}
+#char-modal-stats li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+#char-modal-stats li:last-child {
+    border-bottom: none;
+}
+.dnd-stat {
+    font-weight: bold;
+    color: var(--color-royal-blue);
+    white-space: nowrap;
+    margin-left: 15px;
+}
+
+#char-modal-family-info ul {
+    list-style-type: none;
+    padding-left: 0;
+}
+#char-modal-family-info li {
+    padding: 4px 0;
+}
+
+/* NOUVEAU : Style pour l'avertissement de job invalide */
+.invalid-job-warning {
+    color: var(--color-error);
+    font-weight: bold;
+    margin-left: 8px;
+}
+
+.btn-delete-temp {
+    padding: 2px 6px;
+    font-size: 0.8em;
+    line-height: 1;
+}
+
+/* --- Boutons d'action secondaires --- */
+.secondary-actions {
+    margin-top: 10px;
+    border-top: 1px solid var(--color-border);
+    padding-top: 10px;
+}
+
+.btn.btn-secondary {
+    background-color: #6c757d;
+    color: white;
+    border-color: #6c757d;
+}
+.btn.btn-secondary:hover {
+    background-color: #5a6268;
+    border-color: #545b62;
+}
+
+.btn.btn-warning {
+    background-color: #ffc107;
+    color: #212529;
+    border-color: #ffc107;
+}
+.btn.btn-warning:hover {
+    background-color: #e0a800;
+    border-color: #d39e00;
+}
+
+.btn.btn-danger {
+    background-color: #dc3545;
+    color: white;
+    border-color: #dc3545;
+}
+.btn.btn-danger:hover {
+    background-color: #c82333;
+    border-color: #bd2130;
+}
+
+/* --- NOUVEAU : Style pour l'encadré d'information --- */
+.workflow-warning {
+    background-color: #e8f0f9;
+    border-left: 4px solid var(--color-royal-blue);
+    padding: 10px 15px;
+    margin-bottom: 20px;
+    border-radius: 4px;
+}
+.workflow-warning p {
+    margin: 0;
+    font-size: 0.95em;
+    line-height: 1.5;
+}
+
+/* MODIFICATION : Rendre les membres de la liste cliquables pour l'édition */
+.temp-member-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+    background-color: rgba(0,0,0,0.05);
+    border-radius: 4px;
+    margin-bottom: 5px;
+    transition: background-color 0.2s;
+}
+
+.temp-member-item .member-info {
+    cursor: pointer;
+    flex-grow: 1;
+}
+
+.temp-member-item .member-info:hover {
+    color: var(--color-royal-blue);
+}
+
+.temp-member-item.editing {
+    background-color: rgba(212, 160, 23, 0.2); /* Or transparent */
+    font-weight: bold;
 }

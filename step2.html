@@ -22,7 +22,29 @@
     <a href="step3.html" id="nav-step3">Étape 3<br><small>(Gen.0)</small></a>
 </nav>
 
-    <div class="main-content-wrapper">
+    <dialog id="source-selection-modal" open>
+        <div class="modal-header">
+            <h3>Configuration des Lieux</h3>
+        </div>
+        <div id="source-selection-modal-content">
+            <p>Comment souhaitez-vous peupler votre région ?</p>
+            <div style="display: flex; justify-content: space-around; gap: 20px; margin-top: 20px;">
+                <button id="select-auto-btn" class="btn-primary" style="flex: 1; padding: 15px; line-height: 1.5;">
+                    Génération Automatique
+                    <br><small style="font-weight: normal; font-style: italic;">L'IA crée une région cohérente et viable pour vous.</small>
+                </button>
+                <button id="select-manual-btn" class="btn-edit" style="flex: 1; padding: 15px; line-height: 1.5;">
+                    Configuration Manuelle
+                    <br><small style="font-weight: normal; font-style: italic;">Vous choisissez chaque bâtiment pour chaque lieu.</small>
+                </button>
+            </div>
+             <p style="margin-top: 20px; text-align: center;">
+                <button id="select-custom-btn" class="btn-secondary" style="margin-top: 10px;" disabled>Charger la configuration existante</button>
+            </p>
+        </div>
+    </dialog>
+
+    <div class="main-content-wrapper" style="visibility: hidden;">
         <div class="main-content" id="main-content">
             <header id="top-bar-step2">
                 <div class="header-title-group">
@@ -38,15 +60,25 @@
 
             <div id="generation-overlay">
                 <div class="overlay-content">
-                    <div class="overlay-icon">🏛️</div>
-                    <h1>Les architectes sont à l'œuvre...</h1>
-                    <p>Création d'un monde cohérent et organique.</p>
-                    <div class="spinner"></div>
+                    <div class="overlay-main-layout">
+                        <div class="overlay-column-left">
+                             <div class="overlay-icon">🏛️</div>
+                            <h1>Les architectes sont à l'œuvre...</h1>
+                            <p>Création d'un monde cohérent et organique.</p>
+                            <ul id="generation-log"></ul>
+                            <div class="spinner"></div>
+                        </div>
+                        <div class="overlay-column-right">
+                            <h3>État des Lieux</h3>
+                            <div id="place-status-panel">
+                                </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
             <main id="places-container">
-                </main>
+            </main>
 
             <div id="pagination-controls">
                 <button id="prev-page-btn" class="btn-secondary">Précédent</button>
@@ -99,9 +131,8 @@
             <button class="modal-close-btn" onclick="this.closest('dialog').close()">&times;</button>
         </div>
         <div id="add-building-modal-content">
-            </div>
+        </div>
     </dialog>
-
 
     <script src="races.js"></script>
     <script src="buildings.js"></script>
