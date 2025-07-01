@@ -451,43 +451,61 @@ document.addEventListener('DOMContentLoaded', () => {
         return getAvailableJobs(place, true).length;
     }
 
-    function findBestPartner(person, potentialPartners, allowInterracial, compatibleRaces) {
-        let bestPartnerIndex = -1;
-        let highestScore = -1;
+function findBestPartner(person, potentialPartners, allowInterracial, compatibleRaces) {
+    let bestPartnerIndex = -1;
+    let highestScore = -1;
 
-        const personJobData = getJobData(person.job.buildingName, person.job.jobTitle);
-        if (!personJobData) return -1;
-        const personJobTier = personJobData.tier;
+    const personJobData = getJobData(person.job.buildingName, person.job.jobTitle);
+    if (!personJobData) return -1;
+    const personJobTier = personJobData.tier;
 
-        for (let i = 0; i < potentialPartners.length; i++) {
-            const partner = potentialPartners[i];
-            
-            // MODIFICATION: Ajout du critère de différence d'âge
-            if (Math.abs(person.age - partner.age) > 5) {
-                continue;
-            }
+    // --- OPTIMISATION ---
+    // Au lieu de parcourir tous les partenaires, nous prenons un échantillon aléatoire.
+    // Cela évite le gel du navigateur pour les grandes populations comme la Capitale.
+    const SAMPLE_SIZE = 30; // Nombre de partenaires potentiels à examiner.
+    let searchSample = [...potentialPartners]; // Crée une copie
 
-            let currentScore = 0;
-
-            const isRaceCompatible = (partner.race === person.race) || (allowInterracial && compatibleRaces.includes(partner.race));
-            if (!isRaceCompatible) continue;
-            currentScore += 100;
-
-            const partnerJobData = getJobData(partner.job.buildingName, partner.job.jobTitle);
-            if (partnerJobData) {
-                const partnerJobTier = partnerJobData.tier;
-                if (partner.job.jobTitle === person.job.jobTitle) currentScore += 20;
-                else if (partnerJobTier === personJobTier) currentScore += 10;
-                else if (Math.abs(partnerJobTier - personJobTier) === 1) currentScore += 5;
-            }
-
-            if (currentScore > highestScore) {
-                highestScore = currentScore;
-                bestPartnerIndex = i;
-            }
-        }
-        return bestPartnerIndex;
+    // Mélange la copie et prend un échantillon
+    for (let i = searchSample.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [searchSample[i], searchSample[j]] = [searchSample[j], searchSample[i]];
     }
+
+    // Limite l'échantillon à la taille définie ou à la taille réelle du tableau si plus petit
+    if (searchSample.length > SAMPLE_SIZE) {
+        searchSample = searchSample.slice(0, SAMPLE_SIZE);
+    }
+    // --- FIN DE L'OPTIMISATION ---
+
+    // La boucle parcourt maintenant l'échantillon réduit, pas la liste complète
+    for (const partner of searchSample) {
+
+        if (Math.abs(person.age - partner.age) > 5) {
+            continue;
+        }
+
+        let currentScore = 0;
+
+        const isRaceCompatible = (partner.race === person.race) || (allowInterracial && compatibleRaces.includes(partner.race));
+        if (!isRaceCompatible) continue;
+        currentScore += 100;
+
+        const partnerJobData = getJobData(partner.job.buildingName, partner.job.jobTitle);
+        if (partnerJobData) {
+            const partnerJobTier = partnerJobData.tier;
+            if (partner.job.jobTitle === person.job.jobTitle) currentScore += 20;
+            else if (partnerJobTier === personJobTier) currentScore += 10;
+            else if (Math.abs(partnerJobTier - personJobTier) === 1) currentScore += 5;
+        }
+
+        if (currentScore > highestScore) {
+            highestScore = currentScore;
+            // Nous devons trouver l'index original dans la liste 'potentialPartners'
+            bestPartnerIndex = potentialPartners.findIndex(p => p.id === partner.id);
+        }
+    }
+    return bestPartnerIndex;
+}
     
     function generatePopulationForPlace() {
         if (!selectedPlace || selectedPlace.demographics.raceDistributionTotal !== 100) {

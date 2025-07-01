@@ -1,9 +1,10 @@
 /**
  * EcoSimRPG - step2.js
- * VERSION 9.2 - Correction de bug critique
+ * VERSION 9.3 - Ajustement des quotas et confirmation de la diversité
+ * - MODIFIÉ : Le quota de bâtiments pour chaque type de lieu a été augmenté de 4.
+ * - CONSERVÉ : L'étape de "peuplement de base" garantit au moins 2 bâtiments par catégorie lors de la génération automatique.
  * - CORRIGÉ : Réintégration de la fonction `logToOverlay` qui avait été accidentellement supprimée, causant une ReferenceError.
  * - CONSERVÉ : Le panneau d'état de la région (mode manuel) est correctement masqué lors du re-lancement de la génération automatique.
- * - CONSERVÉ : Le quota de bâtiments par lieu a été augmenté de 2.
  * - CONSERVÉ : Le panneau "État des Lieux" (pendant la génération) affiche un pourcentage.
  * - CONSERVÉ : Toutes les jauges du panneau "État des Lieux" passent à 100% à la fin de la génération.
  */
@@ -217,6 +218,65 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             updatePlaceFillStatus(place.id, config.totalBuildings, config.maxBuildings);
         });
+        
+        // =================================================================
+        // ▼▼▼▼▼▼▼▼▼▼▼▼▼▼ BLOC DE CODE POUR LA DIVERSITÉ MINIMALE ▼▼▼▼▼▼▼▼▼▼▼▼▼
+        // =================================================================
+
+        await logToOverlay("Garantie de la diversité structurelle de base...", 150);
+
+        // Boucle sur chaque lieu pour assurer une diversité de base
+        for (const place of currentRegion.places) {
+            const config = placeConfigs.get(place.id);
+            const availableCategories = BUILDING_DATA[place.type] || {};
+
+            // Boucle sur chaque catégorie de bâtiment disponible pour ce type de lieu
+            for (const categoryName in availableCategories) {
+                // Les bâtiments administratifs sont déjà gérés, on les ignore
+                if (categoryName === "Bâtiments Administratifs") continue;
+
+                // Assure que le tableau pour cette catégorie existe dans la configuration
+                if (!config.buildings[categoryName]) {
+                    config.buildings[categoryName] = [];
+                }
+                
+                // Calcule combien de bâtiments il manque pour atteindre notre objectif de 2
+                let buildingsToAddCount = 2 - config.buildings[categoryName].length;
+                if (buildingsToAddCount <= 0) continue; // On a déjà atteint ou dépassé l'objectif
+
+                // Crée une liste des bâtiments potentiels (non encore construits) pour cette catégorie
+                const potentialBuildings = Object.keys(availableCategories[categoryName])
+                    .filter(name => !Object.values(config.buildings).flat().some(b => b.name === name));
+                
+                // Mélange la liste pour une sélection aléatoire
+                potentialBuildings.sort(() => 0.5 - Math.random());
+
+                // Ajoute les bâtiments manquants
+                for (let i = 0; i < buildingsToAddCount && i < potentialBuildings.length; i++) {
+                    // Vérifie qu'on ne dépasse pas le quota total du lieu
+                    if (config.totalBuildings >= config.maxBuildings) {
+                        await logToOverlay(`Quota de bâtiments atteint pour ${place.name}, ajout pour la catégorie ${categoryName} interrompu.`, 50);
+                        break; 
+                    }
+                    
+                    const buildingNameToAdd = potentialBuildings[i];
+                    const buildingData = availableCategories[categoryName][buildingNameToAdd];
+
+                    config.buildings[categoryName].push({
+                        name: buildingNameToAdd,
+                        description: buildingData.description
+                    });
+                    config.totalBuildings++;
+                    builtByPlaceType.get(place.type).add(buildingNameToAdd); // Met à jour le suivi pour la diversité
+                    await logToOverlay(`Ajout de base: <strong>${buildingNameToAdd}</strong> à <strong>${place.name}</strong> pour assurer la diversité.`, 50);
+                    updatePlaceFillStatus(place.id, config.totalBuildings, config.maxBuildings);
+                }
+            }
+        }
+        
+        // =================================================================
+        // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲ FIN DU BLOC DE CODE POUR LA DIVERSITÉ ▲▲▲▲▲▲▲▲▲▲▲▲▲
+        // =================================================================
 
         let attempts = 0;
         const maxAttempts = 500;
@@ -349,17 +409,24 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         await logToOverlay("Architecture terminée. Affichage de la carte...", 1000);
     }
-
+    
+    // =================================================================
+    // ▼▼▼▼▼▼▼▼▼▼▼▼▼▼ BLOC DE CODE MODIFIÉ ▼▼▼▼▼▼▼▼▼▼▼▼▼
+    // =================================================================
     function getBuildingQuotaForPlace(placeType) {
         switch (placeType) {
-            case "Hameau":   return 10;
-            case "Village":  return 17;
-            case "Bourg":    return 27;
-            case "Ville":    return 42;
-            case "Capitale": return 62;
-            default:         return 12;
+            case "Hameau":   return 14; // 10 + 4
+            case "Village":  return 21; // 17 + 4
+            case "Bourg":    return 31; // 27 + 4
+            case "Ville":    return 46; // 42 + 4
+            case "Capitale": return 66; // 62 + 4
+            default:         return 16; // 12 + 4
         }
     }
+    // =================================================================
+    // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲ FIN DU BLOC DE CODE MODIFIÉ ▲▲▲▲▲▲▲▲▲▲▲▲▲
+    // =================================================================
+
 
     // --- GESTION DE L'AFFICHAGE ET DES DONNÉES ---
     function loadData() {
