@@ -1,10 +1,12 @@
 /**
  * EcoSimRPG - step3.js
- * VERSION 12.0 - Intégration de la sélection de la source des données de races.
+ * VERSION 12.1 - Ajout des boutons de randomisation de la distribution des races.
  * - NOUVEAU : Une modale s'affiche au démarrage pour choisir entre les races par défaut et personnalisées.
  * - MODIFIÉ : La fonction `init()` gère la logique de la modale.
  * - NOUVEAU : La fonction `startAppLogic()` contient l'ancienne logique de `init()` et n'est exécutée qu'après le choix de l'utilisateur.
  * - NOUVEAU : Les fonctions `loadCustomRacesData` et `initializeRaceDataSource` gèrent le chargement et la sélection des données.
+ * - NOUVEAU : Fonction `randomizeRacesForPlace` pour distribuer aléatoirement les pourcentages de races.
+ * - NOUVEAU : Écouteurs d'événements pour les boutons de randomisation (lieu actuel et tous les lieux).
  */
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -50,6 +52,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const createNewTemplateBtn = document.getElementById('create-new-template-btn');
     const familyTemplatesList = document.getElementById('family-templates-list');
     const characterDetailsModal = document.getElementById('character-details-modal');
+    const randomizeRacesCurrentBtn = document.getElementById('randomize-races-current-btn'); // NOUVEAU
+    const randomizeRacesAllBtn = document.getElementById('randomize-races-all-btn'); // NOUVEAU
 
     // -- DOM Selectors for NEW Family Modal --
     const familyModal = document.getElementById('family-modal');
@@ -149,6 +153,43 @@ document.addEventListener('DOMContentLoaded', () => {
     function openCharacterModal(personId) { const allPopulation = currentRegion.places.flatMap(p => (p.demographics ? p.demographics.population : [])); const person = allPopulation.find(p => p.id === personId); if (!person) return; document.getElementById('char-modal-title').textContent = `Détails de ${person.firstName}`; document.getElementById('char-modal-fullname').textContent = `${person.firstName} ${person.lastName}`; document.getElementById('char-modal-race').textContent = person.race; document.getElementById('char-modal-age').textContent = person.age; document.getElementById('char-modal-gender').textContent = person.gender; const monthlyGainsContainer = document.getElementById('char-modal-monthly-gains'); monthlyGainsContainer.innerHTML = ''; const rulingInfo = getRulingFamilyInfoForPerson(person, allPopulation); let jobText = 'N/A', workplaceText = 'N/A', salaryText = '0'; let prestigeText = (person.prestige || 0).toFixed(2); if (person.job) { const jobData = getJobData(person.job.buildingName, person.job.jobTitle); const workPlace = currentRegion.places.find(p => p.id === person.job.locationId); jobText = person.job.jobTitle; workplaceText = `${person.job.buildingName} (${workPlace.name})`; salaryText = (person.salary || 0).toLocaleString(); if (jobData && jobData.gainsMensuels) { monthlyGainsContainer.innerHTML += `<div class="char-detail-item"><strong>Prestige/mois :</strong> +${(jobData.gainsMensuels.prestige || 0).toFixed(2)}</div>`; if(jobData.gainsMensuels.stats){ const statGains = Object.entries(jobData.gainsMensuels.stats).map(([stat, val]) => `+${val.toFixed(2)} ${stat.slice(0,3)}.`); monthlyGainsContainer.innerHTML += `<div class="char-detail-item" style="grid-column: span 2;"><strong>Stats/mois :</strong> ${statGains.join(', ')}</div>`; } } } else if (rulingInfo) { if (rulingInfo.isRulerSpouse) jobText = `${person.gender === 'Femme' ? 'Épouse' : 'Époux'} du ${rulingInfo.rulerJobTitle}`; else if (rulingInfo.isHeir) jobText = person.gender === 'Femme' ? 'Héritière' : 'Héritier'; monthlyGainsContainer.innerHTML = '<p>Bénéficie des revenus de sa famille.</p>'; } else { jobText = 'Sans emploi'; monthlyGainsContainer.innerHTML = '<p>Pas de gains mensuels.</p>'; } document.getElementById('char-modal-job').textContent = jobText; document.getElementById('char-modal-workplace').textContent = workplaceText; document.getElementById('char-modal-salary').textContent = salaryText; document.getElementById('char-modal-prestige').textContent = prestigeText; const statsList = document.getElementById('char-modal-stats'); statsList.innerHTML = ''; if (person.stats) { const statMap = { intelligence: 'Int', force: 'For', constitution: 'Con', dexterite: 'Dex', sagesse: 'Sag', charisme: 'Cha' }; for (const [stat, value] of Object.entries(person.stats)) { const dndString = convertToDnD(value); const statShort = statMap[stat] || stat.slice(0,3); statsList.innerHTML += `<li><span><strong>${stat.charAt(0).toUpperCase() + stat.slice(1)}:</strong> ${Math.round(value)}</span><span class="dnd-stat"><strong>${statShort}:</strong> ${dndString}</span></li>`; } } const familyInfoContainer = document.getElementById('char-modal-family-info'); familyInfoContainer.innerHTML = '<ul>' + ['parents', 'spouseId', 'childrenIds'].map(prop => { if (!person[prop] || person[prop].length === 0) return ''; const ids = Array.isArray(person[prop]) ? person[prop] : [person[prop]]; const relatives = ids.map(id => getPersonById(id, allPopulation)).filter(Boolean); if (relatives.length === 0) return ''; const propMap = { parents: 'Parents', spouseId: 'Conjoint(e)', childrenIds: 'Enfant(s)'}; return `<li><strong>${propMap[prop]} :</strong> ${relatives.map(p => `<span class="character-link" data-person-id="${p.id}">${p.firstName} ${p.lastName || ''}</span>`).join(' et ')}</li>`; }).join('') + '</ul>'; if(familyInfoContainer.textContent === '') familyInfoContainer.innerHTML = '<ul><li>Aucun lien de parenté direct connu.</li></ul>'; document.getElementById('char-modal-desired-children').textContent = person.desiredChildren ?? 'N/A'; document.getElementById('char-modal-desired-friends').textContent = person.maxFriends ?? 'N/A'; document.getElementById('char-modal-desired-acquaintances').textContent = person.maxAcquaintances ?? 'N/A'; characterDetailsModal.showModal(); }
     function updateDashboard() { let totalPop = 0, totalFam = 0; if(currentRegion) { currentRegion.places.forEach(p => { if (p.demographics) { totalPop += p.demographics.population.length; totalFam += p.demographics.families.length; } }); } globalTotalPopulation.textContent = totalPop; globalFamilyCount.textContent = totalFam; calculateAndDisplayDistanceMatrix(); }
     function calculateAndDisplayDistanceMatrix() { if (!currentRegion || !currentRegion.roads || currentRegion.places.length < 2) { distanceMatrixContainer.innerHTML = '<p>Pas assez de lieux ou de routes pour calculer une matrice.</p>'; return; } const places = currentRegion.places; const roadsData = currentRegion.roads; const travelModesToDisplay = { "Pied": "Pied", "Rapide": "Cheval", "Convoi": "Caravane" }; const headerRow = '<th>Lieu</th><th>Mode</th>' + places.map(p => `<th title="${p.name}">${p.name.substring(0, 5)}...</th>`).join(''); let tableHTML = `<table class="distance-matrix-table"><thead><tr>${headerRow}</tr></thead><tbody>`; places.forEach(p1 => { Object.entries(travelModesToDisplay).forEach(([displayName, modeKey], index) => { let rowHTML = '<tr>'; if (index === 0) rowHTML += `<td rowspan="3" style="vertical-align: middle; text-align: left; font-weight: bold;">${p1.name}</td>`; rowHTML += `<td style="text-align: left;">${displayName}</td>`; places.forEach(p2 => { if (p1.id === p2.id) { rowHTML += '<td style="background-color: #ccc;">-</td>'; } else { const roadKey = getRoadKey(p1.id, p2.id); const roadInfo = roadsData[roadKey]; let travelTime = Infinity; if (roadInfo && ROAD_TYPES[roadInfo.type].users.includes(modeKey)) { const distanceKm = axialDistance(p1.coords, p2.coords) * (currentRegion.scale || 10); const baseSpeed = TRAVEL_SPEEDS[modeKey]; const modifier = ROAD_MODIFIERS[roadInfo.type]; travelTime = distanceKm / (baseSpeed * modifier); } rowHTML += `<td>${formatTravelTime(travelTime)}</td>`; } }); rowHTML += '</tr>'; tableHTML += rowHTML; }); }); tableHTML += '</tbody></table>'; distanceMatrixContainer.innerHTML = tableHTML; }
+    
+    // --- NOUVEAU : Fonction pour randomiser la distribution des races ---
+    function randomizeRacesForPlace(place) {
+        if (!place) return;
+
+        if (!place.demographics) {
+            place.demographics = { raceDistribution: {}, raceDistributionTotal: 0, allowInterracialMarriage: true, population: [], families: [], inheritanceLaw: 'primogeniture_male' };
+        }
+
+        const raceNames = Object.keys(RACES_DATA.races);
+        const numRaces = raceNames.length;
+        const newDistribution = {};
+
+        if (numRaces === 0) {
+            place.demographics.raceDistribution = newDistribution;
+            place.demographics.raceDistributionTotal = 0;
+            return;
+        }
+
+        // Générer des poids aléatoires pour chaque race
+        let weights = raceNames.map(() => Math.random());
+        const totalWeight = weights.reduce((sum, w) => sum + w, 0);
+
+        // Calculer les pourcentages en fonction des poids et les arrondir
+        let calculatedTotal = 0;
+        for (let i = 0; i < numRaces - 1; i++) {
+            const percentage = Math.round((weights[i] / totalWeight) * 100);
+            newDistribution[raceNames[i]] = percentage;
+            calculatedTotal += percentage;
+        }
+        
+        // Assigner le reste à la dernière race pour garantir que le total est exactement 100
+        newDistribution[raceNames[numRaces - 1]] = 100 - calculatedTotal;
+
+        place.demographics.raceDistribution = newDistribution;
+        place.demographics.raceDistributionTotal = 100;
+    }
 
 
     // DÉPLACÉ : La logique de l'application est maintenant dans sa propre fonction.
@@ -194,6 +235,35 @@ document.addEventListener('DOMContentLoaded', () => {
         spouseBuilding.addEventListener('change', () => handleWorkBuildingChange(spouseLocation, spouseBuilding, spouseJob));
         document.body.addEventListener('click', e => { if (e.target.classList.contains('character-link')) { const personId = e.target.dataset.personId; const openModals = document.querySelectorAll('dialog[open]'); openModals.forEach(modal => modal.close()); setTimeout(() => openCharacterModal(personId), 50); } });
         characterDetailsModal.querySelector('.modal-close-btn').addEventListener('click', () => characterDetailsModal.close());
+        
+        // --- NOUVEAU : Écouteurs pour les boutons de randomisation ---
+        randomizeRacesCurrentBtn.addEventListener('click', () => {
+            if (!selectedPlace) {
+                alert("Veuillez d'abord sélectionner un lieu.");
+                return;
+            }
+            randomizeRacesForPlace(selectedPlace);
+            renderRaceDistribution(); // Redessine les sliders pour le lieu actuel
+            saveData();
+        });
+
+        randomizeRacesAllBtn.addEventListener('click', () => {
+            if (!currentRegion || !currentRegion.places) return;
+
+            if (confirm("Êtes-vous sûr de vouloir remplacer la distribution des races pour TOUS les lieux de la région ? Cette action est irréversible.")) {
+                currentRegion.places.forEach(place => {
+                    randomizeRacesForPlace(place);
+                });
+                
+                // Si un lieu est sélectionné, rafraîchir sa vue
+                if (selectedPlace) {
+                    renderRaceDistribution();
+                }
+                
+                saveData();
+                alert("La distribution des races a été randomisée pour tous les lieux.");
+            }
+        });
     }
 
     // --- INITIALISATION (Refondue pour la modale) ---
