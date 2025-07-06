@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Éditeur de Races - EcoSim</title>
+    
+    <link rel="stylesheet" href="menu-style.css">
+
+    <link rel="stylesheet" href="step1-style.css"> 
+
+    <link rel="stylesheet" href="editeur.css">
+    <link rel="stylesheet" href="races_editor.css">
+</head>
+<body>
+
+    <nav class="floating-menu">
+        <div class="menu-title">EcoSimRPG</div>
+        <a href="index.html" id="nav-index">Accueil</a>
+        <a href="step1.html" id="nav-step1">Étape 1<br><small>(Carte)</small></a>
+        <a href="step2.html" id="nav-step2">Étape 2<br><small>(Conf. Lieux)</small></a>
+        <a href="step3.html" id="nav-step3">Étape 3<br><small>(Gen.0)</small></a>
+        <a href="step4.html" id="nav-step4">Étape 4<br><small>(Simulation)</small></a>
+        <a href="step5.html" id="nav-step5">Étape 5<br><small>(Données)</small></a>
+        <a href="editeur.html" id="nav-editor" style="border-top: 1px solid #ccc; color: #4a90e2;">Éditeur<br><small>(Bâtiments)</small></a>
+        <a href="races_editor.html" id="nav-races-editor" class="active" style="border-top: 1px solid #ccc; color: #4a90e2;">Éditeur<br><small>(Races)</small></a>
+    </nav>
+
+    <div class="editor-wrapper">
+
+        <header>
+            <h1>Éditeur de Races en Temps Réel</h1>
+            <p>Charge les données depuis `races.js`. Les modifications sont sauvegardées automatiquement.</p>
+             <div class="button-group" style="padding: 0 1em 1em 1em; justify-content: flex-end; margin-top: 0;">
+                <button id="import-data-btn" class="btn btn-secondary">Importer un JSON</button>
+                <input type="file" id="json-upload" accept=".json" style="display:none;">
+                <button id="open-manage-modal-btn" class="btn btn-edit">Exporter / Gérer</button>
+           </div>
+        </header>
+    
+        <div class="container" id="editor-view">
+            <div id="navigation-pane">
+                <h2>Races Disponibles</h2>
+                <div id="tree-container"></div>
+                <div class="button-group">
+                    <button id="add-race-btn" class="btn btn-primary">Ajouter une Race</button>
+                </div>
+            </div>
+            <div id="editor-pane">
+                <div id="placeholder">
+                    <h2>Bienvenue dans l'éditeur de Races</h2>
+                    <p>Sélectionnez une race pour commencer ou ajoutez-en une nouvelle.</p>
+                </div>
+                <form id="race-form" style="display:none;"></form>
+            </div>
+            <div id="analysis-pane">
+                <h2>Analyse des Compatibilités</h2>
+                <div id="analysis-output"></div>
+            </div>
+        </div>
+    
+        <div id="manage-data-modal" class="modal-overlay">
+            <div class="modal-content">
+                <h2>Gérer les Données des Races</h2>
+                <p>Téléchargez vos modifications ou réinitialisez les données à leur état d'origine.</p>
+                <div class="button-group">
+                    <button id="reset-all-btn" class="btn btn-delete">Restaurer les Données d'Origine</button>
+                    <button id="download-json-btn" class="btn btn-primary">Télécharger le JSON</button>
+                    <button type="button" id="manage-modal-close-btn" class="btn btn-secondary">Fermer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="races.js"></script>
+    <script src="races_editor.js" defer></script>
+
+</body>
+</html>

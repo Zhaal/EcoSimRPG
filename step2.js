@@ -1,17 +1,18 @@
 /**
  * EcoSimRPG - step2.js
- * VERSION 9.4 - Correction de la gestion d'absence de région
- * - CORRIGÉ : Ajout d'une vérification dans la fonction `init` pour s'assurer que `currentRegion` n'est pas `null`.
- * - AMÉLIORÉ : Si aucune région n'est chargée, la modale affiche un message d'erreur clair et guide l'utilisateur vers l'étape 1.
- * - CONSERVÉ : Le reste de la logique de génération automatique et manuelle est inchangé.
+ * VERSION 11.0 - Intégration de la restauration de session et validation par menu
+ * - NOUVEAU : Un bouton "Restaurer" apparaît si une configuration précédente existe pour la région.
+ * - NOUVEAU : Cliquer sur le lien de navigation "Étape 3" (s'il est actif) déclenche la validation finale.
+ * - MODIFIÉ : La fonction `init` gère les nouveaux boutons et la nouvelle logique de navigation.
+ * - MODIFIÉ : `validateManualConfiguration` et `startManualConfiguration` mettent à jour l'état du lien de navigation.
  */
 document.addEventListener('DOMContentLoaded', () => {
     // --- CONSTANTES & CONFIGURATION ---
     const STORAGE_KEY = 'ecoSimRPG_map_data';
     const LAST_REGION_KEY = 'ecoSimRPG_last_region_id';
-    const BUILDING_DATA = window.EcoSimData.buildings;
+    const CUSTOM_BUILDINGS_STORAGE_KEY = 'ecoSimRPG_buildings_custom';
     const ITEMS_PER_PAGE = 3;
-    const DIVERSITY_PENALTY = 25; // Malus de score si un bâtiment existe déjà dans un lieu de même type
+    const DIVERSITY_PENALTY = 25;
 
     const PLACE_TYPE_HIERARCHY = {
         "Hameau": 1,
@@ -34,7 +35,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const manualConfigBtn = document.getElementById('manual-config-btn');
     const validationModal = document.getElementById('validation-modal');
     const analysisModal = document.getElementById('analysis-modal');
-    const analysisModalTitle = document.getElementById('analysis-modal-title');
     const internalAnalysisContainer = document.querySelector('#internal-analysis .analysis-details');
     const externalAnalysisContainer = document.querySelector('#external-analysis .analysis-details');
     const statusPanel = document.getElementById('status-panel');
@@ -47,11 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const nextPageBtn = document.getElementById('next-page-btn');
     const pageInfo = document.getElementById('page-info');
 
-    // Nouveaux sélecteurs pour la modale de choix
     const sourceSelectionModal = document.getElementById('source-selection-modal');
-    const selectAutoBtn = document.getElementById('select-auto-btn');
-    const selectManualBtn = document.getElementById('select-manual-btn');
-    const selectCustomBtn = document.getElementById('select-custom-btn');
 
     // --- ETAT DE L'APPLICATION ---
     let regions = [];
@@ -60,6 +56,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let unmetRegionalTags = new Set();
     let currentPage = 1;
     let placeStatusElements = new Map();
+    let customBuildingsData = null;
+    let BUILDING_DATA = window.EcoSimData.buildings; // Modifié en let
 
     // --- FONCTIONS UTILITAIRES ---
     function axialDistance(a, b) {
@@ -182,7 +180,7 @@ document.addEventListener('DOMContentLoaded', () => {
         await logToOverlay("Analyse de la topographie et des ressources régionales...", 200);
 
         const placeConfigs = new Map();
-        const builtByPlaceType = new Map(); // Pour la diversité
+        const builtByPlaceType = new Map();
 
         currentRegion.places.forEach(place => {
             placeConfigs.set(place.id, {
@@ -420,16 +418,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const lastRegionId = localStorage.getItem(LAST_REGION_KEY);
         if (lastRegionId) {
             currentRegion = regions.find(r => r.id == lastRegionId) || null;
-        }
-
-        if (currentRegion && currentRegion.places.some(p => p.config && Object.keys(p.config.buildings || {}).length > 0)) {
-            selectCustomBtn.disabled = false;
-            selectCustomBtn.addEventListener('click', () => {
-                sourceSelectionModal.close();
-                mainContentWrapper.style.visibility = 'visible';
-                isManualMode = false;
-                displayPlaces();
-            });
         }
     }
 
@@ -777,6 +765,7 @@ document.addEventListener('DOMContentLoaded', () => {
         finalStatusHTML += '</ul>';
         statusContent.innerHTML = finalStatusHTML;
         validateAllBtn.disabled = !isAllValid;
+        updateNavLinksState();
     }
 
     function openAnalysisModal(placeId) {
@@ -907,9 +896,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function handleValidateAll() {
-        const canProceed = isManualMode ? !validateAllBtn.disabled : true;
-        if (!canProceed) {
-            return alert("Impossible de valider : tous les prérequis ne sont pas satisfaits en mode manuel.");
+        if (!checkAllPlacesValidated()) {
+            alert("Impossible de valider : tous les prérequis ne sont pas satisfaits ou la configuration est incomplète.");
+            return;
         }
 
         if (confirm("Finaliser cette configuration et passer à l'étape de simulation ?")) {
@@ -926,9 +915,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function startAutomaticGeneration() {
         sourceSelectionModal.close();
         mainContentWrapper.style.visibility = 'visible';
-
         statusPanel.classList.add('hidden');
-
         initializePlaceStatusPanel();
         generationOverlay.style.display = 'flex';
 
@@ -947,31 +934,33 @@ document.addEventListener('DOMContentLoaded', () => {
         validateAllBtn.disabled = false;
         currentPage = 1;
         displayPlaces();
+        updateNavLinksState();
     }
 
     function startManualConfiguration() {
         sourceSelectionModal.close();
         mainContentWrapper.style.visibility = 'visible';
-
         currentPage = 1;
         isManualMode = true;
         statusPanel.classList.remove('hidden');
 
         currentRegion.places.forEach(place => {
-            place.config = {
-                buildings: {},
-                isValidated: false
-            };
-            const adminCategory = "Bâtiments Administratifs";
-            const availableBuildings = BUILDING_DATA[place.type];
-            if (availableBuildings && availableBuildings[adminCategory]) {
-                place.config.buildings[adminCategory] = [];
-                for (const name in availableBuildings[adminCategory]) {
-                    const buildingData = availableBuildings[adminCategory][name];
-                    place.config.buildings[adminCategory].push({
-                        name,
-                        description: buildingData.description
-                    });
+            if (!place.config || !place.config.buildings || Object.keys(place.config.buildings).length === 0) {
+                 place.config = {
+                    buildings: {},
+                    isValidated: false
+                };
+                const adminCategory = "Bâtiments Administratifs";
+                const availableBuildings = BUILDING_DATA[place.type];
+                if (availableBuildings && availableBuildings[adminCategory]) {
+                    place.config.buildings[adminCategory] = [];
+                    for (const name in availableBuildings[adminCategory]) {
+                        const buildingData = availableBuildings[adminCategory][name];
+                        place.config.buildings[adminCategory].push({
+                            name,
+                            description: buildingData.description
+                        });
+                    }
                 }
             }
         });
@@ -980,41 +969,93 @@ document.addEventListener('DOMContentLoaded', () => {
         saveData();
     }
 
+    function loadCustomData() {
+        const customDataJSON = localStorage.getItem(CUSTOM_BUILDINGS_STORAGE_KEY);
+        if (customDataJSON) {
+            try {
+                customBuildingsData = JSON.parse(customDataJSON);
+                console.log("Custom building data loaded from localStorage.");
+            } catch (e) {
+                console.error("Failed to parse custom building data:", e);
+                customBuildingsData = null;
+            }
+        }
+    }
+
+    function initializeWithDataSource(source) {
+        if (source === 'custom' && customBuildingsData) {
+            BUILDING_DATA = customBuildingsData;
+            console.log("Using CUSTOM building data for this session.");
+        } else {
+            BUILDING_DATA = window.EcoSimData.buildings;
+            console.log("Using DEFAULT building data for this session.");
+        }
+    }
+
     // --- INITIALISATION ---
     function init() {
         loadData();
+        loadCustomData();
 
         if (!sourceSelectionModal) return;
 
-        // --- DÉBUT DE LA CORRECTION ---
-        // Vérification cruciale : la région a-t-elle été chargée ?
         if (!currentRegion) {
             const modalContent = document.getElementById('source-selection-modal-content');
             const modalHeader = sourceSelectionModal.querySelector('.modal-header h3');
 
-            // Met à jour la modale pour afficher une erreur claire.
-            if (modalHeader) {
-                modalHeader.textContent = "Erreur de Chargement";
-            }
-
+            if (modalHeader) modalHeader.textContent = "Erreur de Chargement";
+            
             if (modalContent) {
                 modalContent.innerHTML = `
                 <p style="color: var(--color-error); font-weight: bold;">Impossible de charger les données de la région.</p>
-                <p>Cela peut arriver si vous avez accédé directement à cette page ou si les données de navigation ont été effacées.</p>
                 <p>Veuillez d'abord créer ou sélectionner une région à l'étape précédente.</p>
                 <div style="text-align: center; margin-top: 25px;">
                     <a href="step1.html" class="btn-primary" style="text-decoration: none; padding: 10px 20px;">Retourner à l'Étape 1</a>
                 </div>
             `;
             }
-
-            // Stoppe l'exécution pour empêcher toute autre erreur.
             return;
         }
-        // --- FIN DE LA CORRECTION ---
 
-        selectAutoBtn.addEventListener('click', startAutomaticGeneration);
-        selectManualBtn.addEventListener('click', startManualConfiguration);
+        // --- NOUVEAU : Logique pour le bouton de restauration ---
+        const restoreBtnGroup = document.getElementById('restore-config-group');
+        const isRestorable = currentRegion.places.some(p => p.config && p.config.buildings && Object.keys(p.config.buildings).length > 0);
+
+        if (isRestorable && restoreBtnGroup) {
+            restoreBtnGroup.style.display = 'block';
+            document.getElementById('restore-config-btn').addEventListener('click', () => {
+                sourceSelectionModal.close();
+                mainContentWrapper.style.visibility = 'visible';
+                isManualMode = true; // Restaurer en mode manuel pour permettre l'édition
+                statusPanel.classList.remove('hidden');
+                currentPage = 1;
+                displayPlaces();
+                updateNavLinksState();
+            });
+        }
+
+        // Setup button listeners for generation
+        document.getElementById('select-auto-default-btn').addEventListener('click', () => {
+            initializeWithDataSource('default');
+            startAutomaticGeneration();
+        });
+        document.getElementById('select-manual-default-btn').addEventListener('click', () => {
+            initializeWithDataSource('default');
+            startManualConfiguration();
+        });
+
+        if (customBuildingsData) {
+            document.getElementById('custom-data-group').style.display = 'block';
+            document.getElementById('select-auto-custom-btn').addEventListener('click', () => {
+                initializeWithDataSource('custom');
+                startAutomaticGeneration();
+            });
+            document.getElementById('select-manual-custom-btn').addEventListener('click', () => {
+                initializeWithDataSource('custom');
+                startManualConfiguration();
+            });
+        }
+
 
         rerollRegionBtn.addEventListener('click', () => {
             if (confirm("Relancer la génération automatique ? La configuration actuelle sera effacée.")) {
@@ -1029,6 +1070,14 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         validateAllBtn.addEventListener('click', handleValidateAll);
+
+        // --- NOUVEAU : Écouteur pour le lien de navigation de l'étape 3 ---
+        navStep3.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (!navStep3.classList.contains('nav-disabled')) {
+                handleValidateAll();
+            }
+        });
 
         placesContainer.addEventListener('click', (e) => {
             const target = e.target;
@@ -1051,6 +1100,8 @@ document.addEventListener('DOMContentLoaded', () => {
             currentPage--;
             displayPlaces();
         });
+
+        updateNavLinksState();
     }
 
     init();

@@ -1,0 +1,232 @@
+
+ * ===================================================================
+ * === STYLES SPÉCIFIQUES POUR L'ÉDITEUR (INCHANGÉS) ===
+ * ===================================================================
+ * Utilise les variables globales de `step1-style.css` pour une apparence cohérente.
+*/
+
+/* Utilisation des polices globales */
+html, body {
+    font-family: var(--font-body);
+}
+
+/* Adaptation du conteneur principal de l'éditeur */
+.editor-wrapper {
+    margin-left: 160px; /* Doit correspondre à la largeur du .floating-menu */
+    width: calc(100% - 160px);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 1em;
+    box-sizing: border-box;
+    overflow-y: auto; /* Permet le défilement du contenu de l'éditeur */
+    background-color: var(--color-parchment); /* Fond cohérent */
+}
+
+.editor-wrapper header { text-align: center; margin-bottom: 1em; flex-shrink: 0; }
+.editor-wrapper h1, .editor-wrapper h2, .editor-wrapper h3 { color: var(--color-royal-blue); font-family: var(--font-title); }
+
+.container {
+    display: flex;
+    flex-grow: 1;
+    gap: 1em;
+    overflow: hidden;
+    min-height: 0;
+}
+
+#navigation-pane, #editor-pane, #analysis-pane {
+    background-color: #f9f6ef; /* Un beige très clair pour les panneaux */
+    padding: 1em;
+    border-radius: 8px;
+    overflow-y: auto;
+    border: 1px solid var(--color-border);
+}
+
+#navigation-pane { flex: 0 0 320px; }
+#editor-pane { flex: 2 1 50%; }
+#analysis-pane { flex: 1 1 25%; }
+
+#navigation-pane ul { list-style-type: none; padding-left: 15px; }
+#navigation-pane .location-type > span, #navigation-pane .category > span { font-weight: bold; cursor: pointer; display: block; padding: 4px 0; font-family: var(--font-title); }
+#navigation-pane .location-type > span { font-size: 1.2em; }
+#navigation-pane .category > span { font-size: 1.1em; }
+#navigation-pane .building { color: var(--color-dark-text); cursor: pointer; padding: 4px 0; border-left: 3px solid transparent; padding-left: 10px; margin-left: 10px;}
+#navigation-pane .building:hover { color: var(--color-royal-blue); border-left-color: var(--color-royal-blue);}
+#navigation-pane .selected { color: var(--color-royal-blue); font-weight: bold; border-left-color: var(--color-gold); background-color: rgba(212, 160, 23, 0.1); }
+.collapsible-content { display: none; padding-left: 15px;}
+.expanded > .collapsible-content { display: block; }
+
+form { display: flex; flex-direction: column; gap: 1em; }
+fieldset {
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    padding: 1em;
+    margin-bottom: 1em;
+    background-color: #fff;
+}
+legend { font-weight: bold; color: var(--color-royal-blue); padding: 0 0.5em; font-family: var(--font-title); }
+label { display: flex; align-items: center; margin-bottom: 0.5em; font-weight: 500; }
+input[type="text"], input[type="number"], textarea, select {
+    width: 100%;
+    padding: 8px;
+    background-color: #fff;
+    color: var(--color-dark-text);
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-family: var(--font-body);
+}
+textarea { height: 80px; resize: vertical; }
+
+.job-container { margin-top: 1em; border-left: 3px solid var(--color-gold); padding-left: 1em; position: relative; padding-top: 1.5em; }
+.grid-2, .grid-3 { display: grid; gap: 1em; }
+.grid-2 { grid-template-columns: repeat(2, 1fr); }
+.grid-3 { grid-template-columns: repeat(3, 1fr); }
+
+.button-group { display: flex; gap: 1em; margin-top: 1em; }
+
+#placeholder { text-align: center; margin-top: 3em; color: #888; }
+
+.header-with-button { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1em; }
+.header-with-button h2 { margin: 0; }
+#add-tag-btn {
+    padding: 0; width: 28px; height: 28px; font-size: 1.2em;
+    line-height: 28px; border-radius: 50%; flex-shrink: 0;
+}
+
+#analysis-output h3 { margin-top: 20px; border-bottom: 1px solid var(--color-gold); padding-bottom: 5px; }
+#analysis-output .tag-list { list-style-type: none; padding-left: 0; }
+#analysis-output .tag-list li { padding: 5px; border-radius: 4px; margin-bottom: 5px; }
+#analysis-output .tag-orphan { color: var(--color-error); font-weight: bold; background-color: rgba(183, 28, 28, 0.1); border-left: 3px solid var(--color-error); }
+#analysis-output .tag-unused { color: #c08b00; font-weight: bold; background-color: rgba(226, 160, 74, 0.1); border-left: 3px solid #e2a04a; }
+#analysis-output .building-list { font-size: 0.9em; color: #555; padding-left: 15px; margin-top: 5px; }
+.delete-job-btn { position: absolute; top: 5px; right: 5px; }
+
+/* Styles de la modale */
+.modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.7); display: none; justify-content: center;
+    align-items: center; z-index: 1000;
+}
+.modal-content {
+    background-color: var(--color-parchment); padding: 2em; border-radius: 8px;
+    width: 90%; max-width: 600px; border: 2px solid var(--color-gold);
+    max-height: 90vh; display: flex; flex-direction: column;
+}
+.modal-content h2 { margin-top: 0; }
+.modal-content .form-group { margin-bottom: 1em; }
+.modal-content .button-group { justify-content: flex-end; }
+.hidden { display: none; }
+
+.tag-widget, .keyvalue-widget {
+    border: 1px solid var(--color-border); border-radius: 5px; padding: 1em;
+    background-color: #fdfaf2;
+}
+.tag-list-container, .kv-list-container { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.tag-item, .kv-item {
+    display: flex; align-items: center; gap: 8px;
+    background-color: #e8e0c9; padding: 5px 10px;
+    border-radius: 15px; font-size: 0.9em;
+}
+.kv-item { border-radius: 5px; width: 100%; }
+.kv-item input { width: auto; flex-grow: 1; }
+.delete-btn {
+    cursor: pointer; background-color: var(--color-error); color: white;
+    border: none; border-radius: 50%; width: 20px; height: 20px;
+    display: inline-flex; justify-content: center; align-items: center;
+    font-weight: bold; line-height: 1;
+}
+.add-item-form { display: flex; gap: 10px; margin-top: 10px; }
+.add-item-form input, .add-item-form select { flex-grow: 1; }
+
+#export-modal textarea {
+    width: 100%; height: 250px; background-color: #fff; color: var(--color-dark-text);
+    border: 1px solid var(--color-border); border-radius: 4px;
+    padding: 0.5em; box-sizing: border-box; margin-bottom: 1em; margin-top: 1em;
+}
+
+/* Styles pour la simulation et l'analyse */
+.simulation-table {
+    width: 100%; border-collapse: collapse; margin-top: 1em; font-size: 0.9em;
+}
+.simulation-table th, .simulation-table td { border: 1px solid var(--color-border); padding: 8px; text-align: center; }
+.simulation-table th { background-color: #e8e0c9; color: var(--color-royal-blue); }
+.simulation-table td { background-color: #fff; }
+.simulation-table .stat-col { min-width: 110px; }
+
+.analysis-tabs { display: flex; border-bottom: 2px solid var(--color-gold); margin-bottom: 1em; }
+.analysis-tab-btn {
+    padding: 10px 15px; cursor: pointer; background-color: transparent; border: none;
+    color: var(--color-dark-text); border-bottom: 3px solid transparent; font-size: 1em;
+    margin: 0; transition: color 0.2s, border-color 0.2s; font-family: var(--font-title);
+}
+.analysis-tab-btn:hover { color: var(--color-royal-blue); background-color: #e8e0c9; }
+.analysis-tab-btn.active { color: var(--color-royal-blue); border-bottom-color: var(--color-royal-blue); font-weight: bold; }
+.analysis-tab-content { display: none; }
+.analysis-tab-content.active { display: block; }
+
+.tooltip {
+    display: inline-block; margin-left: 8px; color: var(--color-royal-blue); cursor: help;
+    border: 1px solid var(--color-border); border-radius: 50%; width: 18px; height: 18px;
+    text-align: center; line-height: 18px; font-size: 0.85em; font-weight: bold; user-select: none;
+}
+legend .tooltip { margin-bottom: 0; }
+
+/*
+ * ===================================================================
+ * === STYLES POUR LA LISTE D'ANALYSE DÉPLIANTE (NOUVEAU) ===
+ * ===================================================================
+*/
+
+#analysis-output .clickable-tag {
+    cursor: pointer;
+    font-weight: bold;
+    display: block;
+    padding: 6px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+#analysis-output .clickable-tag:hover {
+    background-color: #e8e0c9;
+}
+
+/* Le contenu du dépliant est caché par défaut */
+#analysis-output .tag-info {
+    display: none;
+    padding: 10px 10px 10px 15px; /* haut droit bas gauche */
+    margin-left: 10px;
+    margin-top: 5px;
+    border-left: 2px solid var(--color-gold);
+    background-color: rgba(255, 255, 255, 0.5);
+}
+
+#analysis-output .info-list {
+    list-style-type: none;
+    padding-left: 10px;
+    font-size: 0.9em;
+    color: #333;
+}
+
+#analysis-output .tag-info h4 {
+    margin: 10px 0 5px 0;
+    font-size: 0.95em;
+    color: var(--color-royal-blue);
+}
+
+#analysis-output .tag-info h4.required {
+    color: var(--color-error);
+}
+
+/* Conserver le style pour les liens de bâtiments à l'intérieur du dépliant */
+#analysis-output .building-link {
+    cursor: pointer;
+    color: var(--color-dark-text);
+    text-decoration: underline;
+    text-decoration-color: var(--color-border);
+}
+
+#analysis-output .building-link:hover {
+    color: var(--color-royal-blue);
+    text-decoration-color: var(--color-royal-blue);
+}

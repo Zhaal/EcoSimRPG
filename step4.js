@@ -306,10 +306,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (jobTier === 0) return; // Les dirigeants ne prennent pas leur retraite de cette façon
 
             if (jobTier === 1) {
-                retirementAge = Math.floor(lifespan * 0.80);
+                retirementAge = Math.floor(lifespan * 0.90);
             } 
             else if (jobTier > 1) {
-                retirementAge = Math.floor(lifespan * 0.65);
+                retirementAge = Math.floor(lifespan * 0.90);
             }
 
             if (retirementAge > 0 && person.age >= retirementAge) {
@@ -323,7 +323,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function getWeightedDesiredChildren() {
         const weights = [
-            0, 1, 1, 2, 2, 3, 3
+            0, 0, 1, 1, 2, 2, 2, 3
         ];
         const randomIndex = Math.floor(Math.random() * weights.length);
         return weights[randomIndex];
@@ -519,9 +519,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const familyInfluence = familyInfluences.get(person.familyId) || 0;
                 const influenceModifier = 1 / (1 + (familyInfluence / 50)); 
     
-                let overpopulationDeathChance = (0.001 * overpopulationFactor) * influenceModifier; 
+                let overpopulationDeathChance = (0.050 * overpopulationFactor) * influenceModifier; 
                 if (person.age > maxLifespan * 0.5) {
-                    const ageScaling = 1 + 9 * ((person.age - maxLifespan * 0.8) / (maxLifespan * 0.8));
+                    const ageScaling = 1 + 15 * ((person.age - maxLifespan * 0.2) / (maxLifespan * 0.2));
                     overpopulationDeathChance *= ageScaling;
                 }
                 if (Math.random() < overpopulationDeathChance) {

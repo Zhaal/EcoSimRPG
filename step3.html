@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
     
+    <link rel="stylesheet" href="menu-style.css">
     <link rel="stylesheet" href="step1-style.css"> 
     <link rel="stylesheet" href="step3-style.css">
 </head>
@@ -22,10 +23,37 @@
     <a href="step3.html" id="nav-step3" class="active">Étape 3<br><small>(Gen.0)</small></a>
     <a href="step4.html" id="nav-step4">Étape 4<br><small>(Simulation)</small></a>
     <a href="step5.html" id="nav-step5">Étape 5<br><small>(Données)</small></a>
-
+    <a href="editeur.html" id="nav-editor" style="border-top: 1px solid #ccc; color: #4a90e2;">Éditeur<br><small>(Bâtiments)</small></a>
+    <a href="races_editor.html" id="nav-races-editor" style="border-top: 1px solid #ccc; color: #4a90e2;">Éditeur<br><small>(Races)</small></a>
 </nav>
 
-<div class="page-container-step3">
+<dialog id="race-source-modal" open>
+    <div class="modal-header">
+        <h3>Génération de la Population (Gen.0)</h3>
+    </div>
+    <div id="race-source-modal-content">
+        <p>Quelle source de données pour les races souhaitez-vous utiliser ?</p>
+        
+        <div class="config-option-group">
+            <h4>Utiliser les données <strong>par défaut</strong></h4>
+            <div class="button-group">
+                <button id="select-races-default-btn" class="btn-primary">Commencer avec les races standard</button>
+            </div>
+        </div>
+
+        <div id="custom-races-group" class="config-option-group" style="display:none;">
+            <div class="title-with-link">
+                <h4>Utiliser vos données de <strong>l'Éditeur de Races</strong></h4>
+                <a href="races_editor.html" class="btn-link-editor" title="Ouvrir l'éditeur pour modifier les races">Modifier ✎</a>
+            </div>
+             <div class="button-group">
+                <button id="select-races-custom-btn" class="btn-primary">Commencer avec vos races personnalisées</button>
+            </div>
+        </div>
+    </div>
+</dialog>
+
+<div class="page-container-step3" style="visibility: hidden;">
 
     <header id="top-dashboard-banner">
         <div class="dashboard-section">
@@ -77,23 +105,23 @@
                     </div>
                 </section>
 
-<section class="config-section">
-    <h2>2. Règles Sociales</h2>
-    <div class="social-rules-container">
-        <input type="checkbox" id="interracial-marriage-toggle" checked>
-        <label for="interracial-marriage-toggle">Autoriser les mariages inter-raciaux (selon compatibilités)</label>
-    </div>
-    
-    <div class="social-rules-container" style="margin-top: 15px;">
-        <label for="inheritance-law-select" style="font-weight: 600; font-size: 1.1em; margin-right: 10px;">Loi de succession (Titres Tiers 0) :</label>
-        <select id="inheritance-law-select" class="form-control" style="width: auto;">
-            <option value="primogeniture_male">Primogéniture Masculine</option>
-            <option value="primogeniture_female">Primogéniture Féminine</option>
-            <option value="primogeniture_absolute">Primogéniture Absolue (l'aîné, peu importe le sexe)</option>
-            <option value="elective">Électif par Prestige (membre le plus prestigieux de la famille)</option>
-        </select>
-    </div>
-    </section>
+                <section class="config-section">
+                    <h2>2. Règles Sociales</h2>
+                    <div class="social-rules-container">
+                        <input type="checkbox" id="interracial-marriage-toggle" checked>
+                        <label for="interracial-marriage-toggle">Autoriser les mariages inter-raciaux (selon compatibilités)</label>
+                    </div>
+                    
+                    <div class="social-rules-container" style="margin-top: 15px;">
+                        <label for="inheritance-law-select" style="font-weight: 600; font-size: 1.1em; margin-right: 10px;">Loi de succession (Titres Tiers 0) :</label>
+                        <select id="inheritance-law-select" class="form-control" style="width: auto;">
+                            <option value="primogeniture_male">Primogéniture Masculine</option>
+                            <option value="primogeniture_female">Primogéniture Féminine</option>
+                            <option value="primogeniture_absolute">Primogéniture Absolue (l'aîné, peu importe le sexe)</option>
+                            <option value="elective">Électif par Prestige (membre le plus prestigieux de la famille)</option>
+                        </select>
+                    </div>
+                </section>
 
                 <section class="config-section">
                     <h2>3. Population & Actions</h2>

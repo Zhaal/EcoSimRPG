@@ -1,0 +1,107 @@
+/*
+ * ===================================================================
+ * === STYLES SPÉCIFIQUES POUR L'ÉDITEUR DE RACES ===
+ * ===================================================================
+ * Utilise les variables et classes de `editeur.css` pour une base cohérente.
+*/
+
+/* Styles pour la liste des races dans la navigation */
+#navigation-pane .race-item {
+    color: var(--color-dark-text);
+    cursor: pointer;
+    padding: 6px 0 6px 15px;
+    border-left: 3px solid transparent;
+    margin-left: 5px;
+    font-size: 1.1em;
+}
+
+#navigation-pane .race-item:hover {
+    color: var(--color-royal-blue);
+    border-left-color: var(--color-royal-blue);
+}
+
+#navigation-pane .selected {
+    color: var(--color-royal-blue);
+    font-weight: bold;
+    border-left-color: var(--color-gold);
+    background-color: rgba(212, 160, 23, 0.1);
+}
+
+/* Grille pour les caractéristiques numériques */
+.grid-5 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 1em;
+}
+
+/* Styles pour les listes de noms/prénoms */
+.names-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
+}
+
+.names-list {
+    min-height: 100px;
+    max-height: 200px;
+    border: 1px solid var(--color-border);
+    padding: 0.5em;
+    border-radius: 4px;
+    overflow-y: auto;
+    background-color: #fff;
+}
+
+/* Styles pour le widget de compatibilité */
+#compatibilites-widget .tag-list-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+#compatibilites-widget .tag-item {
+     display: flex;
+    align-items: center;
+    gap: 8px;
+    background-color: #d1c4e9; /* Un violet clair pour la compatibilité */
+    padding: 5px 12px;
+    border-radius: 15px;
+    font-size: 0.95em;
+    border: 1px solid #b39ddb;
+}
+
+/* Analyse des compatibilités */
+#analysis-output ul {
+    list-style-type: none;
+    padding-left: 0;
+}
+
+#analysis-output li {
+    padding: 8px;
+    border-radius: 4px;
+    margin-bottom: 6px;
+    border-left: 3px solid;
+}
+
+#analysis-output .analysis-ok {
+    background-color: rgba(76, 175, 80, 0.1);
+    border-color: #4CAF50;
+    color: #388E3C;
+}
+
+#analysis-output .analysis-warning {
+    background-color: rgba(255, 152, 0, 0.1);
+    border-color: #FF9800;
+    color: #E65100;
+}
+
+#analysis-output .analysis-error {
+    background-color: rgba(244, 67, 54, 0.1);
+    border-color: #F44336;
+    color: #c62828;
+}
+
+#analysis-output .details {
+    font-size: 0.85em;
+    margin-left: 15px;
+    color: #555;
+}

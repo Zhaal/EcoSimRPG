@@ -1,10 +1,14 @@
 /**
  * EcoSimRPG - step5.js
  * Page d'exploitation et d'impression des données de simulation.
- * VERSION 7.0 - Dossiers de Personnage Détaillés
- * - Refonte complète de l'affichage des personnages pour inclure un historique de vie.
- * - Ajout de fonctions de rendu pour la chronologie, la carrière et les liens sociaux.
- * - Ajustement de la récupération des données pour les liens familiaux étendus.
+ * VERSION 7.2 - Modification de l'affichage
+ * - Dans la liste des familles :
+ * - Les morts sont barrés.
+ * - Les hommes sont en bleu, les femmes en rose.
+ * - Fiches de personnage :
+ * - Ne sont plus générées pour les morts.
+ * - Retrait des sections "Chronologie de vie" et "Parcours Professionnel".
+ * - Ajout des oncles/tantes paternels et maternels.
  */
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -132,12 +136,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const getSiblings = (person, scope) => {
         const parents = getParents(person, scope);
         if (parents.length === 0) return [];
-        const parent = parents[0];
-        const siblingIds = new Set(parent.childrenIds || []);
-        if (parents[1] && parents[1].childrenIds) {
-            parents[1].childrenIds.forEach(id => siblingIds.add(id));
-        }
-        return Array.from(siblingIds).filter(id => id !== person.id).map(id => getPersonById(id, scope)).filter(Boolean);
+        // Find siblings from both parents to be safe
+        const parentIds = parents.map(p => p.id);
+        const allChildren = new Set();
+        populationScope.forEach(p => {
+            if (p.parents && p.parents.some(parentId => parentIds.includes(parentId))) {
+                allChildren.add(p);
+            }
+        });
+        return Array.from(allChildren).filter(p => p.id !== person.id);
     };
     const getChildren = (person, scope) => (person.childrenIds || []).map(id => getPersonById(id, scope)).filter(Boolean);
     const getSpouse = (person, scope) => person.spouseId ? getPersonById(person.spouseId, scope) : null;
@@ -292,13 +299,35 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderFamilies(location) {
-        let html = `<h2>Familles de ${location.name}</h2><div id="families-grid">`;
+        let html = `<h2>Familles du lieu : ${location.name}</h2><div id="families-grid">`;
         const { families, population } = location.demographics;
         families.sort((a,b) => (a.name || '').localeCompare(b.name || '')).forEach(family => {
             html += `<div class="family-card"><h3>Famille ${family.name}</h3><ul>`;
             const members = family.memberIds.map(id => population.find(p => p.id === id)).filter(Boolean);
             members.sort((a,b) => (b.age || 0) - (a.age || 0)).forEach(member => {
-                 html += `<li><strong>${member.firstName}</strong> (${member.age} ans) - ${member.job ? member.job.jobTitle : (member.royalTitle || 'Sans emploi')}</li>`;
+                 const ageText = member.isAlive ? `${member.age} ans` : `décédé(e) à ${member.ageAtDeath || member.age} ans`;
+                 let jobText = member.job?.jobTitle || member.royalTitle;
+
+                 if (member.isAlive) {
+                     jobText = jobText || 'Sans emploi';
+                 } else {
+                     jobText = jobText || 'aucun emploi connu';
+                 }
+
+                 // MODIFICATION: Add classes for gender and strikethrough for deceased
+                 let nameClass = '';
+                 if (member.gender === 'Homme') {
+                     nameClass = 'class="male"';
+                 } else if (member.gender === 'Femme') {
+                     nameClass = 'class="female"';
+                 }
+
+                 let formattedName = `<span ${nameClass}>${member.firstName}</span>`;
+                 if (!member.isAlive) {
+                     formattedName = `<s>${formattedName}</s>`;
+                 }
+
+                 html += `<li><strong>${formattedName} ${family.name}</strong> (${ageText}) - ${jobText}</li>`;
             });
             html += `</ul></div>`;
         });
@@ -309,8 +338,14 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderCharacterSheets(location) {
         let html = `<h2>Fiches des Personnages</h2><div id="character-sheets-container">`;
         const population = location.demographics.population;
-        population.sort((a,b) => (a.lastName || '').localeCompare(b.lastName || '') || (a.firstName || '').localeCompare(b.firstName || ''));
-        population.forEach(person => { html += renderSingleCharacterSheet(person, population) });
+        // MODIFICATION: Filter out deceased characters
+        population
+            .filter(person => person.isAlive)
+            .sort((a,b) => (a.lastName || '').localeCompare(b.lastName || '') || (a.firstName || '').localeCompare(b.firstName || ''))
+            .forEach(person => { 
+                const allPopulation = currentRegion.places.flatMap(p => p.demographics.population);
+                html += renderSingleCharacterSheet(person, allPopulation) 
+            });
         html += `</div>`;
         return html;
     }
@@ -335,66 +370,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderCharacterView(personId, location) {
         const person = getPersonById(personId, location.demographics.population);
-        // NOUVEAU : On récupère la population de toute la région pour trouver les liens familiaux hors de la ville
+        // Do not render if the person is not alive
+        if (!person || !person.isAlive) {
+            renderLocationView(selectedLocation);
+            return;
+        }
         const allPopulation = currentRegion.places.flatMap(p => p.demographics.population);
 
         let html = `<div class="print-section character-sheet-full-view"><h2><span class="location-title">${location.name}</span> &gt; Dossier de Personnage</h2>`;
-        html += renderSingleCharacterSheet(person, allPopulation); // On passe maintenant la population totale
+        html += renderSingleCharacterSheet(person, allPopulation);
         html += `</div>`;
         contentArea.innerHTML = html;
     }
 
     /**
-     * NOUVEAU (v7.0): Affiche une chronologie des événements de la vie du personnage.
-     * Suppose que person.eventLog est un tableau d'objets {age: number, event: string}
-     */
-    function renderTimeline(person) {
-        // NOTE: La simulation doit générer cet historique. Nous simulons ici quelques entrées possibles.
-        const eventLog = person.eventLog || [];
-        if (person.birthYear) {
-             eventLog.unshift({ age: 0, event: `Naissance à ${person.locationOfBirth || 'lieu inconnu'}.` });
-        }
-        if (!person.isAlive) {
-            eventLog.push({ age: person.ageAtDeath, event: `Décès. Cause : ${person.causeOfDeath || 'inconnue'}.` });
-        }
-        
-        if (eventLog.length <= 1) return '<p>Aucun événement marquant enregistré.</p>';
-
-        let html = '<dl class="life-timeline">';
-        eventLog.sort((a, b) => a.age - b.age).forEach(entry => {
-            html += `<dt>Âge : ${entry.age}</dt><dd>${entry.event}</dd>`;
-        });
-        html += '</dl>';
-        return html;
-    }
-
-    /**
-     * NOUVEAU (v7.0): Affiche l'historique de carrière du personnage.
-     * Suppose que person.jobHistory est un tableau d'objets {jobTitle, buildingName, startAge, endAge}
-     */
-    function renderCareerHistory(person) {
-        // NOTE: La simulation doit générer cet historique.
-        const jobHistory = person.jobHistory || (person.job ? [{...person.job, startAge: RACES_DATA.races[person.race].ageTravail, endAge: null}] : []);
-        
-        if (jobHistory.length === 0) return `<p>${person.royalTitle || 'N\'a jamais occupé d\'emploi formel.'}</p>`;
-
-        let html = '<ul class="career-history">';
-        jobHistory.forEach(job => {
-            const duration = job.endAge ? `(de ${job.startAge} à ${job.endAge} ans)` : `(depuis l'âge de ${job.startAge} ans)`;
-            html += `<li><strong>${job.jobTitle}</strong>, <em>${job.buildingName}</em> ${duration}</li>`;
-        });
-        html += '</ul>';
-        return html;
-    }
-
-
-    /**
-     * FONCTION PRINCIPALE DE RENDU - ENTIÈREMENT REVUE
+     * MODIFIED (v7.2): Character sheet main rendering function.
+     * - Removed Timeline and Career History.
+     * - Added Paternal/Maternal Uncles and Aunts.
      */
     function renderSingleCharacterSheet(person, populationScope) {
         if (!person) return '';
         
-        // Calculs des statistiques
+        // Stat calculations
         const displayStats = getDisplayStats(person);
         const { score: str, modifier: strMod } = convertToDnD(displayStats.force);
         const { score: dex, modifier: dexMod } = convertToDnD(displayStats.dexterite);
@@ -403,18 +400,24 @@ document.addEventListener('DOMContentLoaded', () => {
         const { score: wis, modifier: wisMod } = convertToDnD(displayStats.sagesse);
         const { score: cha, modifier: chaMod } = convertToDnD(displayStats.charisme);
         
-        // Récupération des informations sociales
+        // Social information retrieval
         const spouse = getSpouse(person, populationScope);
         const children = getChildren(person, populationScope);
         const parents = getParents(person, populationScope);
         const siblings = getSiblings(person, populationScope);
+
+        // MODIFICATION: Find uncles and aunts
+        const father = parents.find(p => p.gender === 'Homme');
+        const mother = parents.find(p => p.gender === 'Femme');
+        const paternalUnclesAunts = father ? getSiblings(father, populationScope) : [];
+        const maternalUnclesAunts = mother ? getSiblings(mother, populationScope) : [];
+        
         const jobTitle = person.job?.jobTitle || person.royalTitle || 'Sans emploi';
-        const status = person.isAlive ? `Vivant(e)` : `Décédé(e)`;
-        const causeOfDeath = !person.isAlive ? `<p><strong>Cause du décès :</strong> ${person.causeOfDeath || 'Non spécifiée'}</p>` : '';
-        const ageLine = person.isAlive ? `${person.age} ans` : `Mort(e) à l'âge de ${person.ageAtDeath} ans`;
+        const status = `Vivant(e)`;
+        const ageLine = `${person.age} ans`;
         const residence = person.currentLocation || 'Inconnue';
 
-        // Formatage de la liste de personnes pour les liens familiaux
+        // Helper for formatting person links in family lists
         const formatPersonLink = p => `${p.firstName} ${p.lastName} (${p.isAlive ? p.age + ' ans' : 'décédé(e)'})`;
 
         return `
@@ -438,24 +441,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         <h4>État Civil & Statut</h4>
                         <p><strong>Âge :</strong> ${ageLine}</p>
                         <p><strong>Statut :</strong> ${status}</p>
-                        ${causeOfDeath}
                         <p><strong>Prestige social :</strong> ${person.prestige ? person.prestige.toFixed(0) : '0'}</p>
-                         <p><strong>Occupation actuelle :</strong> ${jobTitle}</p>
+                        <p><strong>Occupation actuelle :</strong> ${jobTitle}</p>
                     </div>
                 </section>
             </div>
 
             <div class="char-sheet-details">
-                <div class="details-section">
-                    <h4>Chronologie de vie</h4>
-                    ${renderTimeline(person)}
-                </div>
-                
-                <div class="details-section">
-                    <h4>Parcours Professionnel</h4>
-                    ${renderCareerHistory(person)}
-                </div>
-
                 <div class="details-section">
                     <h4>Cercle Social & Familial</h4>
                     <div class="social-grid">
@@ -464,6 +456,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                         <div><strong>Fratrie:</strong>
                             <ul>${siblings.length > 0 ? siblings.map(s => `<li>${formatPersonLink(s)}</li>`).join('') : '<li>Aucune</li>'}</ul>
+                        </div>
+                         <div><strong>Oncles & Tantes (Paternel):</strong>
+                            <ul>${paternalUnclesAunts.length > 0 ? paternalUnclesAunts.map(p => `<li>${formatPersonLink(p)}</li>`).join('') : '<li>Aucun</li>'}</ul>
+                        </div>
+                        <div><strong>Oncles & Tantes (Maternel):</strong>
+                           <ul>${maternalUnclesAunts.length > 0 ? maternalUnclesAunts.map(p => `<li>${formatPersonLink(p)}</li>`).join('') : '<li>Aucun</li>'}</ul>
                         </div>
                         <div><strong>Conjoint(e):</strong>
                             <p>${spouse ? formatPersonLink(spouse) : 'Célibataire'}</p>
@@ -495,6 +493,8 @@ document.addEventListener('DOMContentLoaded', () => {
         characterSelect.innerHTML = '<option value="">-- Tous les Personnages --</option>';
         if (location.demographics?.population) {
             location.demographics.population
+                // MODIFICATION: Show only living people in the dropdown
+                .filter(person => person.isAlive)
                 .sort((a,b) => (a.lastName || '').localeCompare(b.lastName || '') || (a.firstName || '').localeCompare(b.firstName || ''))
                 .forEach(person => characterSelect.innerHTML += `<option value="${person.id}">${person.firstName} ${person.lastName}</option>`);
         }
@@ -514,6 +514,9 @@ document.addEventListener('DOMContentLoaded', () => {
             contentArea.innerHTML = '<h1>Région non valide ou vide.</h1><p>Retournez aux étapes précédentes.</p>';
             return;
         }
+        
+        // Global scope for finding relatives across locations
+        window.populationScope = currentRegion.places.flatMap(p => p.demographics.population);
 
         locationSelect.innerHTML = currentRegion.places.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
         selectedLocation = currentRegion.places[0];
