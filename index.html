@@ -20,6 +20,9 @@
     <a href="step1.html" id="nav-step1">Étape 1<br><small>(Carte)</small></a>
     <a href="step2.html" id="nav-step2">Étape 2<br><small>(Conf. Lieux)</small></a>
     <a href="step3.html" id="nav-step3">Étape 3<br><small>(Gen.0)</small></a>
+    <a href="step4.html" id="nav-step4">Étape 4<br><small>(Simulation)</small></a>
+    <a href="step5.html" id="nav-step5">Étape 5<br><small>(Données)</small></a>
+
 </nav>
 
     <div class="main-content-index">
@@ -35,32 +38,18 @@
             </section>
 
             <div class="steps-container">
+                
                 <div class="step-card" id="card-step1">
                     <div class="step-card-header">
                         <span class="step-number">1</span>
-                        <h3>Étape 1 : Sculpter la Carte</h3>
+                        <h3>Forger le Royaume</h3>
                     </div>
                     <div class="step-card-body">
-                        <p>C'est ici que votre monde prend forme. L'Étape 1 est un éditeur de carte interactif où vous dessinez les contours de votre royaume.</p>
-                        
-                        <h4>Gestion de la Région</h4>
+                        <p>C'est ici que votre monde prend forme. Donnez une âme à votre continent en traçant ses contours. Chaque hexagone est un fragment de votre monde, attendant d'être façonné.</p>
                         <ul>
-                            <li><strong>Créer &amp; Sélectionner :</strong> Utilisez les contrôles en haut à gauche pour créer une nouvelle région ou en sélectionner une existante.</li>
-                            <li><strong>Échelle :</strong> Définissez la distance en kilomètres pour chaque hexagone de la carte.</li>
-                        </ul>
-
-                        <h4>Interagir avec la Carte</h4>
-                        <ul>
-                            <li><strong>Navigation :</strong> Maintenez le clic gauche pour vous déplacer (panning) et utilisez la molette de la souris pour zoomer.</li>
-                            <li><strong>Placer un Lieu :</strong> Double-cliquez sur un hexagone vide pour ouvrir la fenêtre de création.</li>
-                            <li><strong>Déplacer un Lieu :</strong> Cliquez sur l'image d'un lieu et faites-la glisser vers un autre hexagone.</li>
-                        </ul>
-
-                        <h4>Gestion des Lieux et Routes</h4>
-                        <ul>
-                            <li><strong>Liste des Lieux :</strong> Le panneau de droite affiche tous les lieux de la région. Vous pouvez les éditer, les supprimer ou centrer la carte sur eux.</li>
-                             <li><strong>Mesure & Création de Routes :</strong> Cliquez sur l'icône <strong>↔️</strong> au-dessus d'un lieu pour entrer en mode mesure, voir les distances et ajouter ou retirer des routes vers d'autres lieux.</li>
-                            <li><strong>Modifier une Route :</strong> Cliquez sur l'icône <strong>⚙️</strong> située au milieu d'une route pour changer son type (de "Sentier de montagne" à "Route Royale") et ainsi affecter sa vitesse.</li>
+                            <li><strong>Posez les graines de la civilisation :</strong> Fondez vos premières cités, des capitales rayonnantes aux hameaux isolés, et donnez-leur un nom qui résonnera à travers les âges.</li>
+                            <li><strong>Tissez un réseau vital :</strong> Reliez vos communautés par un réseau de routes. S'agira-t-il de grandes voies royales pavées, de chemins de traverse sinueux ou de périlleux sentiers de montagne ? Chaque route a son importance et influence la vitesse et la nature des voyages.</li>
+                             <li><strong>Définissez l'échelle du monde :</strong> Chaque hexagone représente-t-il une simple lieue ou une vaste étendue de dix kilomètres ? Vos choix détermineront les temps de trajet et l'ampleur des défis logistiques.</li>
                         </ul>
                     </div>
                     <div class="step-card-footer">
@@ -71,24 +60,14 @@
                 <div class="step-card" id="card-step2">
                     <div class="step-card-header">
                         <span class="step-number">2</span>
-                        <h3>Étape 2 : Bâtir l'Économie</h3>
+                        <h3>Ériger l'Économie</h3>
                     </div>
                     <div class="step-card-body">
-                        <p>Une fois la carte établie, il est temps de donner vie à vos cités. Cette étape peuple vos lieux de bâtiments, créant une économie dynamique et des interdépendances logiques.</p>
-                        
-                        <h4>Mode Automatique (Recommandé)</h4>
+                        <p>Une cité n'est rien sans son cœur battant : son économie. Cette étape donne une fonction et une âme à chacun de vos lieux.</p>
                         <ul>
-                            <li><strong>Génération Intelligente :</strong> Par défaut, le programme analyse votre région et tente de construire une économie viable.</li>
-                            <li><strong>Objectif de Viabilité :</strong> L'algorithme s'assure que chaque ressource (`tag`) requise par un bâtiment est produite quelque part dans la région.</li>
-                            <li><strong>Analyse Approfondie :</strong> Cliquez sur l'icône <strong>ℹ️</strong> sur la carte d'un lieu pour ouvrir une analyse détaillée de ses importations, exportations et de sa logique interne.</li>
-                        </ul>
-
-                        <h4>Mode Personnalisé (Contrôle total)</h4>
-                        <ul>
-                            <li><strong>Activation :</strong> Cliquez sur le bouton "✍️ Région Personnalisée".</li>
-                            <li><strong>Construction Manuelle :</strong> Utilisez le bouton "Ajouter un Bâtiment" sur chaque lieu pour choisir dans une liste de constructions possibles. Le système vous recommandera les bâtiments ⭐ qui comblent un manque dans la région.</li>
-                            <li><strong>Validation en Temps Réel :</strong> Le panneau de droite "État de la Région" vous montre en direct les prérequis économiques non satisfaits (par exemple, "Source introuvable pour 'minerai_de_fer'").</li>
-                            <li><strong>Finalisation :</strong> Le bouton "Tout Valider et Passer à l'Étape 3" ne devient cliquable que lorsque tous les besoins de la région sont comblés.</li>
+                           <li><strong>L'Architecte Divin (Mode Auto) :</strong> Laissez notre intelligence artificielle, tel un architecte omniscient, peupler vos lieux de forges, de marchés et de fermes. Elle tisse une toile économique complexe, s'assurant que chaque ressource, du minerai de fer au blé, trouve son producteur et son consommateur pour une région viable.</li>
+                           <li><strong>L'Urbaniste en Chef (Mode Manuel) :</strong> Pour les plus audacieux, prenez les rênes. Choisissez chaque bâtiment, de la taverne du village à la grande bibliothèque de la capitale. Le système vous guidera en temps réel, vous indiquant les manques et les besoins de votre économie naissante.</li>
+                            <li><strong>Analysez les flux :</strong> Plongez au cœur de chaque ville pour comprendre ses importations, ses exportations et sa logique interne. Votre capitale dépend-elle du poisson d'un lointain village côtier ? C'est ici que vous le découvrirez.</li>
                         </ul>
                     </div>
                     <div class="step-card-footer">
@@ -99,21 +78,39 @@
                 <div class="step-card" id="card-step3">
                     <div class="step-card-header">
                         <span class="step-number">3</span>
-                        <h3>Étape 3 : La Génération 0</h3>
+                        <h3>Le Souffle de la Vie</h3>
                     </div>
                     <div class="step-card-body">
-                        <p>L'étape ultime. Une fois votre monde validé, la Génération 0 donnera naissance à la population initiale de votre royaume.</p>
+                        <p>Votre monde est prêt. Il ne manque que ses habitants. Assistez à la naissance de la "Génération 0", la population originelle de votre royaume.</p>
                         <ul>
-                            <li><strong>Peuples & Races :</strong> Des individus uniques seront créés (Humains, Elfes, Nains, Orcs...) en se basant sur une base de données de noms et de caractéristiques propres à chaque race.</li>
-                            <li><strong>Démographie Dynamique :</strong> Chaque race possède sa propre espérance de vie, son âge de départ au travail et sa durée de gestation, ce qui influencera l'évolution future de la population.</li>
-                            <li><strong>Relations Inter-raciales :</strong> Le système gère les compatibilités entre races pour la procréation, permettant la naissance naturelle de <strong>Demi-Elfes</strong> (issus d'unions Humain-Elfe) et de <strong>Demi-Orcs</strong> (issus d'unions Humain-Orc).</li>
-                            <li><strong>Le Point de Départ :</strong> Cette étape cruciale peuple votre monde avec sa toute première génération, établissant les familles et les lignées qui formeront la base de vos histoires, campagnes et simulations.</li>
+                            <li><strong>La Danse des Peuples :</strong> Des familles de Nains, d'Elfes, d'Humains et d'Orcs émergent, chacune avec ses traditions et sa destinée. Le système donne vie à des individus uniques, dotés de noms, d'âges et d'aspirations.</li>
+                            <li><strong>Les Liens du Sang et du Cœur :</strong> Les premiers liens familiaux se tissent. Le système arrange les unions, parfois surprenantes, donnant naissance à des <strong>Demi-Elfes</strong> et <strong>Demi-Orcs</strong>, témoins de la rencontre des cultures.</li>
+                            <li><strong>Forger des Dynasties :</strong> Créez de toutes pièces vos propres familles, assignez-leur des emplois clés et placez-les à la tête de votre société. Définissez les <strong>lois de succession</strong>, de la primogéniture stricte à l'élection par le prestige, pour dicter l'avenir de vos dynasties.</li>
                         </ul>
                     </div>
                      <div class="step-card-footer">
                         <a href="step3.html" class="btn btn-primary">Lancer la Génération 0</a>
                     </div>
                 </div>
+                
+                <div class="step-card" id="card-step4">
+                    <div class="step-card-header">
+                        <span class="step-number">4</span>
+                        <h3>Déchaîner le Temps</h3>
+                    </div>
+                    <div class="step-card-body">
+                        <p>Une fois les fondations posées, il est temps de laisser votre monde vivre. Lancez la simulation et observez les années s'écouler.</p>
+                        <ul>
+                            <li><strong>Le Cycle de la Vie :</strong> Les familles s'agrandissent, les enfants naissent, les anciens s'éteignent. Chaque habitant a ses propres désirs et attributs, évoluant au fil du temps. La surpopulation ou les pénuries peuvent avoir des conséquences mortelles.</li>
+                            <li><strong>Ambitions et Carrières :</strong> Les individus cherchent du travail, obtiennent des promotions au sein de leur corporation ou migrent vers d'autres cités en quête d'une vie meilleure. Les plus prestigieux gravissent les échelons du pouvoir.</li>
+                            <li><strong>Chroniques d'un Monde :</strong> Grâce à un journal d'événements détaillé et à un arbre généalogique interactif, suivez le destin de chaque âme, de l'humble fermier au puissant souverain. Votre création n'est plus un tableau statique, mais un écosystème social en perpétuel mouvement.</li>
+                        </ul>
+                    </div>
+                     <div class="step-card-footer">
+                        <a href="step4.html" class="btn btn-primary">Démarrer la Simulation</a>
+                    </div>
+                </div>
+
             </div>
         </main>
     </div>

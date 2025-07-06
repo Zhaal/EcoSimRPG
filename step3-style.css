@@ -575,3 +575,105 @@ input[type="range"]::-moz-range-thumb {
     background-color: rgba(212, 160, 23, 0.2); /* Or transparent */
     font-weight: bold;
 }
+
+/* =========================================== */
+/* AJOUTS POUR LA MODALE DE FAMILLE REFONDUE   */
+/* =========================================== */
+
+.family-section {
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    padding: 15px;
+    margin-bottom: 20px;
+    background-color: rgba(0,0,0,0.02);
+}
+
+.family-section legend {
+    font-family: var(--font-title);
+    font-weight: bold;
+    padding: 0 10px;
+    color: var(--color-royal-blue);
+    font-size: 1.1em;
+}
+
+label.inline-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: normal;
+    cursor: pointer;
+}
+
+label.inline-label input[type="checkbox"] {
+    width: auto;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+#children-list {
+    margin-bottom: 15px;
+}
+
+.child-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: rgba(0,0,0,0.05);
+    padding: 8px 12px;
+    border-radius: 4px;
+    margin-bottom: 5px;
+}
+
+.child-item .btn-delete-child {
+    padding: 2px 8px;
+    font-size: 0.9em;
+    line-height: 1;
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    border-radius: 50%;
+}
+.child-item .btn-delete-child:hover {
+    background-color: #c0392b;
+}
+
+
+.add-entity-form {
+    border-top: 1px dashed var(--color-border);
+    padding-top: 15px;
+    margin-top: 15px;
+}
+
+.add-entity-form h5 {
+    font-family: var(--font-body);
+    font-size: 1em;
+    font-weight: 600;
+    margin-top: 0;
+    margin-bottom: 10px;
+}
+
+.form-grid-small {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 10px;
+    align-items: center;
+}
+
+.form-grid-small input, .form-grid-small select {
+    width: 100%;
+    padding: 8px;
+}
+
+
+.form-grid-small button {
+    grid-column: 1 / -1; /* Le bouton prend toute la largeur sur petit écran */
+}
+
+@media (min-width: 600px) {
+    .form-grid-small {
+        grid-template-columns: 2fr 1.5fr 1fr 1.5fr auto; /* Layout plus spécifique pour écrans larges */
+    }
+    .form-grid-small button {
+        grid-column: auto; /* Le bouton retrouve sa place */
+    }
+}

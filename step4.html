@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoSimRPG - Étape 4 : Simulation</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="step1-style.css"> 
+    <link rel="stylesheet" href="step4-style.css">
+</head>
+<body>
+
+<nav class="floating-menu">
+    <div class="menu-title">EcoSimRPG</div>
+    <a href="index.html" id="nav-index">Accueil</a>
+    <a href="step1.html" id="nav-step1">Étape 1<br><small>(Carte)</small></a>
+    <a href="step2.html" id="nav-step2">Étape 2<br><small>(Conf. Lieux)</small></a>
+    <a href="step3.html" id="nav-step3">Étape 3<br><small>(Gen.0)</small></a>
+    <a href="step4.html" id="nav-step4" class="active">Étape 4<br><small>(Simulation)</small></a>
+    <a href="step5.html" id="nav-step5">Étape 5<br><small>(Données)</small></a>
+</nav>
+
+<div class="page-container-step4">
+
+    <header id="top-control-bar">
+        <div class="control-group">
+            <button id="start-sim-btn" class="btn btn-primary">▶️ Démarrer</button>
+            <button id="pause-sim-btn" class="btn btn-warning" disabled>⏸️ Pause</button>
+            <button id="reset-sim-btn" class="btn btn-danger">🔄 Réinitialiser la Simulation</button>
+        </div>
+        <div class="control-group">
+            <label for="speed-control">Vitesse :</label>
+            <input type="range" id="speed-control" min="1" max="5" value="1">
+            <span id="speed-display">x1</span>
+        </div>
+        <div class="control-group date-display">
+            <h3>Date : <span id="current-date">Mois 1, Année 1</span></h3>
+        </div>
+        <div class="control-group global-stats">
+            <p><strong>Population :</strong> <span id="global-population">0</span></p>
+            <p><strong>Familles :</strong> <span id="global-families">0</span></p>
+        </div>
+        <div class="control-group">
+            <button id="view-jobs-btn" class="btn">Voir les Emplois</button>
+        </div>
+    </header>
+
+    <div class="main-content-wrapper-step4">
+        <main id="simulation-main-panel">
+            <div id="event-log-container">
+                <h3>Journal des Événements</h3>
+                <div id="event-log-family-title">Journal global</div>
+                <ul id="event-log">
+                    <li>Simulation prête à démarrer...</li>
+                </ul>
+            </div>
+            <div id="place-overview-container">
+                 <div id="family-view-controls">
+                    <div class="control-column">
+                        <label for="character-search">Rechercher un personnage :</label>
+                        <input type="search" id="character-search" placeholder="Nom ou prénom...">
+                        <div id="search-results"></div>
+                        <div id="location-population-summary">
+                        </div>
+                    </div>
+                    <div class="control-column">
+                        <label>Ou sélectionner par lieu :</label>
+                        <div id="location-tabs"></div>
+                        <select id="family-selector"><option>-- Choisissez un lieu --</option></select>
+                        <small style="text-align: right; margin-top: 5px; color: #555;"><i>Astuce : Maintenez ALT + Molette pour zoomer sur l'arbre.</i></small>
+                        <div id="family-influence-display">
+                            <strong>Influence : </strong><span id="family-influence-value">N/A</span>
+                        </div>
+                    </div>
+                </div>
+                <div id="family-tree-display-area-wrapper">
+                    <div id="family-tree-display-area" class="tree">
+                        <p>Sélectionnez une famille pour afficher son arbre généalogique.</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+</div>
+
+<dialog id="character-details-modal">
+    <div class="modal-header" id="char-modal-header">
+        <div id="char-modal-tabs-container">
+            </div>
+        <button class="modal-close-btn">&times;</button>
+    </div>
+    
+    <div id="char-view-tab-controls">
+        <button class="char-view-tab active" data-tab="general">Général</button>
+        <button class="char-view-tab" data-tab="social">Social</button>
+        <button class="char-view-tab" data-tab="history">Historique</button>
+    </div>
+
+    <div id="char-modal-content">
+        <div id="char-tab-content-container">
+            
+            <div id="char-tab-general" class="char-tab-content active">
+                <div class="char-sheet">
+                    <div class="char-section char-identity">
+                        <h4 id="char-modal-fullname"></h4>
+                        <p><strong id="char-modal-race"></strong> <span id="char-modal-gender"></span> de <strong id="char-modal-age"></strong> ans (Espérance de vie: ~<span id="char-modal-lifespan"></span> ans)</p>
+                        <p>Statut : <strong id="char-modal-status">Vivant</strong></p>
+                        <p id="char-modal-death-cause-container" style="display: none;">Cause du décès : <strong id="char-modal-death-cause"></strong></p>
+                        <p>Localisation : <strong id="char-modal-location"></strong></p>
+                        <p>Désir d'enfants : <strong id="char-modal-desired-children">N/A</strong></p>
+                    </div>
+                    <div class="char-section char-profession">
+                        <h4>Profession</h4>
+                        <p><strong>Emploi :</strong> <span id="char-modal-job">N/A</span></p>
+                        <p><strong>Lieu de travail :</strong> <span id="char-modal-workplace">N/A</span></p>
+                        <p><strong>Salaire mensuel :</strong> <span id="char-modal-salary">0</span> 🪙</p>
+                        <p><strong>Prestige :</strong> <span id="char-modal-prestige">0</span></p>
+                    </div>
+                    <div class="char-section char-stats">
+                        <h4>Attributs</h4>
+                        <ul id="char-modal-stats"></ul>
+                    </div>
+                    <div class="char-section char-gains">
+                        <h4>Gains de Carrière (par mois)</h4>
+                        <div id="char-modal-monthly-gains"></div>
+                    </div>
+                    <div class="char-section char-family-summary">
+                        <h4>Cercle Familial Proche</h4>
+                        <div id="char-modal-family-summary"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="char-tab-social" class="char-tab-content">
+                <div class="social-sheet">
+                    <div id="social-family-circle" class="social-section">
+                        <h4>Cercle Familial</h4>
+                        </div>
+                    <div id="social-friends" class="social-section">
+                        <h4>Amis</h4>
+                        </div>
+                    <div id="social-acquaintances" class="social-section">
+                        <h4>Connaissances</h4>
+                        </div>
+                </div>
+            </div>
+
+            <div id="char-tab-history" class="char-tab-content">
+                <div class.history-sheet">
+                    <h4>Historique du Personnage</h4>
+                    <ul id="char-history-log" class="history-log">
+                        </ul>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</dialog>
+
+<dialog id="jobs-by-tier-modal">
+    <div class="modal-header">
+        <h3>Liste des Emplois par Tiers</h3>
+        <button class="modal-close-btn">&times;</button>
+    </div>
+    <div id="jobs-by-tier-content" class="modal-content-scrollable">
+        </div>
+</dialog>
+
+<script src="races.js"></script>
+<script src="buildings.js"></script>
+<script src="step4.js"></script>
+
+</body>
+</html>

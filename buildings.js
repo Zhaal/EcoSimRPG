@@ -1,4 +1,4 @@
-// Fichier généré par l'Éditeur EcoSim le 01/07/2025 18:32:14
+// Fichier généré par l'Éditeur EcoSim le 04/07/2025 21:16:48
 
 window.EcoSimData = window.EcoSimData || {};
 EcoSimData.buildings = EcoSimData.buildings || {};
@@ -29,7 +29,7 @@ EcoSimData.buildings['Bourg'] = {
             },
             "emplois": [
                 {
-                    "tier": 1,
+                    "tier": 0,
                     "titre": "Bourgmestre",
                     "postes": 1,
                     "salaire": {
@@ -3925,7 +3925,7 @@ EcoSimData.buildings['Hameau'] = {
             },
             "emplois": [
                 {
-                    "tier": 2,
+                    "tier": 0,
                     "titre": "Chef du Hameau",
                     "postes": 1,
                     "salaire": {
@@ -3948,7 +3948,7 @@ EcoSimData.buildings['Hameau'] = {
                     "type": "mixte"
                 },
                 {
-                    "tier": 3,
+                    "tier": 1,
                     "titre": "Ancien du Conseil",
                     "postes": 2,
                     "salaire": {
@@ -4991,7 +4991,7 @@ EcoSimData.buildings['Village'] = {
             },
             "emplois": [
                 {
-                    "tier": 2,
+                    "tier": 0,
                     "titre": "Maire du Village",
                     "postes": 1,
                     "salaire": {
@@ -5014,7 +5014,7 @@ EcoSimData.buildings['Village'] = {
                     "type": "mixte"
                 },
                 {
-                    "tier": 3,
+                    "tier": 2,
                     "titre": "Adjoint au Maire",
                     "postes": 2,
                     "salaire": {
@@ -6569,7 +6569,7 @@ EcoSimData.buildings['Ville'] = {
             },
             "emplois": [
                 {
-                    "tier": 1,
+                    "tier": 0,
                     "titre": "Gouverneur de la Ville",
                     "postes": 1,
                     "salaire": {
@@ -6592,7 +6592,7 @@ EcoSimData.buildings['Ville'] = {
                     "type": "mixte"
                 },
                 {
-                    "tier": 2,
+                    "tier": 1,
                     "titre": "Magistrat de la Cité",
                     "postes": 1,
                     "salaire": {

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoSimRPG - Étape 5 : Données & Impression</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="step1-style.css"> <link rel="stylesheet" href="step5-style.css">
+    <link rel="stylesheet" href="print-style.css" media="print">
+
+</head>
+<body>
+
+<nav class="floating-menu">
+    <div class="menu-title">EcoSimRPG</div>
+    <a href="index.html" id="nav-index">Accueil</a>
+    <a href="step1.html" id="nav-step1">Étape 1<br><small>(Carte)</small></a>
+    <a href="step2.html" id="nav-step2">Étape 2<br><small>(Conf. Lieux)</small></a>
+    <a href="step3.html" id="nav-step3">Étape 3<br><small>(Gen.0)</small></a>
+    <a href="step4.html" id="nav-step4">Étape 4<br><small>(Simulation)</small></a>
+    <a href="step5.html" id="nav-step5" class="active">Étape 5<br><small>(Données)</small></a>
+</nav>
+
+<div class="page-container-step5">
+    <header id="controls">
+        <h1>Exploitation des Données de Simulation</h1>
+        <div class="control-group">
+            <label for="location-select">Choisir un lieu :</label>
+            <select id="location-select"></select>
+        </div>
+        <div class="control-group">
+            <label for="building-select">Choisir un bâtiment :</label>
+            <select id="building-select"><option value="">-- Tous --</option></select>
+        </div>
+        <div class="control-group">
+            <label for="character-select">Choisir un personnage :</label>
+            <select id="character-select"><option value="">-- Tous --</option></select>
+        </div>
+        <div class="control-group">
+            <button id="print-btn" class="btn btn-primary">🖨️ Imprimer</button>
+        </div>
+    </header>
+
+    <main id="content-area">
+        </main>
+</div>
+
+
+<script src="races.js"></script>
+<script src="buildings.js"></script>
+<script src="step5.js"></script>
+
+</body>
+</html>

@@ -76,7 +76,26 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     const DEFAULT_ROAD_TYPE = 'marchand';
     const HEX_TERRAIN = { img: null, file: 'terrain_hex.jpg' };
-    const RANDOM_NAMES = ["Aethelgard", "Baeldor", "Crystalgate", "Dunharrow", "Eldoria", "Faelivrin", "Glimmerwood", "Highgarden", "Ironcliff", "Silvercreek", "Valoria", "Windhaven", "Dragon's Rest", "Starfall"];
+const RANDOM_NAMES = [
+  "Aethelgard", "Baeldor", "Crystalgate", "Dunharrow", "Eldoria", "Faelivrin",
+  "Glimmerwood", "Highgarden", "Ironcliff", "Silvercreek", "Valoria", "Windhaven",
+  "Dragon's Rest", "Starfall",
+  "Thornhollow", "Moonspire", "Stormreach", "Frostmere", "Shadowfen", "Whiteridge",
+  "Ambermoor", "Nightshade", "Ravenhall", "Oakenshield", "Mistvale", "Darkmere",
+  "Emberfall", "Brightforge", "Sunhollow", "Grimwatch", "Rimehold", "Hollowdeep",
+  "Ashenfield", "Duskmire", "Seabreak", "Winterglen", "Myrefall", "Skyridge",
+  "Hawkwind", "Blackbriar", "Wolfsden", "Goldenthorne", "Thundertop", "Evermist",
+  "Redreach", "Ironwood", "Verdanshire", "Stonehollow", "Wyrmgate", "Brighthollow",
+  "Stormhelm", "Moonfen", "Cindervale", "Greywatch", "Ravenshade", "Silvershade",
+  "Ivyridge", "Cloudspire", "Ashenmoor", "Nightglen", "Duskwatch", "Frosthollow",
+  "Stormvale", "Wildmere", "Twilight Reach", "Windspire", "Thornspire", "Ebonvale",
+  "Hearthglen", "Northwatch", "Mistridge", "Shadowhollow", "Brightmoor", "Grimspire",
+  "Stonegate", "Snowvale", "Ironhold", "Emberridge", "Rookfell", "Moonreach",
+  "Duskfall", "Winterhall", "Sablefen", "Ravensong", "Cloudreach", "Brightpeak",
+  "Sablewatch", "Sunspire", "Glacierrest", "Hollowpine", "Feyvale", "Ashgrove",
+  "Crownspire", "Verdantdeep", "Thundertree", "Wolfspire", "Nightforge", "Silverdeep",
+  "Redpine", "Ironspire", "Gloomreach", "Cragwatch", "Violet Hollow", "Mournvale"
+];
 
     // --- SELECTEURS DOM ---
     const canvas = document.getElementById('hex-map');

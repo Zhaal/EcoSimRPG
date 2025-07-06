@@ -20,6 +20,9 @@
     <a href="step1.html" id="nav-step1">Étape 1<br><small>(Carte)</small></a>
     <a href="step2.html" id="nav-step2">Étape 2<br><small>(Conf. Lieux)</small></a>
     <a href="step3.html" id="nav-step3" class="active">Étape 3<br><small>(Gen.0)</small></a>
+    <a href="step4.html" id="nav-step4">Étape 4<br><small>(Simulation)</small></a>
+    <a href="step5.html" id="nav-step5">Étape 5<br><small>(Données)</small></a>
+
 </nav>
 
 <div class="page-container-step3">
@@ -74,13 +77,23 @@
                     </div>
                 </section>
 
-                <section class="config-section">
-                    <h2>2. Règles Sociales</h2>
-                    <div class="social-rules-container">
-                        <input type="checkbox" id="interracial-marriage-toggle" checked>
-                        <label for="interracial-marriage-toggle">Autoriser les mariages inter-raciaux (selon compatibilités)</label>
-                    </div>
-                </section>
+<section class="config-section">
+    <h2>2. Règles Sociales</h2>
+    <div class="social-rules-container">
+        <input type="checkbox" id="interracial-marriage-toggle" checked>
+        <label for="interracial-marriage-toggle">Autoriser les mariages inter-raciaux (selon compatibilités)</label>
+    </div>
+    
+    <div class="social-rules-container" style="margin-top: 15px;">
+        <label for="inheritance-law-select" style="font-weight: 600; font-size: 1.1em; margin-right: 10px;">Loi de succession (Titres Tiers 0) :</label>
+        <select id="inheritance-law-select" class="form-control" style="width: auto;">
+            <option value="primogeniture_male">Primogéniture Masculine</option>
+            <option value="primogeniture_female">Primogéniture Féminine</option>
+            <option value="primogeniture_absolute">Primogéniture Absolue (l'aîné, peu importe le sexe)</option>
+            <option value="elective">Électif par Prestige (membre le plus prestigieux de la famille)</option>
+        </select>
+    </div>
+    </section>
 
                 <section class="config-section">
                     <h2>3. Population & Actions</h2>
@@ -133,10 +146,9 @@
     </div>
 </dialog>
 
-
 <dialog id="family-modal">
     <div class="modal-header">
-        <h3 id="family-modal-title">Créateur de Famille</h3>
+        <h3 id="family-modal-title">Créateur de Famille Personnalisée</h3>
         <button class="modal-close-btn">&times;</button>
     </div>
     <form id="family-form" method="dialog">
@@ -146,61 +158,118 @@
             <input type="text" id="family-name" required>
         </div>
 
-        <h4>Membres</h4>
-        <div id="family-members-list"></div>
-        
-        <div id="add-member-section">
-            <h5>Ajouter un Nouveau Membre</h5>
+        <fieldset class="family-section" id="head-section">
+            <legend>Chef de Famille</legend>
             <div class="form-grid">
                 <div class="form-group">
-                    <label for="member-firstname">Prénom :</label>
-                    <input type="text" id="member-firstname">
+                    <label for="head-firstname">Prénom :</label>
+                    <input type="text" id="head-firstname" required>
                 </div>
                 <div class="form-group">
-                    <label for="member-race">Race :</label>
-                    <select id="member-race"></select>
+                    <label for="head-race">Race :</label>
+                    <select id="head-race"></select>
                 </div>
                 <div class="form-group">
-                    <label for="member-age">Âge :</label>
-                    <input type="number" id="member-age" min="0">
+                    <label for="head-age">Âge :</label>
+                    <input type="number" id="head-age" min="0" required>
                 </div>
                 <div class="form-group">
-                    <label for="member-gender">Sexe :</label>
-                    <select id="member-gender">
+                    <label for="head-gender">Sexe :</label>
+                    <select id="head-gender">
                         <option value="Homme">Homme</option>
                         <option value="Femme">Femme</option>
                     </select>
                 </div>
             </div>
-            
-            <h5>Assignation Professionnelle (Optionnel)</h5>
+            <h5>Assignation Professionnelle (Chef de Famille)</h5>
             <div class="form-grid">
                 <div class="form-group">
-                    <label for="member-work-location">Lieu de travail :</label>
-                    <select id="member-work-location">
-                        <option value="">Aucun</option>
-                    </select>
+                    <label for="head-work-location">Lieu de travail :</label>
+                    <select id="head-work-location"><option value="">Aucun</option></select>
                 </div>
                 <div class="form-group">
-                    <label for="member-work-building">Bâtiment :</label>
-                    <select id="member-work-building" disabled></select>
+                    <label for="head-work-building">Bâtiment :</label>
+                    <select id="head-work-building" disabled></select>
                 </div>
                 <div class="form-group">
-                    <label for="member-work-job">Poste :</label>
-                    <select id="member-work-job" disabled></select>
+                    <label for="head-work-job">Poste :</label>
+                    <select id="head-work-job" disabled></select>
                 </div>
             </div>
-            <button type="button" id="add-member-btn" class="btn">Ajouter ce membre</button>
+        </fieldset>
+
+        <div class="form-group">
+            <label for="add-spouse-toggle" class="inline-label">
+                <input type="checkbox" id="add-spouse-toggle">
+                Ajouter un(e) conjoint(e)
+            </label>
         </div>
+        <fieldset class="family-section hidden" id="spouse-section">
+            <legend>Conjoint(e)</legend>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="spouse-firstname">Prénom :</label>
+                    <input type="text" id="spouse-firstname">
+                </div>
+                <div class="form-group">
+                    <label for="spouse-race">Race :</label>
+                    <select id="spouse-race"></select>
+                </div>
+                <div class="form-group">
+                    <label for="spouse-age">Âge :</label>
+                    <input type="number" id="spouse-age" min="0">
+                </div>
+                <div class="form-group">
+                    <label for="spouse-gender">Sexe :</label>
+                    <select id="spouse-gender">
+                        <option value="Femme">Femme</option>
+                        <option value="Homme">Homme</option>
+                    </select>
+                </div>
+            </div>
+            <h5>Assignation Professionnelle (Conjoint-e)</h5>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="spouse-work-location">Lieu de travail :</label>
+                    <select id="spouse-work-location"><option value="">Aucun</option></select>
+                </div>
+                <div class="form-group">
+                    <label for="spouse-work-building">Bâtiment :</label>
+                    <select id="spouse-work-building" disabled></select>
+                </div>
+                <div class="form-group">
+                    <label for="spouse-work-job">Poste :</label>
+                    <select id="spouse-work-job" disabled></select>
+                </div>
+            </div>
+        </fieldset>
+
+        <fieldset class="family-section" id="children-section">
+            <legend>Enfants</legend>
+            <div id="children-list">
+                <p>Aucun enfant ajouté.</p>
+            </div>
+            <div id="add-child-form" class="add-entity-form">
+                 <h5>Ajouter un enfant</h5>
+                <div class="form-grid-small">
+                    <input type="text" id="child-firstname" placeholder="Prénom">
+                    <select id="child-race"></select>
+                    <input type="number" id="child-age" min="0" placeholder="Âge">
+                    <select id="child-gender">
+                        <option value="Homme">Garçon</option>
+                        <option value="Femme">Fille</option>
+                    </select>
+                    <button type="button" id="add-child-btn" class="btn btn-secondary">Ajouter l'enfant</button>
+                </div>
+            </div>
+        </fieldset>
         
         <div class="modal-actions">
             <button type="button" id="cancel-family-btn" class="btn">Annuler</button>
-            <button type="button" id="save-family-template-btn" class="btn btn-secondary">Sauvegarder le modèle</button>
-            <button type="submit" id="confirm-add-family-btn" class="btn-primary" disabled>Ajouter au Lieu</button>
+            <button type="submit" id="confirm-add-family-btn" class="btn-primary" disabled>Ajouter la Famille au Lieu</button>
         </div>
     </form>
 </dialog>
-
 <dialog id="character-details-modal">
     <div class="modal-header">
         <h3 id="char-modal-title">Détails du Personnage</h3>

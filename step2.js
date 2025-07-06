@@ -1,12 +1,9 @@
 /**
  * EcoSimRPG - step2.js
- * VERSION 9.3 - Ajustement des quotas et confirmation de la diversité
- * - MODIFIÉ : Le quota de bâtiments pour chaque type de lieu a été augmenté de 4.
- * - CONSERVÉ : L'étape de "peuplement de base" garantit au moins 2 bâtiments par catégorie lors de la génération automatique.
- * - CORRIGÉ : Réintégration de la fonction `logToOverlay` qui avait été accidentellement supprimée, causant une ReferenceError.
- * - CONSERVÉ : Le panneau d'état de la région (mode manuel) est correctement masqué lors du re-lancement de la génération automatique.
- * - CONSERVÉ : Le panneau "État des Lieux" (pendant la génération) affiche un pourcentage.
- * - CONSERVÉ : Toutes les jauges du panneau "État des Lieux" passent à 100% à la fin de la génération.
+ * VERSION 9.4 - Correction de la gestion d'absence de région
+ * - CORRIGÉ : Ajout d'une vérification dans la fonction `init` pour s'assurer que `currentRegion` n'est pas `null`.
+ * - AMÉLIORÉ : Si aucune région n'est chargée, la modale affiche un message d'erreur clair et guide l'utilisateur vers l'étape 1.
+ * - CONSERVÉ : Le reste de la logique de génération automatique et manuelle est inchangé.
  */
 document.addEventListener('DOMContentLoaded', () => {
     // --- CONSTANTES & CONFIGURATION ---
@@ -167,7 +164,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- LOGIQUE DE GÉNÉRATION (Automatique et Immersive) ---
-    // CORRIGÉ : Fonction réintégrée
     async function logToOverlay(message, delay = 100) {
         if (generationLog) {
             const li = document.createElement('li');
@@ -219,41 +215,28 @@ document.addEventListener('DOMContentLoaded', () => {
             updatePlaceFillStatus(place.id, config.totalBuildings, config.maxBuildings);
         });
         
-        // =================================================================
-        // ▼▼▼▼▼▼▼▼▼▼▼▼▼▼ BLOC DE CODE POUR LA DIVERSITÉ MINIMALE ▼▼▼▼▼▼▼▼▼▼▼▼▼
-        // =================================================================
-
         await logToOverlay("Garantie de la diversité structurelle de base...", 150);
 
-        // Boucle sur chaque lieu pour assurer une diversité de base
         for (const place of currentRegion.places) {
             const config = placeConfigs.get(place.id);
             const availableCategories = BUILDING_DATA[place.type] || {};
 
-            // Boucle sur chaque catégorie de bâtiment disponible pour ce type de lieu
             for (const categoryName in availableCategories) {
-                // Les bâtiments administratifs sont déjà gérés, on les ignore
                 if (categoryName === "Bâtiments Administratifs") continue;
 
-                // Assure que le tableau pour cette catégorie existe dans la configuration
                 if (!config.buildings[categoryName]) {
                     config.buildings[categoryName] = [];
                 }
                 
-                // Calcule combien de bâtiments il manque pour atteindre notre objectif de 2
                 let buildingsToAddCount = 2 - config.buildings[categoryName].length;
-                if (buildingsToAddCount <= 0) continue; // On a déjà atteint ou dépassé l'objectif
+                if (buildingsToAddCount <= 0) continue;
 
-                // Crée une liste des bâtiments potentiels (non encore construits) pour cette catégorie
                 const potentialBuildings = Object.keys(availableCategories[categoryName])
                     .filter(name => !Object.values(config.buildings).flat().some(b => b.name === name));
                 
-                // Mélange la liste pour une sélection aléatoire
                 potentialBuildings.sort(() => 0.5 - Math.random());
 
-                // Ajoute les bâtiments manquants
                 for (let i = 0; i < buildingsToAddCount && i < potentialBuildings.length; i++) {
-                    // Vérifie qu'on ne dépasse pas le quota total du lieu
                     if (config.totalBuildings >= config.maxBuildings) {
                         await logToOverlay(`Quota de bâtiments atteint pour ${place.name}, ajout pour la catégorie ${categoryName} interrompu.`, 50);
                         break; 
@@ -267,17 +250,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         description: buildingData.description
                     });
                     config.totalBuildings++;
-                    builtByPlaceType.get(place.type).add(buildingNameToAdd); // Met à jour le suivi pour la diversité
+                    builtByPlaceType.get(place.type).add(buildingNameToAdd);
                     await logToOverlay(`Ajout de base: <strong>${buildingNameToAdd}</strong> à <strong>${place.name}</strong> pour assurer la diversité.`, 50);
                     updatePlaceFillStatus(place.id, config.totalBuildings, config.maxBuildings);
                 }
             }
         }
         
-        // =================================================================
-        // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲ FIN DU BLOC DE CODE POUR LA DIVERSITÉ ▲▲▲▲▲▲▲▲▲▲▲▲▲
-        // =================================================================
-
         let attempts = 0;
         const maxAttempts = 500;
         while (attempts < maxAttempts) {
@@ -380,11 +359,19 @@ document.addEventListener('DOMContentLoaded', () => {
             const bestCandidateToAdd = candidatePool[0];
 
             if (bestCandidateToAdd) {
-                const { place, name, category, data } = bestCandidateToAdd;
+                const {
+                    place,
+                    name,
+                    category,
+                    data
+                } = bestCandidateToAdd;
                 const config = placeConfigs.get(place.id);
 
                 if (!config.buildings[category]) config.buildings[category] = [];
-                config.buildings[category].push({ name, description: data.description });
+                config.buildings[category].push({
+                    name,
+                    description: data.description
+                });
                 config.totalBuildings++;
                 builtByPlaceType.get(place.type).add(name);
 
@@ -399,9 +386,7 @@ document.addEventListener('DOMContentLoaded', () => {
         await logToOverlay("Finalisation du plan de la région...", 200);
         for (const [placeId, elements] of placeStatusElements.entries()) {
             const placeConfig = placeConfigs.get(placeId);
-            // On met à jour avec le nombre final de bâtiments pour atteindre 100% de la barre "remplie"
-            // (même si le quota max n'est pas atteint, visuellement c'est plus satisfaisant)
-            updatePlaceFillStatus(placeId, placeConfig.totalBuildings, placeConfig.totalBuildings); 
+            updatePlaceFillStatus(placeId, placeConfig.totalBuildings, placeConfig.totalBuildings);
         }
 
         currentRegion.places.forEach(place => {
@@ -409,23 +394,23 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         await logToOverlay("Architecture terminée. Affichage de la carte...", 1000);
     }
-    
-    // =================================================================
-    // ▼▼▼▼▼▼▼▼▼▼▼▼▼▼ BLOC DE CODE MODIFIÉ ▼▼▼▼▼▼▼▼▼▼▼▼▼
-    // =================================================================
+
     function getBuildingQuotaForPlace(placeType) {
         switch (placeType) {
-            case "Hameau":   return 14; // 10 + 4
-            case "Village":  return 21; // 17 + 4
-            case "Bourg":    return 31; // 27 + 4
-            case "Ville":    return 46; // 42 + 4
-            case "Capitale": return 66; // 62 + 4
-            default:         return 16; // 12 + 4
+            case "Hameau":
+                return 14;
+            case "Village":
+                return 21;
+            case "Bourg":
+                return 31;
+            case "Ville":
+                return 46;
+            case "Capitale":
+                return 66;
+            default:
+                return 16;
         }
     }
-    // =================================================================
-    // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲ FIN DU BLOC DE CODE MODIFIÉ ▲▲▲▲▲▲▲▲▲▲▲▲▲
-    // =================================================================
 
 
     // --- GESTION DE L'AFFICHAGE ET DES DONNÉES ---
@@ -503,14 +488,23 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function createAutoPlaceCardHTML(place) {
-        const categoryIcons = { "Bâtiments Administratifs": "🏛️", "Bâtiments de Production": "🏭", "Bâtiments Indépendants": "🏘️", "Bâtiments Agricoles": "🌾", "Chasse/Nature": "🌲" };
-        const { buildingCount, jobCount } = calculatePlaceStats(place);
+        const categoryIcons = {
+            "Bâtiments Administratifs": "🏛️",
+            "Bâtiments de Production": "🏭",
+            "Bâtiments Indépendants": "🏘️",
+            "Bâtiments Agricoles": "🌾",
+            "Chasse/Nature": "🌲"
+        };
+        const {
+            buildingCount,
+            jobCount
+        } = calculatePlaceStats(place);
         const statsHTML = `<small>${place.type} &bull; 🏛️ ${buildingCount} Bâtiments &bull; 👥 ${jobCount} Emplois</small>`;
         let headerHTML = `<h2><div>${place.name}${statsHTML}</div><span class="info-icon" data-place-id="${place.id}" title="Analyser le lieu">ℹ️</span></h2>`;
         let buildingsHTML = '';
         const orderedCategories = ["Bâtiments Administratifs", "Bâtiments Agricoles", "Chasse/Nature", "Bâtiments de Production", "Bâtiments Indépendants"];
 
-        if(place.config && place.config.buildings) {
+        if (place.config && place.config.buildings) {
             for (const category of orderedCategories) {
                 if (place.config.buildings[category] && place.config.buildings[category].length > 0) {
                     const isMandatory = category === "Bâtiments Administratifs";
@@ -522,24 +516,32 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function createManualPlaceCardHTML(place) {
-        const categoryIcons = { "Bâtiments Administratifs": "🏛️", "Bâtiments de Production": "🏭", "Bâtiments Indépendants": "🏘️", "Bâtiments Agricoles": "🌾", "Chasse/Nature": "🌲" };
+        const categoryIcons = {
+            "Bâtiments Administratifs": "🏛️",
+            "Bâtiments de Production": "🏭",
+            "Bâtiments Indépendants": "🏘️",
+            "Bâtiments Agricoles": "🌾",
+            "Chasse/Nature": "🌲"
+        };
         const allCategoriesForType = Object.keys(BUILDING_DATA[place.type] || {});
         const orderedCategories = [...new Set(["Bâtiments Administratifs", "Bâtiments Agricoles", "Chasse/Nature", "Bâtiments de Production", "Bâtiments Indépendants", ...allCategoriesForType])];
-    
-        const { buildingCount, jobCount } = calculatePlaceStats(place);
+
+        const {
+            buildingCount,
+            jobCount
+        } = calculatePlaceStats(place);
         const statsHTML = `<small>${place.type} &bull; 🏛️ ${buildingCount} Bâtiments &bull; 👥 ${jobCount} Emplois</small>`;
-        
-        // MODIFICATION : Le bouton est ajouté directement à l'en-tête (headerHTML)
+
         let headerHTML = `<h2><div>${place.name}${statsHTML}</div></h2><button class="btn-add-building" data-place-id="${place.id}" data-place-type="${place.type}">Ajouter un Bâtiment...</button>`;
         let buildingsHTML = '';
-        
+
         if (place.config && place.config.buildings) {
             for (const category of orderedCategories) {
                 if (place.config.buildings[category] && place.config.buildings[category].length > 0) {
                     const isAdministrative = category === "Bâtiments Administratifs";
-                    
+
                     buildingsHTML += `<div class="building-category"><h3><span class="icon">${categoryIcons[category] || '🏢'}</span>${category}${isAdministrative ? '<span class="mandatory-badge">Obligatoire</span>' : ''}</h3>`;
-    
+
                     buildingsHTML += `<ul class="building-list">${place.config.buildings[category].sort((a,b) => a.name.localeCompare(b.name)).map(b => {
                         const buildingData = getBuildingData(b.name);
                         const removeButtonHTML = isAdministrative
@@ -557,38 +559,36 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         }
-        
-        // SUPPRESSION de l'ancienne ligne qui ajoutait le bouton ici
-        
+
         return `<div class="place-card-header">${headerHTML}</div><div class="place-card-body">${buildingsHTML}</div>`;
     }
 
     function openAddBuildingModal(placeId, placeType) {
         const place = currentRegion.places.find(p => p.id == placeId);
         if (!place) return;
-    
+
         const currentBuildingNames = new Set();
         if (place.config && place.config.buildings) {
             for (const cat in place.config.buildings) {
                 place.config.buildings[cat].forEach(b => currentBuildingNames.add(b.name));
             }
         }
-    
+
         addBuildingModalTitle.textContent = `Ajouter un Bâtiment à ${place.name}`;
         let nativeRecommendedHTML = '';
         let otherNativeHTML = '';
         let exceptionalRecommendedHTML = '';
-    
+
         const allBuildingsForType = BUILDING_DATA[placeType] || {};
         for (const category in allBuildingsForType) {
             let categoryNativeRecommended = '';
             let categoryOtherNative = '';
-    
+
             for (const buildingName in allBuildingsForType[category]) {
                 const data = allBuildingsForType[category][buildingName];
-                
+
                 if (category === "Bâtiments Administratifs" || currentBuildingNames.has(buildingName)) continue;
-    
+
                 const providesNeededTag = data.providesTags.some(tag => unmetRegionalTags.has(tag));
                 const buildingItemHTML = `
                     <div class="building-list-item ${providesNeededTag ? 'recommended-building' : ''}">
@@ -603,7 +603,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                         <button class="btn-add-this-building" data-place-id="${placeId}" data-building-name="${buildingName}">Ajouter</button>
                     </div>`;
-                
+
                 if (providesNeededTag) {
                     categoryNativeRecommended += buildingItemHTML;
                 } else {
@@ -613,7 +613,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (categoryNativeRecommended) nativeRecommendedHTML += `<h4>${category}</h4>${categoryNativeRecommended}`;
             if (categoryOtherNative) otherNativeHTML += `<h4>${category}</h4>${categoryOtherNative}`;
         }
-    
+
         let anyNativeRecommendationExistsInRegion = false;
         if (unmetRegionalTags.size > 0) {
             for (const p of currentRegion.places) {
@@ -630,19 +630,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (anyNativeRecommendationExistsInRegion) break;
             }
         }
-        
+
         const showExceptionalRecommendations = !anyNativeRecommendationExistsInRegion;
-    
+
         if (showExceptionalRecommendations && unmetRegionalTags.size > 0) {
             for (const buildingType in BUILDING_DATA) {
                 if (buildingType === placeType) continue;
-    
+
                 for (const category in BUILDING_DATA[buildingType]) {
                     if (category === "Bâtiments Administratifs") continue;
-    
+
                     for (const buildingName in BUILDING_DATA[buildingType][category]) {
                         if (currentBuildingNames.has(buildingName)) continue;
-                        
+
                         const data = BUILDING_DATA[buildingType][category][buildingName];
                         if (data.providesTags.some(tag => unmetRegionalTags.has(tag))) {
                             exceptionalRecommendedHTML += `
@@ -663,7 +663,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         }
-    
+
         let finalContentHTML = '';
         if (nativeRecommendedHTML) {
             finalContentHTML += `<h3>Bâtiments Recommandés (Natifs)</h3><p class="desc">Ces bâtiments produisent des ressources manquantes dans votre région.</p>${nativeRecommendedHTML}`;
@@ -672,38 +672,44 @@ document.addEventListener('DOMContentLoaded', () => {
             finalContentHTML += `<hr><h3>Recommandations Exceptionnelles</h3><p class="desc">Aucun lieu ne peut produire nativement certaines ressources manquantes. Les bâtiments suivants sont suggérés.</p>${exceptionalRecommendedHTML}`;
         }
         if (otherNativeHTML) {
-             if (finalContentHTML) finalContentHTML += '<hr>';
+            if (finalContentHTML) finalContentHTML += '<hr>';
             finalContentHTML += `<h3>Autres Bâtiments Disponibles (Natifs)</h3>${otherNativeHTML}`;
         }
         if (!finalContentHTML) {
             finalContentHTML = "<p>Aucun bâtiment supplémentaire ne peut être ajouté à ce lieu pour le moment.</p>";
         }
-    
+
         addBuildingModalContent.innerHTML = finalContentHTML;
         addBuildingModal.showModal();
     }
-    
+
     function addBuildingToPlace(placeId, buildingName) {
         const place = currentRegion.places.find(p => p.id == placeId);
         const buildingData = getBuildingData(buildingName);
-        if(!place || !buildingData) return;
+        if (!place || !buildingData) return;
 
-        const { category, description } = buildingData;
+        const {
+            category,
+            description
+        } = buildingData;
         if (!place.config.buildings[category]) {
             place.config.buildings[category] = [];
         }
-        place.config.buildings[category].push({ name: buildingName, description });
-        
+        place.config.buildings[category].push({
+            name: buildingName,
+            description
+        });
+
         addBuildingModal.close();
         displayPlaces();
         saveData();
     }
 
     function removeBuildingFromPlace(placeId, buildingName) {
-         const place = currentRegion.places.find(p => p.id == placeId);
-         if (!place) return;
-         for(const category in place.config.buildings) {
-            if(category === "Bâtiments Administratifs") continue;
+        const place = currentRegion.places.find(p => p.id == placeId);
+        if (!place) return;
+        for (const category in place.config.buildings) {
+            if (category === "Bâtiments Administratifs") continue;
 
             const index = place.config.buildings[category].findIndex(b => b.name === buildingName);
             if (index > -1) {
@@ -712,7 +718,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 saveData();
                 return;
             }
-         }
+        }
     }
 
     function validateManualConfiguration() {
@@ -728,13 +734,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (buildingData.providesTags) {
                         buildingData.providesTags.forEach(tag => {
                             if (!allProviders.has(tag)) allProviders.set(tag, []);
-                            allProviders.get(tag).push({ placeId: p.id, placeName: p.name });
+                            allProviders.get(tag).push({
+                                placeId: p.id,
+                                placeName: p.name
+                            });
                         });
                     }
                     if (buildingData.requiresTags) {
                         for (const tag in buildingData.requiresTags) {
                             allRequirements.push({
-                                place: p, buildingName: b.name, requiredTag: tag,
+                                place: p,
+                                buildingName: b.name,
+                                requiredTag: tag,
                                 neededDist: buildingData.requiresTags[tag].distance
                             });
                         }
@@ -755,11 +766,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         let finalStatusHTML = '<ul>';
         if (!hasErrors) {
-             if (allRequirements.length > 0) {
+            if (allRequirements.length > 0) {
                 finalStatusHTML += '<li><p style="color: var(--color-forest-green); text-align: center;">✅ Tous les prérequis sont satisfaits !</p></li>';
-             } else {
+            } else {
                 finalStatusHTML += '<li><p>Ajoutez des bâtiments pour vérifier les prérequis.</p></li>';
-             }
+            }
         } else {
             finalStatusHTML += errorsHTML;
         }
@@ -778,7 +789,7 @@ document.addEventListener('DOMContentLoaded', () => {
         externalAnalysisContainer.innerHTML = generateExternalAnalysisHTML(place, placeProvides, regionalProviders);
         analysisModal.showModal();
     }
-    
+
     function getRegionalProviders() {
         const providersMap = new Map();
         if (!currentRegion) return providersMap;
@@ -786,17 +797,25 @@ document.addEventListener('DOMContentLoaded', () => {
             getTagsForPlace(place, 'providesTags').forEach(tag => {
                 if (!providersMap.has(tag)) providersMap.set(tag, []);
                 if (!providersMap.get(tag).some(p => p.name === place.name)) {
-                     providersMap.get(tag).push({name: place.name, id: place.id, coords: place.coords});
+                    providersMap.get(tag).push({
+                        name: place.name,
+                        id: place.id,
+                        coords: place.coords
+                    });
                 }
             });
         });
         return providersMap;
     }
-    
+
     function getClosestProviderInfo(requiredTag, currentPlace, regionalProviders) {
         const providerData = regionalProviders.get(requiredTag) || [];
         const providers = providerData.filter(p => p.id !== currentPlace.id);
-        if (providers.length === 0) return { isMet: false, distance: Infinity, providerName: "Aucun" };
+        if (providers.length === 0) return {
+            isMet: false,
+            distance: Infinity,
+            providerName: "Aucun"
+        };
         let closestDistance = Infinity;
         let closestProvider = null;
         for (const provider of providers) {
@@ -806,14 +825,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 closestProvider = provider;
             }
         }
-        return { isMet: true, distance: closestDistance, providerName: closestProvider.name };
+        return {
+            isMet: true,
+            distance: closestDistance,
+            providerName: closestProvider.name
+        };
     }
 
     function generateInternalAnalysisHTML(place, placeProvides, regionalProviders) {
         let html = '<ul>';
         if (!place.config.buildings) return '<p>Pas de bâtiments à analyser.</p>';
 
-        const orderedBuildings = Object.values(place.config.buildings).flat().sort((a,b) => a.name.localeCompare(b.name));
+        const orderedBuildings = Object.values(place.config.buildings).flat().sort((a, b) => a.name.localeCompare(b.name));
 
         for (const building of orderedBuildings) {
             const buildingData = getBuildingData(building.name);
@@ -826,7 +849,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const satisfactionDetails = Object.keys(buildingData.requiresTags).map(tag => {
                     const requiredDist = buildingData.requiresTags[tag].distance;
                     if (placeProvides.has(tag)) return `${tag} ✅ (local)`;
-                    
+
                     const providerInfo = getClosestProviderInfo(tag, place, regionalProviders);
                     if (providerInfo.isMet) {
                         return `${tag} ✅ (import: ${providerInfo.providerName} à ${Math.round(providerInfo.distance)}km)`;
@@ -882,18 +905,20 @@ document.addEventListener('DOMContentLoaded', () => {
             navStep3.classList.add('nav-disabled');
         }
     }
-    
+
     function handleValidateAll() {
         const canProceed = isManualMode ? !validateAllBtn.disabled : true;
         if (!canProceed) {
             return alert("Impossible de valider : tous les prérequis ne sont pas satisfaits en mode manuel.");
         }
-        
+
         if (confirm("Finaliser cette configuration et passer à l'étape de simulation ?")) {
             currentRegion.places.forEach(place => place.config.isValidated = true);
             saveData();
             validationModal.showModal();
-            setTimeout(() => { window.location.href = "step3.html"; }, 2500);
+            setTimeout(() => {
+                window.location.href = "step3.html";
+            }, 2500);
         }
     }
 
@@ -903,12 +928,15 @@ document.addEventListener('DOMContentLoaded', () => {
         mainContentWrapper.style.visibility = 'visible';
 
         statusPanel.classList.add('hidden');
-        
+
         initializePlaceStatusPanel();
         generationOverlay.style.display = 'flex';
-        
+
         currentRegion.places.forEach(place => {
-            place.config = { buildings: {}, isValidated: false };
+            place.config = {
+                buildings: {},
+                isValidated: false
+            };
         });
 
         await generateRegionConfiguration();
@@ -924,20 +952,26 @@ document.addEventListener('DOMContentLoaded', () => {
     function startManualConfiguration() {
         sourceSelectionModal.close();
         mainContentWrapper.style.visibility = 'visible';
-        
+
         currentPage = 1;
         isManualMode = true;
         statusPanel.classList.remove('hidden');
 
         currentRegion.places.forEach(place => {
-            place.config = { buildings: {}, isValidated: false }; 
+            place.config = {
+                buildings: {},
+                isValidated: false
+            };
             const adminCategory = "Bâtiments Administratifs";
             const availableBuildings = BUILDING_DATA[place.type];
             if (availableBuildings && availableBuildings[adminCategory]) {
                 place.config.buildings[adminCategory] = [];
                 for (const name in availableBuildings[adminCategory]) {
                     const buildingData = availableBuildings[adminCategory][name];
-                    place.config.buildings[adminCategory].push({ name, description: buildingData.description });
+                    place.config.buildings[adminCategory].push({
+                        name,
+                        description: buildingData.description
+                    });
                 }
             }
         });
@@ -949,18 +983,45 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- INITIALISATION ---
     function init() {
         loadData();
-        
-        if(!sourceSelectionModal) return;
+
+        if (!sourceSelectionModal) return;
+
+        // --- DÉBUT DE LA CORRECTION ---
+        // Vérification cruciale : la région a-t-elle été chargée ?
+        if (!currentRegion) {
+            const modalContent = document.getElementById('source-selection-modal-content');
+            const modalHeader = sourceSelectionModal.querySelector('.modal-header h3');
+
+            // Met à jour la modale pour afficher une erreur claire.
+            if (modalHeader) {
+                modalHeader.textContent = "Erreur de Chargement";
+            }
+
+            if (modalContent) {
+                modalContent.innerHTML = `
+                <p style="color: var(--color-error); font-weight: bold;">Impossible de charger les données de la région.</p>
+                <p>Cela peut arriver si vous avez accédé directement à cette page ou si les données de navigation ont été effacées.</p>
+                <p>Veuillez d'abord créer ou sélectionner une région à l'étape précédente.</p>
+                <div style="text-align: center; margin-top: 25px;">
+                    <a href="step1.html" class="btn-primary" style="text-decoration: none; padding: 10px 20px;">Retourner à l'Étape 1</a>
+                </div>
+            `;
+            }
+
+            // Stoppe l'exécution pour empêcher toute autre erreur.
+            return;
+        }
+        // --- FIN DE LA CORRECTION ---
 
         selectAutoBtn.addEventListener('click', startAutomaticGeneration);
         selectManualBtn.addEventListener('click', startManualConfiguration);
-        
+
         rerollRegionBtn.addEventListener('click', () => {
             if (confirm("Relancer la génération automatique ? La configuration actuelle sera effacée.")) {
                 startAutomaticGeneration();
             }
         });
-        
+
         manualConfigBtn.addEventListener('click', () => {
             if (confirm("Passer en mode manuel ? La configuration actuelle sera effacée.")) {
                 startManualConfiguration();
@@ -968,7 +1029,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         validateAllBtn.addEventListener('click', handleValidateAll);
-        
+
         placesContainer.addEventListener('click', (e) => {
             const target = e.target;
             if (target.closest('.info-icon')) openAnalysisModal(target.closest('.info-icon').dataset.placeId);

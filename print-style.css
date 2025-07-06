@@ -1,0 +1,119 @@
+/* print-style.css */
+
+@media print {
+    @page {
+        size: A4;
+        margin: 1.5cm;
+    }
+
+    body, html, .page-container-step5 {
+        height: auto !important;
+        overflow: visible !important;
+        width: 100% !important;
+        background-color: #fff !important;
+        color: #000 !important;
+    }
+
+    body {
+        font-size: 10pt;
+    }
+
+    .floating-menu, #controls {
+        display: none !important;
+    }
+
+    .page-container-step5 {
+        margin: 0 !important;
+        width: 100% !important;
+    }
+
+    #content-area {
+        padding: 0;
+        max-width: 100%;
+        box-shadow: none;
+        border: none;
+    }
+
+    .print-section {
+        background-color: transparent !important;
+        border: 1px solid #ccc;
+        box-shadow: none;
+        page-break-inside: avoid;
+        margin-bottom: 15px;
+        padding: 15px;
+    }
+
+    .print-section h1, .print-section h2, .print-section h3 {
+        color: #000 !important;
+    }
+    .print-section h2 { font-size: 16pt; border-color: #888; }
+    .print-section h3 { font-size: 12pt; }
+
+    #location-details-grid {
+        grid-template-columns: 1fr; /* Une seule colonne pour l'impression */
+    }
+    .distance-matrix table, .distance-matrix th, .distance-matrix td {
+        border-color: #aaa !important;
+    }
+
+    /* ------- STYLES D'IMPRESSION FICHE PERSONNAGE (v7.0) ------- */
+    #character-sheets-container {
+        /* FORCER UNE SEULE COLONNE pour les dossiers détaillés */
+        grid-template-columns: 1fr !important; 
+        gap: 20px !important;
+    }
+    
+    .character-sheet {
+        border: 2px solid #333 !important;
+        page-break-inside: avoid !important; /* Essaye de garder le dossier sur une seule page */
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        background: #fff !important;
+    }
+
+    .char-sheet-header {
+        background-color: #eee !important;
+        border-bottom-color: #888 !important;
+    }
+    
+    .char-sheet-header h3, .char-sheet-header p {
+        color: #000 !important;
+    }
+    
+    .stat-box {
+        border-color: #888 !important;
+        background-color: #fff !important;
+    }
+    
+    .stat-box .score, .stat-box .modifier, .stat-box .label {
+        color: #000 !important;
+    }
+
+    .stat-box .modifier {
+        background-color: #f0f0f0 !important;
+        border-color: #aaa !important;
+    }
+    
+    .char-sheet-details {
+        border-top-color: #aaa !important;
+    }
+    .details-section h4 {
+        color: #000 !important;
+        border-bottom-color: #aaa !important;
+    }
+    .life-timeline dd {
+        border-left-color: #ccc !important;
+    }
+    .social-grid, .career-history {
+        color: #000 !important;
+    }
+    
+    a {
+        text-decoration: none;
+        color: #000 !important;
+    }
+
+    .route-steps, .time-steps {
+        font-size: 0.8em !important;
+    }
+}
