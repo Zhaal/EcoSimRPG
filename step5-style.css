@@ -209,7 +209,8 @@ body {
 /* ------- STYLES DE FICHE PERSONNAGE (D&D) ------- */
 #character-sheets-container {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); /* Colonnes plus larges */
+    /* MODIFICATION : Passage de auto-fit à 2 colonnes fixes pour plus d'espace */
+    grid-template-columns: repeat(2, 1fr); 
     gap: 25px;
 }
 .character-sheet-full-view {
@@ -459,9 +460,11 @@ body {
 
 .combat-stats-container {
     display: flex;
-    flex-direction: column;
+    flex-direction: row; /* MODIFIÉ : 'column' devient 'row' pour mettre côte à côte */
     gap: 15px;
+    justify-content: center; /* AJOUTÉ : Pour centrer les boîtes */
     align-items: center;
+    margin-bottom: 15px; /* AJOUTÉ : Pour espacer avec le bloc d'en dessous */
 }
 
 .combat-box {

@@ -95,8 +95,6 @@ const RANDOM_NAMES = [
     "Sablewatch", "Sunspire", "Glacierrest", "Hollowpine", "Feyvale", "Ashgrove",
     "Crownspire", "Verdantdeep", "Thundertree", "Wolfspire", "Nightforge", "Silverdeep",
     "Redpine", "Ironspire", "Gloomreach", "Cragwatch", "Violet Hollow", "Mournvale",
-
-    // Noms à consonance française
     "Aiguebelle", "Beaurivage", "Châteaunoir", "Fauconnerre", "Luneroc", "Montclar",
     "Pierrelune", "Valdoré", "Verchamps", "Bellombre", "Clairefont", "Hauterive",
     "Noyeroc", "Rochefort", "Sombreval", "Verlac", "Auberive", "Boischantant",

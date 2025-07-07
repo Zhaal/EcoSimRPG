@@ -56,7 +56,7 @@
         border-color: #aaa !important;
     }
 
-    /* ------- STYLES D'IMPRESSION FICHE PERSONNAGE (v7.0) ------- */
+    /* ------- STYLES D'IMPRESSION FICHE PERSONNAGE (v7.0) - MODIFIÉS ------- */
     #character-sheets-container {
         /* FORCER UNE SEULE COLONNE pour les dossiers détaillés */
         grid-template-columns: 1fr !important; 
@@ -66,13 +66,11 @@
     .character-sheet {
         border: 2px solid #333 !important;
         page-break-inside: avoid !important; /* Essaye de garder le dossier sur une seule page */
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-        background: #fff !important;
+        background: #fff !important; /* Fond blanc forcé */
     }
 
     .char-sheet-header {
-        background-color: #eee !important;
+        background-color: #fff !important; /* MODIFIÉ : Fond blanc au lieu de gris */
         border-bottom-color: #888 !important;
     }
     
@@ -90,7 +88,13 @@
     }
 
     .stat-box .modifier {
-        background-color: #f0f0f0 !important;
+        background-color: #fff !important; /* MODIFIÉ : Fond blanc au lieu de gris clair */
+        border-color: #aaa !important;
+    }
+
+    /* AJOUTÉ : Forcer le fond blanc pour le conteneur des compétences */
+    .skills-list-container {
+        background: #fff !important;
         border-color: #aaa !important;
     }
     

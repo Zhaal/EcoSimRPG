@@ -70,6 +70,34 @@
         .hidden {
             display: none;
         }
+
+        /* Style pour la nouvelle section détaillée */
+        .detailed-mechanics-section .step-card {
+            background-color: var(--color-parchment-darker); /* Un fond légèrement différent pour distinguer */
+            border-color: var(--color-border-light);
+        }
+
+        .detailed-mechanics-section h3 {
+            font-size: 1.5em; /* Titres de section un peu plus petits */
+        }
+
+        .detailed-mechanics-section ul {
+            text-align: left;
+            padding-left: 20px;
+        }
+        
+        .detailed-mechanics-section li {
+            margin-bottom: 10px;
+        }
+
+        .detailed-mechanics-section code {
+            background-color: #e0d9c9;
+            padding: 2px 5px;
+            border-radius: 4px;
+            font-family: 'Courier New', Courier, monospace;
+            color: #5d4037;
+        }
+
     </style>
 </head>
 <body>
@@ -116,7 +144,7 @@
         <main class="index-main">
             <section class="intro-section">
                 <h2>Bienvenue, Maître du Monde !</h2>
-                <p>EcoSimRPG est une suite d'outils conçue pour vous aider à générer des régions fantastiques cohérentes, dotées d'une économie crédible et de lieux qui interagissent de manière organique. Suivez les étapes ci-dessous pour donner vie à votre propre univers, de la première pierre de la capitale au dernier sentier du hameau le plus reculé.</p>
+                <p>EcoSimRPG est bien plus qu'un simple générateur. C'est une forge divine, une suite d'outils conçue pour vous, l'architecte de mondes, afin de donner naissance à des royaumes fantastiques d'une cohérence et d'une profondeur inégalées. Chaque étape est un acte de création, de la première lueur de votre capitale à la dernière rumeur dans la taverne du hameau le plus isolé. Préparez-vous à insuffler la vie à un univers qui respire, commerce et évolue selon vos desseins.</p>
             </section>
 
             <div class="steps-container">
@@ -127,11 +155,11 @@
                         <h3>Forger le Royaume</h3>
                     </div>
                     <div class="step-card-body">
-                        <p>C'est ici que votre monde prend forme. Fondez vos premières cités, des capitales rayonnantes aux hameaux isolés, et reliez-les par un réseau de routes qui façonnera le commerce et les voyages.</p>
+                        <p>C'est l'acte fondateur, le moment où le néant recule pour laisser place à votre vision. Ici, vous ne placez pas de simples icônes, vous sculptez la géographie politique et commerciale de votre création.</p>
                         <ul>
-                            <li><strong>Posez les fondations :</strong> Fondez vos premières cités, des capitales rayonnantes aux hameaux isolés, et donnez-leur un nom qui résonnera à travers les âges.</li>
-                            <li><strong>Tissez un réseau vital :</strong> Reliez vos communautés par des routes. S'agira-t-il de grandes voies royales pavées ou de périlleux sentiers de montagne ? Chaque route influence la vitesse et la nature des voyages.</li>
-                            <li><strong>Définissez l'échelle :</strong> Chaque hexagone représente-t-il une simple lieue ou une vaste étendue ? Vos choix détermineront l'ampleur des défis logistiques.</li>
+                            <li><strong>Érigez les Piliers de la Civilisation :</strong> Fondez vos premières communautés. Qu'il s'agisse d'une capitale rayonnante destinée à dominer les âges ou d'un modeste hameau niché au creux d'une vallée oubliée, chaque lieu est une promesse.</li>
+                            <li><strong>Tissez la Toile du Monde :</strong> Tracez les artères qui feront battre le cœur de votre royaume. Des grandes voies impériales pavées, témoins de la puissance de votre trône, aux périlleux sentiers de montagne où seuls les plus audacieux s'aventurent. Chaque route est une histoire, un défi, une opportunité.</li>
+                            <li><strong>Décrétez l'Échelle du Monde :</strong> Un simple hexagone peut représenter une marche rapide d'une heure ou une journée de voyage éprouvante. Ce choix initial dictera l'ampleur des migrations, la portée du commerce et la vitesse de déploiement de vos armées.</li>
                         </ul>
                     </div>
                 </div>
@@ -142,11 +170,11 @@
                         <h3>Ériger l'Économie</h3>
                     </div>
                     <div class="step-card-body">
-                        <p>Une cité n'est rien sans son cœur battant : son économie. Donnez une fonction et une âme à chacun de vos lieux.</p>
+                        <p>Une cité n'est qu'une coquille vide sans l'âme de son économie. C'est ici que vous donnez une fonction, un but et une vie propre à chacun de vos lieux, transformant des points sur une carte en centres de production et de pouvoir.</p>
                         <ul>
-                           <li><strong>Mode Automatique :</strong> Laissez notre intelligence artificielle peupler vos lieux de forges, marchés et fermes. Elle tisse une toile économique complexe et s'assure que chaque ressource trouve son producteur pour une région viable.</li>
-                           <li><strong>Mode Manuel :</strong> Prenez les rênes et choisissez chaque bâtiment. Le système vous guidera en temps réel, indiquant les manques et les besoins de votre économie naissante.</li>
-                           <li><strong>Analyse des Flux :</strong> Plongez au cœur de chaque ville pour comprendre ses importations, ses exportations et sa logique interne. Votre capitale dépend-elle du poisson d'un lointain village côtier ? C'est ici que vous le découvrirez.</li>
+                           <li><strong>Le Souffle de l'Automatisation :</strong> Laissez l'intelligence des algorithmes tisser pour vous une toile économique complexe. Des forges aux marchés, des fermes aux guildes, chaque ressource trouvera son producteur, garantissant une région viable et autonome.</li>
+                           <li><strong>La Main du Créateur :</strong> Prenez les rênes. Choisissez chaque bâtiment, chaque industrie. Le système, tel un conseiller fidèle, vous soufflera en temps réel les besoins criants et les surplus abondants de votre économie naissante.</li>
+                           <li><strong>Le Cœur des Cités :</strong> Plongez dans les entrailles de chaque communauté. Votre capitale dépend-elle du poisson d'un lointain village côtier ? C'est ici que vous déchiffrerez les flux, que vous comprendrez les dépendances et que vous identifierez les opportunités stratégiques.</li>
                         </ul>
                     </div>
                 </div>
@@ -157,11 +185,11 @@
                         <h3>Le Souffle de la Vie</h3>
                     </div>
                     <div class="step-card-body">
-                        <p>Votre monde est prêt. Il ne manque que ses habitants. Assistez à la naissance de la "Génération 0", la population originelle de votre royaume.</p>
+                        <p>Le décor est planté, l'économie est prête. Il ne manque que l'étincelle divine : les habitants. Assistez à la naissance de la "Génération 0", la population originelle qui façonnera les premières chroniques de votre royaume.</p>
                         <ul>
-                            <li><strong>La Danse des Peuples :</strong> Le système donne vie à des individus uniques, dotés de noms, d'âges et d'aspirations, en respectant la distribution de races que vous avez définie.</li>
-                            <li><strong>Les Liens du Sang :</strong> Les premiers liens familiaux se tissent et les unions arrangées par le système peuvent donner naissance à des <strong>Demi-Elfes</strong> ou <strong>Demi-Orcs</strong>.</li>
-                            <li><strong>Forger des Dynasties :</strong> Créez vos propres familles, assignez-leur des emplois clés et définissez les <strong>lois de succession</strong> (primogéniture, élection, etc.) pour dicter l'avenir de vos dynasties.</li>
+                            <li><strong>La Mosaïque des Peuples :</strong> Le système donne vie à des individus uniques, dotés de noms, d'âges, d'emplois et d'aspirations, en parfaite adéquation avec la tapisserie des races que vous avez imaginée.</li>
+                            <li><strong>Les Liens du Sang et du Destin :</strong> Observez la formation des premières familles. Les mariages arrangés par le système, basés sur une logique sociale et économique, peuvent donner naissance à des lignées inattendues, comme des <strong>Demi-Elfes</strong> ou des <strong>Demi-Orcs</strong>.</li>
+                            <li><strong>Fondez des Dynasties Éternelles :</strong> Ne soyez pas simple spectateur. Créez vos propres familles nobles, assignez-leur des rôles clés et définissez les <strong>lois de succession</strong> (primogéniture, élective...) qui dicteront l'ascension et la chute des puissants.</li>
                         </ul>
                     </div>
                 </div>
@@ -172,11 +200,11 @@
                         <h3>Déchaîner le Temps</h3>
                     </div>
                     <div class="step-card-body">
-                        <p>Une fois les fondations posées, il est temps de laisser votre monde vivre. Lancez la simulation et observez les années s'écouler.</p>
+                        <p>Les fondations sont posées, les acteurs sont en place. Il est temps de laisser votre création vivre sa propre vie. Lancez la simulation et observez les années, les décennies, les siècles s'écouler sous vos yeux.</p>
                         <ul>
-                            <li><strong>Le Cycle de la Vie :</strong> Les familles s'agrandissent, les enfants naissent, les anciens s'éteignent. La surpopulation ou les pénuries peuvent avoir des conséquences mortelles.</li>
-                            <li><strong>Ambitions et Carrières :</strong> Les individus cherchent du travail, obtiennent des promotions ou migrent vers d'autres cités en quête d'une vie meilleure. Les plus prestigieux gravissent les échelons du pouvoir.</li>
-                            <li><strong>Chroniques d'un Monde :</strong> Grâce à un journal d'événements et un arbre généalogique interactif, suivez le destin de chaque âme, de l'humble fermier au puissant souverain.</li>
+                            <li><strong>Le Grand Cycle de la Vie :</strong> Les dynasties s'agrandissent, les enfants naissent, les anciens s'éteignent. Mais attention, la surpopulation ou les famines peuvent avoir des conséquences funestes et redessiner l'équilibre démographique.</li>
+                            <li><strong>L'Ambition des Mortels :</strong> Les individus ne sont pas statiques. Ils cherchent du travail, gravissent les échelons du pouvoir, ou migrent vers d'autres cités, en quête d'une fortune ou d'une vie meilleure.</li>
+                            <li><strong>Les Annales d'un Monde :</strong> Grâce à un journal d'événements détaillé et à un arbre généalogique interactif, suivez le destin de chaque âme, de l'humble fermier au monarque tout-puissant. Chaque vie est une histoire à découvrir.</li>
                         </ul>
                     </div>
                 </div>
@@ -187,11 +215,11 @@
                         <h3>Explorer les Chroniques</h3>
                     </div>
                     <div class="step-card-body">
-                        <p>Votre monde a une histoire. Plongez dans les détails et extrayez des informations prêtes à l'emploi pour vos aventures.</p>
+                        <p>Votre monde a vécu, il a une histoire. Il est temps de vous y plonger, d'en extraire les récits et les secrets pour nourrir vos propres aventures.</p>
                         <ul>
-                            <li><strong>Dossiers de Personnage :</strong> Consultez des fiches complètes pour chaque habitant, incluant leurs attributs (style D&D), leur parcours professionnel, et leur chronologie de vie.</li>
-                            <li><strong>Analyse Logistique :</strong> Visualisez les temps de trajet entre vos cités, que ce soit à pied, à cheval ou en caravane, en tenant compte du type et de l'état des routes.</li>
-                            <li><strong>Prêt à Jouer :</strong> Imprimez les fiches de personnages, les listes de familles ou les détails d'un lieu pour les utiliser directement dans vos parties de jeu de rôle.</li>
+                            <li><strong>Le Grimoire des Âmes :</strong> Consultez des fiches de personnage complètes pour chaque habitant, incluant leurs attributs (façon D&D), leur histoire professionnelle, et leur biographie générée par les événements de la simulation.</li>
+                            <li><strong>Les Artères du Royaume :</strong> Visualisez les temps de trajet précis entre vos cités. Combien de jours pour une caravane lourdement chargée ? Et pour un messager à cheval ? La logistique de votre monde n'aura plus de secrets.</li>
+                            <li><strong>Prêt pour la Table de Jeu :</strong> Imprimez les fiches de PNJ, les listes de familles influentes, ou les détails économiques d'un lieu. Tout est prêt à être intégré directement dans vos parties de jeu de rôle.</li>
                         </ul>
                     </div>
                 </div>
@@ -199,7 +227,7 @@
 
             <section class="intro-section editor-section">
                 <h2>Un Monde Vraiment à Vous : Les Éditeurs</h2>
-                <p>EcoSimRPG n'est pas un système fermé. Prenez le contrôle total de la simulation grâce à des éditeurs intégrés qui vous permettent de redéfinir les règles de votre univers.</p>
+                <p>EcoSimRPG n'est pas un système fermé. Brisez les chaînes des règles par défaut et prenez le contrôle total de la simulation grâce à des éditeurs intégrés qui vous permettent de redéfinir les fondements mêmes de votre univers.</p>
             </section>
 
              <div class="steps-container editor-cards-container">
@@ -209,11 +237,11 @@
                         <h3>Éditeur de Bâtiments</h3>
                     </div>
                     <div class="step-card-body">
-                        <p>Ne vous contentez pas des bâtiments par défaut. Créez les vôtres pour un monde unique.</p>
+                        <p>Ne vous contentez pas des bâtiments existants. Forgez les industries et les institutions qui rendront votre monde véritablement unique.</p>
                         <ul>
-                            <li><strong>Créez sans Limites :</strong> Inventez de nouveaux bâtiments, définissez leurs descriptions, les emplois qu'ils proposent, les salaires et les prérequis en prestige.</li>
-                            <li><strong>Maîtrisez l'Économie :</strong> Définissez les "tags" que chaque bâtiment produit (ex: 'Nourriture', 'Armes') et ceux qu'il requiert pour fonctionner. L'analyseur en temps réel vous aide à équilibrer votre économie.</li>
-                            <li><strong>Importez et Partagez :</strong> Sauvegardez vos configurations de bâtiments en JSON pour les réutiliser ou les partager avec d'autres maîtres du jeu.</li>
+                            <li><strong>Créez sans Limites :</strong> Inventez de nouveaux bâtiments, définissez leurs fonctions, les emplois qu'ils proposent, les salaires et les prérequis en prestige pour y travailler.</li>
+                            <li><strong>Maîtrisez l'Économie :</strong> Définissez les "tags" (concepts économiques comme 'Nourriture', 'Armes', 'Savoir') que chaque bâtiment produit et ceux qu'il requiert. L'analyseur en temps réel vous guidera pour créer une économie équilibrée ou volontairement instable.</li>
+                            <li><strong>Importez et Partagez :</strong> Sauvegardez vos configurations économiques complexes au format JSON pour les réutiliser dans d'autres mondes ou les partager avec d'autres maîtres du jeu.</li>
                         </ul>
                     </div>
                 </div>
@@ -223,11 +251,119 @@
                         <h3>Éditeur de Races</h3>
                     </div>
                     <div class="step-card-body">
-                        <p>Donnez naissance à de nouvelles civilisations et définissez leurs particularités.</p>
+                        <p>Donnez naissance à des civilisations inédites et définissez leurs particularités culturelles et biologiques.</p>
                         <ul>
-                             <li><strong>Inventez des Peuples :</strong> Créez des races entièrement nouvelles ou modifiez celles existantes. Définissez leur espérance de vie, leur âge de maturité et leur culture à travers les noms typiques.</li>
-                             <li><strong>Généalogie Complexe :</strong> Établissez les règles de compatibilité reproductive entre les races pour contrôler l'émergence de peuples métissés.</li>
-                             <li><strong>Sauvegardez vos Créations :</strong> Tout comme pour les bâtiments, exportez vos configurations de races en JSON pour les intégrer facilement dans n'importe quel projet.</li>
+                             <li><strong>Inventez des Peuples :</strong> Créez des races entièrement nouvelles ou modifiez celles existantes. Définissez leur espérance de vie, leur âge de maturité, et donnez-leur une identité culturelle à travers des listes de noms typiques.</li>
+                             <li><strong>Généalogie Complexe :</strong> Établissez les règles de compatibilité reproductive entre les races. Contrôlez l'émergence de peuples métissés ou créez des sociétés aux lignées pures et exclusives.</li>
+                             <li><strong>Sauvegardez vos Créations :</strong> Tout comme pour les bâtiments, exportez vos configurations de races en JSON pour les intégrer facilement dans n'importe quel projet ou les partager avec la communauté.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <section class="intro-section editor-section detailed-mechanics-section">
+                <h2>Les Rouages du Monde : Le Fonctionnement Détaillé</h2>
+                <p>Curieux de savoir comment la magie opère ? Voici une plongée en profondeur dans les mécanismes qui animent chaque étape de la création de votre monde. Chaque page est un automate complexe, une horlogerie précise dont nous vous révélons ici les secrets.</p>
+            </section>
+            
+            <div class="steps-container detailed-mechanics-section">
+                
+                <div class="step-card" id="card-details-step1">
+                    <div class="step-card-header">
+                        <h3>Étape 1 : Forger le Royaume (step1.js)</h3>
+                    </div>
+                    <div class="step-card-body">
+                        <p>Cette page est le canevas initial. Elle utilise une grille hexagonale et des algorithmes de graphes pour créer une fondation géographique et logistique cohérente.</p>
+                        <ul>
+                            <li><strong>Placement et Coordonnées :</strong> La carte emploie un système de coordonnées axiales (q, r) pour représenter la grille hexagonale. Chaque clic sur la carte est traduit en une coordonnée d'hexagone, permettant de placer ou de déplacer des lieux de manière précise et intuitive. Cette structure mathématique est essentielle pour calculer les distances de manière réaliste.</li>
+                            <li><strong>Réseau Routier Intelligent :</strong> Lors de la génération automatique, un réseau routier est créé via un algorithme d'<strong>Arbre Recouvrant Minimum</strong>. Ce processus garantit que tous les lieux sont connectés entre eux par le chemin le plus court possible, formant l'épine dorsale du réseau. Pour ajouter du réalisme, l'algorithme ajoute ensuite un certain pourcentage de routes supplémentaires non essentielles, créant des raccourcis et des itinéraires alternatifs.</li>
+                            <li><strong>Hiérarchie des Communications :</strong> L'automate reconnaît l'importance stratégique des grands centres de population. Il est programmé pour tracer préférentiellement des routes plus directes et de meilleure qualité (type 'royale' ou 'comtale') entre la capitale et les villes majeures, simulant ainsi les grands axes commerciaux et militaires d'un royaume.</li>
+                             <li><strong>Calcul Logistique :</strong> Le temps de trajet entre deux points n'est pas une simple estimation. Il est calculé en prenant en compte la distance physique (définie par l'échelle de la carte), la vitesse de base du mode de transport (à pied, à cheval, ou en caravane), et un <strong>modificateur de vitesse</strong> propre à chaque type de route. Un sentier de montagne ralentira drastiquement un voyageur, tandis qu'une route royale l'accélérera.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="step-card" id="card-details-step2">
+                    <div class="step-card-header">
+                        <h3>Étape 2 : Ériger l'Économie (step2.js)</h3>
+                    </div>
+                    <div class="step-card-body">
+                        <p>Le moteur économique est un solveur de dépendances sophistiqué. Son but est de distribuer les bâtiments pour créer une chaîne logistique cohérente où chaque besoin trouve une réponse.</p>
+                        <ul>
+                            <li><strong>Le Système de "Tags" Économiques :</strong> Le cœur du système repose sur des concepts abstraits appelés "tags". Chaque bâtiment <strong>produit</strong> des tags (une ferme produit 'Grain', une forge produit 'Outils Simples') et en <strong>requiert</strong> d'autres pour fonctionner (une boulangerie requiert 'Farine'). Une économie est considérée comme viable lorsque tous les tags requis par les bâtiments de la région sont fournis par d'autres bâtiments.</li>
+                            <li><strong>Boucle de Résolution Itérative :</strong> La génération automatique est un processus intelligent en plusieurs passes. À chaque itération, le système :
+                                <ol>
+                                    <li>Analyse la totalité des bâtiments présents et dresse la liste des <strong>besoins non satisfaits</strong> (les tags requis mais non produits).</li>
+                                    <li>Évalue tous les bâtiments constructibles et leur attribue un score. Un bâtiment gagne des points s'il peut satisfaire un besoin manquant. Pour encourager la spécialisation régionale et éviter que tous les villages ne se ressemblent, un <strong>malus de diversité</strong> est appliqué si un bâtiment similaire est déjà très présent dans d'autres lieux du même type (par exemple, la 10ème forge dans un village aura un score plus bas).</li>
+                                    <li>Le bâtiment obtenant le meilleur score est alors construit dans le lieu le plus approprié. La boucle recommence, réévaluant les besoins avec ce nouveau bâtiment en place.</li>
+                                </ol>
+                            </li>
+                            <li><strong>Quotas et Hiérarchie :</strong> Chaque type de lieu possède un nombre maximum de "slots" de construction, reflétant sa taille. Une Capitale peut accueillir des dizaines de bâtiments, tandis qu'un Hameau n'en supportera qu'une poignée. De plus, un lieu ne peut construire que des bâtiments de son niveau ou d'un niveau inférieur (un Hameau ne peut pas construire une "Académie Royale"), assurant une progression logique de la complexité économique.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                 <div class="step-card" id="card-details-step3">
+                    <div class="step-card-header">
+                        <h3>Étape 3 : Le Souffle de la Vie (step3.js)</h3>
+                    </div>
+                    <div class="step-card-body">
+                        <p>La création de la population initiale (Génération 0) est un processus démographique visant à créer une population de départ crédible, structurée et prête à évoluer.</p>
+                        <ul>
+                            <li><strong>Génération Basée sur l'Emploi :</strong> La population n'est pas générée au hasard. Le système commence par lister tous les postes de travail disponibles dans la région. Chaque poste vacant devient le point de départ pour la création d'un individu. Le <strong>niveau hiérarchique (Tier)</strong> de l'emploi est crucial : il détermine l'âge de la personne générée. Un dirigeant de Tier 0 sera plus âgé et expérimenté, tandis qu'un ouvrier de Tier 5 sera plus jeune.</li>
+                            <li><strong>Formation des Familles :</strong> Une fois les individus créés, un algorithme de "matching" social tente de former des couples. Il priorise les individus de même race et de statut social similaire (même Tier d'emploi), et vérifie la compatibilité reproductive définie dans les règles. Les individus restants fondent des lignées de célibataires.</li>
+                            <li><strong>Démographie Initiale :</strong> Pour les couples formés, le système simule une descendance. Le nombre d'enfants est basé sur le désir d'enfant moyen des deux parents. L'âge de ces enfants est calculé pour être logiquement inférieur à celui de leurs parents, créant ainsi une première génération avec une pyramide des âges cohérente.</li>
+                            <li><strong>Simulation de l'Expérience de Vie :</strong> Pour éviter que tous les personnages de 40 ans aient les mêmes compétences, une fonction simule l'expérience de vie accumulée. Elle calcule les gains de prestige et de statistiques qu'un personnage aurait dû recevoir chaque mois entre l'âge adulte et son âge actuel. Ce calcul intègre un <strong>facteur de déclin</strong>, simulant le fait que l'on apprend moins vite avec l'âge, ce qui donne des vétérans sages mais pas surpuissants.</li>
+                             <li><strong>Structure du Pouvoir :</strong> Dès la fin de la génération, le système identifie les dirigeants (Tier 0) et applique immédiatement les titres nobiliaires (Héritier, Patriarche, etc.) aux membres de leur famille. Cela assure qu'une hiérarchie politique claire et fonctionnelle est en place avant même le début de la simulation temporelle.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                 <div class="step-card" id="card-details-step4">
+                    <div class="step-card-header">
+                        <h3>Étape 4 : Déchaîner le Temps (step4.js)</h3>
+                    </div>
+                    <div class="step-card-body">
+                        <p>Le moteur de simulation est une boucle complexe qui exécute, chaque "mois" (ou "tick"), une série d'événements et de décisions pour chaque individu, créant une chronique vivante.</p>
+                        <ul>
+                            <li><strong>Le Cycle de la Vie et la Faucheuse :</strong> À chaque tick, la probabilité de décès d'un personnage est évaluée. Ce n'est pas un simple jet de dé. C'est une combinaison de facteurs :
+                                <ul>
+                                    <li><strong>La Vieillesse :</strong> La probabilité de mourir augmente de manière exponentielle après 70% de l'espérance de vie de la race, rendant la mort de vieillesse quasi inévitable mais imprévisible.</li>
+                                    <li><strong>Les Crises :</strong> En cas de surpopulation (définie par un dépassement de 150% de la population de départ), une chance de mourir de "maladie" est introduite. Cette probabilité est plus élevée pour les personnages âgés et pour les membres de familles à faible prestige, simulant un accès inégal aux ressources.</li>
+                                    <li><strong>Le Hasard :</strong> Une infime probabilité de base de mourir d'un "accident" existe à chaque instant, représentant les aléas de la vie.</li>
+                                </ul>
+                            </li>
+                            <li><strong>La Couronne et l'Héritage :</strong> À la mort d'un dirigeant (Tier 0), une procédure de succession est enclenchée. Elle respecte scrupuleusement la loi du lieu (<code>inheritanceLaw</code>). En mode <strong>primogéniture</strong>, l'automate recherche un héritier valide en descendant l'arbre généalogique (enfants, puis petits-enfants), puis en le remontant (frères et sœurs, puis neveux). En mode <strong>électif</strong>, le membre de la famille avec le plus haut score de prestige est désigné. Si aucune solution n'est trouvée, le pouvoir devient vacant et la famille la plus prestigieuse du lieu s'en empare.</li>
+                            <li><strong>Ambition et Carrière :</strong> La vie professionnelle est dynamique. Un personnage sans emploi vérifiera régulièrement les offres disponibles pour lesquelles son prestige est suffisant. Un employé peut être promu à un poste de rang supérieur au sein de son bâtiment si une place se libère, avec une priorité donnée au plus méritant (le plus prestigieux). En cas de stagnation, un personnage peut décider de migrer vers une autre ville offrant de meilleures opportunités et une plus grande satisfaction.</li>
+                            <li><strong>L'Expérience et le Déclin :</strong> La progression n'est pas linéaire. Chaque mois, les personnages gagnent des points de prestige et de statistiques. Cependant, ce gain est affecté par un <strong>multiplicateur de rendement décroissant</strong>. Après 25 ans de carrière et passé 70% de son espérance de vie, un personnage verra sa progression ralentir considérablement, simulant le plateau de compétence et le déclin physique de la fin de carrière.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                 <div class="step-card" id="card-details-step5">
+                    <div class="step-card-header">
+                        <h3>Étape 5 : Explorer les Chroniques (step5.js)</h3>
+                    </div>
+                    <div class="step-card-body">
+                        <p>L'explorateur de données est une interface de visualisation qui transforme les données brutes de la simulation en informations claires et exploitables pour le jeu de rôle.</p>
+                        <ul>
+                            <li><strong>Conversion de Données Brutes :</strong> Les statistiques des personnages dans la simulation (force, intelligence...) sont des valeurs brutes qui peuvent atteindre plusieurs milliers de points. Pour les rendre utilisables en JDR, un script les convertit sur une échelle de 1 à 20, similaire à D&D. Cette conversion n'est pas linéaire mais suit une courbe logarithmique : il faut beaucoup plus de points bruts pour passer de 17 à 18 que pour passer de 9 à 10.</li>
+                            <li><strong>Logistique et Pathfinding :</strong> Le calcul des temps de trajet n'est pas une simple ligne droite. Le système utilise un algorithme de recherche de chemin le plus court (de type Dijkstra). Il construit un graphe du réseau routier et calcule l'itinéraire optimal entre deux villes, en pondérant chaque segment de route par son type (royal, marchand, etc.) et le mode de transport, pour fournir des temps de parcours réalistes.</li>
+                            <li><strong>Agrégation Généalogique :</strong> Pour afficher les arbres familiaux, le script parcourt récursivement les liens de parenté (parents, enfants, conjoints) de toute la population pour reconstruire dynamiquement la structure de chaque famille et l'afficher de manière hiérarchique et interactive.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="step-card" id="card-details-editor">
+                    <div class="step-card-header">
+                        <h3>Les Éditeurs (editeur.js, etc.)</h3>
+                    </div>
+                    <div class="step-card-body">
+                        <p>Les éditeurs sont des outils puissants qui vous donnent les clés du moteur de simulation, vous permettant de modifier les règles fondamentales du jeu.</p>
+                        <ul>
+                            <li><strong>Couche de Personnalisation :</strong> Les éditeurs ne modifient pas les fichiers de base. Ils créent une couche de données personnalisées dans le stockage local de votre navigateur. Au lancement, l'application détecte cette couche et vous propose de l'utiliser à la place des règles par défaut. Cela garantit que les données originales restent intactes et que vos créations sont portables.</li>
+                            <li><strong>Analyseur Économique en Temps Réel :</strong> L'éditeur de bâtiments est un véritable outil de diagnostic. Chaque fois que vous modifiez un bâtiment, il recalcule l'intégralité de la chaîne de production de votre configuration. Il maintient une liste de tous les "tags" économiques et vous alerte instantanément sur les déséquilibres : les "tags orphelins" (ressources nécessaires mais jamais produites) et les "tags jamais requis" (ressources produites mais jamais utilisées).</li>
+                            <li><strong>Modularité et Portabilité :</strong> La fonction d'exportation au format JSON transforme vos configurations complexes de bâtiments ou de races en un simple fichier texte. Vous pouvez ainsi archiver différentes versions de vos mondes (un monde "low fantasy", un monde "high magic"...), les partager avec d'autres maîtres de jeu, ou les réimporter dans un autre navigateur, assurant une flexibilité totale.</li>
                         </ul>
                     </div>
                 </div>
