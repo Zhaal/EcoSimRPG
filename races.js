@@ -22,7 +22,7 @@ EcoSimData.racesData = {
       "esperanceVieMax": 750,
       "dureeGestationMois": 18,
       "ageApprentissage": 4,
-      "ageTravail": 35
+      "ageTravail": 18
     },
     "Demi-Elfe": {
       "prenomsM": ["Caelum", "Theron", "Aelric", "Eldric", "Lorand", "Vaelin", "Sylric", "Malwen", "Tyrel", "Darian", "Kaelor", "Oryn", "Lirion", "Fenric", "Calion", "Erevan", "Faolan", "Gaelin", "Halasían", "Ithron", "Jhaer", "Kaelar", "Lorcan", "Mithron", "Nael", "Orion", "Paelion", "Quarion", "Rolen", "Sael", "Talion", "Urien", "Vaelan", "Wyn", "Xanion", "Yllan"],
@@ -38,17 +38,17 @@ EcoSimData.racesData = {
       "prenomsM": ["Gorruk", "Tharok", "Borgakh", "Gruk", "Morgul", "Urgash", "Zogmar", "Drogath", "Vorgak", "Hraknor", "Zarnok", "Torug", "Kazgar", "Urdan", "Skarn", "Azog", "Bolgr", "Dugrul", "Fargash", "Ghash", "Hogar", "Jorg", "Korgul", "Lugdush", "Mauhúr", "Narg", "Ogrash", "Pug", "Rugdush", "Shagrat", "Tugog", "Uglúk", "Vrask", "Wugrash", "Yazneg"],
       "prenomsF": ["Graga", "Morga", "Bagra", "Urga", "Sharga", "Vorka", "Zugra", "Drakka", "Krasha", "Zulga", "Ogra", "Krota", "Braga", "Thurka", "Narza", "Azog", "Bolg", "Durbag", "Ghash", "Hug", "Jarga", "Kraka", "Lugburz", "Mazog", "Narg", "Ogrash", "Pug", "Ragash", "Shagga", "Tugog", "Ugbash", "Vorga", "Wug", "Yazga", "Zogga"],
       "noms": ["Ironjaw", "Bloodfist", "Bonecrusher", "Skullsplitter", "Warbringer", "Blackfang", "Doomhammer", "Stormscar", "Ironhide", "Thundermaw", "Battleborn", "Steelclaw", "Ragefang", "Blightclaw", "Darkmaul", "Gorefang", "Deathmaw", "Rustblade", "Grimskull", "Hatecleaver", "Mangletooth", "Rotgut", "Slagheart", "Terrorgrip", "Vileblade", "Warpike", "Xal'gor", "Yak'gor", "Zog'nar", "Azkor", "Brak'thar", "Crag'gor", "Drog'ath", "Ekk'zar", "Frak'gar", "Ironfang", "Bloodmaw", "Bonegnasher", "Skullcrusher", "Warhowl", "Blacktooth", "Doomfist", "Stormcleaver", "Ironfist", "Thunderfang", "Battleaxe", "Steelmaw", "Rageclaw", "Blightfang", "Darkhowl", "Goremaw", "Deathclaw", "Rustfang", "Grimblood", "Hatemaul", "Manglejaw", "Rotfang", "Slagfist", "Terrorhowl", "Vilemaw", "Warscar", "Bloodcleaver", "Brutemaul", "Venomblood", "Ashfang", "Wargrin", "Dreadfang", "Ironrage", "Furyfist", "Gutripper", "Crimsonhowl", "Doomscar", "Wargheart", "Rageborn", "Rotspike", "Daggerfang", "Hollowtooth", "Shatterfist", "Blazemaul", "Thunderclaw", "Nightfang", "Stormfang", "Ironspike", "Venomjaw", "Dreadclaw", "Battlefang", "Brutetooth", "Fleshrender", "Ironmaul", "Blightfury", "Darkscar", "Shadowcleaver", "Warcrusher", "Tuskbreaker", "Firefang", "Voidclaw", "Dreadjaw", "Gorebreaker", "Rotmaw", "Wargclaw", "Skullhowl", "Hatejaw", "Bloodfang", "Ironmaw", "Frostfang", "Ragecrusher", "Savagehowl", "Venomscar", "Stormbreaker", "Warfang", "Ashmaw", "Hollowfang", "Flamecleaver", "Furyfang", "Vortexfang", "Dreadmaw", "Voidfang", "Terrorfang", "Hellscar", "Steelbreaker", "Ragehowl", "Goreclaw", "Daggermaw", "Cragfang", "Brutefist", "Shadowfang", "Gutripper", "Darkfang", "Skullmaw", "Blightclaw", "Rotbreaker", "Havocfang", "Fireclaw", "Stormcrusher", "Wrathfang", "Ironhowl", "Nightmaw", "Voidmaul"],
-      "ageAdulte": 14,
+      "ageAdulte": 11,
       "esperanceVieMax": 60,
       "dureeGestationMois": 6,
-      "ageApprentissage": 2,
+      "ageApprentissage": 3,
       "ageTravail": 8
     },
     "Demi-Orc": {
       "prenomsM": ["Gorran", "Tharon", "Borgan", "Grukan", "Morgar", "Urkan", "Zogran", "Drogmar", "Varkan", "Hrok", "Zarnak", "Torun", "Kazrik", "Urdak", "Skor", "Azhak", "Borkul", "Drokk", "Gorzak", "Hrogar", "Jorgal", "Krogar", "Lugak", "Morgak", "Narok", "Orghar", "Porg", "Rogar", "Shagar", "Torgak", "Ugor", "Vorgak", "Wrogar", "Xorg", "Yorg"],
       "prenomsF": ["Gara", "Mara", "Bara", "Urana", "Shara", "Vora", "Zura", "Draga", "Kraga", "Zura", "Ogra", "Kara", "Braka", "Thura", "Narga", "Agra", "Borga", "Droga", "Gorza", "Hroga", "Jorga", "Kroga", "Lugra", "Morza", "Nagra", "Orga", "Pogra", "Rogra", "Shagra", "Togra", "Ugra", "Vorga", "Wroga", "Xogra", "Yogra"],
       "noms": ["Steeljaw", "Redfist", "Stonebreaker", "Ironhide", "Bloodaxe", "Stormcrusher", "Darkfang", "Shadowmaw", "Ragehammer", "Doomscar", "Thunderjaw", "Grimclaw", "Warchild", "Firebrand", "Frostfang", "Gorehowl", "Deathgrip", "Rustfang", "Grimblade", "Hatecleaver", "Mangler", "Rotfang", "Slagmaw", "Terrorfang", "Viletooth", "Warsong", "Xal'gur", "Yak'mar", "Zog'gar", "Azkar", "Brak'dar", "Crag'mar", "Drog'ash", "Ekk'zor", "Frak'mar", "Steelmaw", "Redclaw", "Stonefang", "Ironfury", "Bloodhowl", "Stormmaul", "Darkscar", "Shadowfang", "Rageclaw", "Doomjaw", "Thunderclaw", "Grimfang", "Warborn", "Firestrike", "Frostmaw", "Gorecleaver", "Deathfang", "Rustjaw", "Grimfist", "Hatetooth", "Manglefang", "Rotmaw", "Slagclaw", "Terrormaw", "Viletusk", "Warhowl", "Stormtusk", "Ironbrand", "Cragfist", "Daggerfang", "Bruteborn", "Dreadscar", "Venomclaw", "Ashfury", "Wargborn", "Hollowfang", "Furyjaw", "Blazefang", "Nightscar", "Shadowcleaver", "Ragestrike", "Doomcleaver", "Firefang", "Voidclaw", "Terrorjaw", "Hellfang", "Steelborn", "Rageheart", "Thunderborn", "Warchild", "Savagefang", "Stormfang", "Darkcleaver", "Battlejaw", "Crimsonfang", "Flamejaw", "Ironscar", "Bloodbrand", "Stormrider", "Warbringer", "Frostborn", "Blightfang", "Daggerjaw", "Goremaul", "Venomtusk", "Wrathfang", "Tuskbreaker", "Rageshade", "Gutripper", "Cragborn", "Shadowjaw", "Fireclaw", "Havocfang", "Blazemaul", "Vortexfang", "Dreadjaw", "Voidfang", "Ashfang", "Thunderstrike", "Stormcrusher", "Blackfang", "Ironhowl", "Rotclaw", "Battleborn", "Savageshade", "Grimjaw", "Skullfang", "Bloodscar", "Darkhowl", "Stonejaw", "Slagtusk", "Warspike", "Stormhowl", "Frostclaw", "Daggerstrike", "Doomfang", "Ironbreaker", "Crimsonclaw", "Thundershade", "Rageborn", "Grimblood", "Dreadscar", "Warshade", "Nightfang"],
-      "ageAdulte": 14,
+      "ageAdulte": 12,
       "esperanceVieMax": 70,
       "dureeGestationMois": 8,
       "ageApprentissage": 3,
@@ -61,8 +61,8 @@ EcoSimData.racesData = {
       "ageAdulte": 16,
       "esperanceVieMax": 350,
       "dureeGestationMois": 12,
-      "ageApprentissage": 8,
-      "ageTravail": 13
+      "ageApprentissage": 5,
+      "ageTravail": 12
     }
   },
   "compatibilites": {

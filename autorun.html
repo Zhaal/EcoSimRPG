@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>EcoSimRPG - Génération en cours...</title>
+    <style>
+        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #f0f0f0; margin: 0; }
+        .progress-container { text-align: center; background: white; padding: 40px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); width: 80%; max-width: 600px; }
+        #progress-log { list-style: none; padding: 10px; margin-top: 20px; height: 300px; overflow-y: auto; border: 1px solid #ccc; background: #fafafa; text-align: left; }
+        #progress-log li { margin-bottom: 8px; font-family: monospace; }
+        /* Styles pour les types de log */
+        #progress-log .info { color: #333; }
+        #progress-log .success { color: #2E7D32; font-weight: bold; }
+        #progress-log .error { color: #D32F2F; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="progress-container">
+        <h1>Génération de votre monde en cours...</h1>
+        <p>Veuillez patienter, ce processus peut prendre une minute.</p>
+        <ul id="progress-log"></ul>
+    </div>
+
+    <script>
+      var EcoSimData = {
+          buildings: {},
+          racesData: {}
+      };
+    </script>
+    
+    <script src="buildings.js" defer></script>
+    <script src="races.js" defer></script> 
+    <script src="step1.js" defer></script>
+    <script src="step2.js" defer></script>
+    <script src="step3.js" defer></script>
+    <script src="step4.js" defer></script>
+
+    <script src="autorun.js" defer></script>
+
+</body>
+</html>

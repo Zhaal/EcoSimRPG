@@ -5,6 +5,7 @@
  * - NOUVEAU : Cliquer sur le lien de navigation "Étape 3" (s'il est actif) déclenche la validation finale.
  * - MODIFIÉ : La fonction `init` gère les nouveaux boutons et la nouvelle logique de navigation.
  * - MODIFIÉ : `validateManualConfiguration` et `startManualConfiguration` mettent à jour l'état du lien de navigation.
+ * CORRIGÉ POUR AUTORUN : Ajout de gardes pour empêcher les erreurs lorsque les éléments DOM sont absents.
  */
 document.addEventListener('DOMContentLoaded', () => {
     // --- CONSTANTES & CONFIGURATION ---
@@ -124,6 +125,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- FONCTIONS POUR LE PANNEAU D'ÉTAT ---
     function initializePlaceStatusPanel() {
+        if (!placeStatusPanel) return; // CORRECTION: Ajout d'une garde
         placeStatusPanel.innerHTML = '';
         placeStatusElements.clear();
         if (!currentRegion) return;
@@ -427,13 +429,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function displayPlaces() {
+        if (!placesContainer) return; // CORRECTION: Ajout d'une garde
         if (!currentRegion) {
             placesContainer.innerHTML = `<p>Aucune région sélectionnée. Retournez à l'étape 1.</p>`;
-            paginationControls.style.display = 'none';
+            if (paginationControls) paginationControls.style.display = 'none';
             return;
         }
 
-        regionNameDisplay.textContent = `Région : ${currentRegion.name}`;
+        if(regionNameDisplay) regionNameDisplay.textContent = `Région : ${currentRegion.name}`;
 
         const sortedPlaces = [...currentRegion.places].sort((a, b) => {
             const tierA = PLACE_TYPE_HIERARCHY[a.type] || 99;
@@ -464,15 +467,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updatePaginationUI(totalPages) {
+        if (!paginationControls) return; // CORRECTION: Ajout d'une garde
         if (totalPages <= 1) {
             paginationControls.style.display = 'none';
             return;
         }
 
         paginationControls.style.display = 'flex';
-        pageInfo.textContent = `Page ${currentPage} / ${totalPages}`;
-        prevPageBtn.disabled = (currentPage === 1);
-        nextPageBtn.disabled = (currentPage >= totalPages);
+        if(pageInfo) pageInfo.textContent = `Page ${currentPage} / ${totalPages}`;
+        if(prevPageBtn) prevPageBtn.disabled = (currentPage === 1);
+        if(nextPageBtn) nextPageBtn.disabled = (currentPage >= totalPages);
     }
 
     function createAutoPlaceCardHTML(place) {
@@ -888,6 +892,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateNavLinksState() {
+        if (!navStep3) return; // CORRECTION: Ajout d'une garde
         if (checkAllPlacesValidated()) {
             navStep3.classList.remove('nav-disabled');
         } else {
@@ -904,38 +909,42 @@ document.addEventListener('DOMContentLoaded', () => {
         if (confirm("Finaliser cette configuration et passer à l'étape de simulation ?")) {
             currentRegion.places.forEach(place => place.config.isValidated = true);
             saveData();
-            validationModal.showModal();
+            if (validationModal) validationModal.showModal(); // CORRECTION: Ajout d'une garde
             setTimeout(() => {
                 window.location.href = "step3.html";
             }, 2500);
         }
     }
 
-    // --- FONCTIONS DE DÉMARRAGE ---
-    async function startAutomaticGeneration() {
-        sourceSelectionModal.close();
-        mainContentWrapper.style.visibility = 'visible';
-        statusPanel.classList.add('hidden');
-        initializePlaceStatusPanel();
-        generationOverlay.style.display = 'flex';
 
-        currentRegion.places.forEach(place => {
-            place.config = {
-                buildings: {},
-                isValidated: false
-            };
-        });
+async function startAutomaticGeneration() {
+    if (sourceSelectionModal) sourceSelectionModal.close();
+    if (mainContentWrapper) mainContentWrapper.style.visibility = 'visible';
+    if (statusPanel) statusPanel.classList.add('hidden');
+    
+    initializePlaceStatusPanel(); 
+    
+    if (generationOverlay) generationOverlay.style.display = 'flex';
 
-        await generateRegionConfiguration();
+    currentRegion.places.forEach(place => {
+        place.config = {
+            buildings: {},
+            isValidated: false
+        };
+    });
 
-        saveData();
-        generationOverlay.style.display = 'none';
-        isManualMode = false;
-        validateAllBtn.disabled = false;
-        currentPage = 1;
-        displayPlaces();
-        updateNavLinksState();
-    }
+    await generateRegionConfiguration();
+
+    saveData();
+    
+    if (generationOverlay) generationOverlay.style.display = 'none';
+    isManualMode = false;
+    if (validateAllBtn) validateAllBtn.disabled = false;
+    
+    currentPage = 1;
+    displayPlaces(); 
+    updateNavLinksState(); 
+}
 
     function startManualConfiguration() {
         sourceSelectionModal.close();
@@ -1104,5 +1113,14 @@ document.addEventListener('DOMContentLoaded', () => {
         updateNavLinksState();
     }
 
+    window.EcoSimStep2 = {
+        run: (source) => {
+            loadData(); 
+            initializeWithDataSource(source);
+            return startAutomaticGeneration(); // Retourne la promesse
+        }
+    };
+if (document.getElementById('top-bar-step2')) {
     init();
+}
 });

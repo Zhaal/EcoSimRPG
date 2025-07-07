@@ -77,29 +77,65 @@ document.addEventListener('DOMContentLoaded', () => {
     const DEFAULT_ROAD_TYPE = 'marchand';
     const HEX_TERRAIN = { img: null, file: 'terrain_hex.jpg' };
 const RANDOM_NAMES = [
-  "Aethelgard", "Baeldor", "Crystalgate", "Dunharrow", "Eldoria", "Faelivrin",
-  "Glimmerwood", "Highgarden", "Ironcliff", "Silvercreek", "Valoria", "Windhaven",
-  "Dragon's Rest", "Starfall",
-  "Thornhollow", "Moonspire", "Stormreach", "Frostmere", "Shadowfen", "Whiteridge",
-  "Ambermoor", "Nightshade", "Ravenhall", "Oakenshield", "Mistvale", "Darkmere",
-  "Emberfall", "Brightforge", "Sunhollow", "Grimwatch", "Rimehold", "Hollowdeep",
-  "Ashenfield", "Duskmire", "Seabreak", "Winterglen", "Myrefall", "Skyridge",
-  "Hawkwind", "Blackbriar", "Wolfsden", "Goldenthorne", "Thundertop", "Evermist",
-  "Redreach", "Ironwood", "Verdanshire", "Stonehollow", "Wyrmgate", "Brighthollow",
-  "Stormhelm", "Moonfen", "Cindervale", "Greywatch", "Ravenshade", "Silvershade",
-  "Ivyridge", "Cloudspire", "Ashenmoor", "Nightglen", "Duskwatch", "Frosthollow",
-  "Stormvale", "Wildmere", "Twilight Reach", "Windspire", "Thornspire", "Ebonvale",
-  "Hearthglen", "Northwatch", "Mistridge", "Shadowhollow", "Brightmoor", "Grimspire",
-  "Stonegate", "Snowvale", "Ironhold", "Emberridge", "Rookfell", "Moonreach",
-  "Duskfall", "Winterhall", "Sablefen", "Ravensong", "Cloudreach", "Brightpeak",
-  "Sablewatch", "Sunspire", "Glacierrest", "Hollowpine", "Feyvale", "Ashgrove",
-  "Crownspire", "Verdantdeep", "Thundertree", "Wolfspire", "Nightforge", "Silverdeep",
-  "Redpine", "Ironspire", "Gloomreach", "Cragwatch", "Violet Hollow", "Mournvale"
+    "Aethelgard", "Baeldor", "Crystalgate", "Dunharrow", "Eldoria", "Faelivrin",
+    "Glimmerwood", "Highgarden", "Ironcliff", "Silvercreek", "Valoria", "Windhaven",
+    "Dragon's Rest", "Starfall",
+    "Thornhollow", "Moonspire", "Stormreach", "Frostmere", "Shadowfen", "Whiteridge",
+    "Ambermoor", "Nightshade", "Ravenhall", "Oakenshield", "Mistvale", "Darkmere",
+    "Emberfall", "Brightforge", "Sunhollow", "Grimwatch", "Rimehold", "Hollowdeep",
+    "Ashenfield", "Duskmire", "Seabreak", "Winterglen", "Myrefall", "Skyridge",
+    "Hawkwind", "Blackbriar", "Wolfsden", "Goldenthorne", "Thundertop", "Evermist",
+    "Redreach", "Ironwood", "Verdanshire", "Stonehollow", "Wyrmgate", "Brighthollow",
+    "Stormhelm", "Moonfen", "Cindervale", "Greywatch", "Ravenshade", "Silvershade",
+    "Ivyridge", "Cloudspire", "Ashenmoor", "Nightglen", "Duskwatch", "Frosthollow",
+    "Stormvale", "Wildmere", "Twilight Reach", "Windspire", "Thornspire", "Ebonvale",
+    "Hearthglen", "Northwatch", "Mistridge", "Shadowhollow", "Brightmoor", "Grimspire",
+    "Stonegate", "Snowvale", "Ironhold", "Emberridge", "Rookfell", "Moonreach",
+    "Duskfall", "Winterhall", "Sablefen", "Ravensong", "Cloudreach", "Brightpeak",
+    "Sablewatch", "Sunspire", "Glacierrest", "Hollowpine", "Feyvale", "Ashgrove",
+    "Crownspire", "Verdantdeep", "Thundertree", "Wolfspire", "Nightforge", "Silverdeep",
+    "Redpine", "Ironspire", "Gloomreach", "Cragwatch", "Violet Hollow", "Mournvale",
+
+    // Noms à consonance française
+    "Aiguebelle", "Beaurivage", "Châteaunoir", "Fauconnerre", "Luneroc", "Montclar",
+    "Pierrelune", "Valdoré", "Verchamps", "Bellombre", "Clairefont", "Hauterive",
+    "Noyeroc", "Rochefort", "Sombreval", "Verlac", "Auberive", "Boischantant",
+    "Clairmarais", "Fleurac", "Griselande", "Lombreuil", "Pointebrume", "Sauveterre",
+    "Vieux-Bourg", "Bastide-la-Forêt", "Chanteloup", "Croix-du-Sud", "Épineuil", "Froideval",
+    "Lafayette", "Marais-d'Argent", "Pont-de-Brume", "Sainte-Colombe-des-Bois", "Trouvence", "Valbrume",
+    "Bellegarde", "Cœur-d'Acier", "Froidemantel", "Havre-Gris", "Mornesource", "Orbec",
+    "Rivière-aux-Serpents", "Terre-Sauvage", "Villeneuve-la-Hardi", "Aussillon", "Brumeval", "Cendrelac",
+    "Étoile-du-Matin", "Gouffre-Gelé", "Hivernesse", "Lande-Morte", "Port-d'Acier", "Rochelion",
+    "Solitude", "Val-d'Espoir", "Belleroche", "Cimefroide", "Drakonheim", "Espérance",
+    "Fort-le-Corbeau", "Gué-des-Loups", "Longue-Vue", "Mont-Dragon", "Pierre-Écrite", "Sérénité",
+    "Tours-de-Garde", "Val-Silencieux", "Couronneige", "Feuillemorte", "Roncenoir", "Lys-d'Argent",
+    "Adlerstein", "Bergfried", "Donnerfels", "Eisenwacht", "Falkenhorst", "Geisterwald",
+    "Hochland", "Kaltburg", "Mondlicht", "Nebelstein", "Rabenfels", "Schattenburg",
+    "Silberbach", "Sturmfels", "Wolfenstein", "Zwergenbinge", "Altdorf", "Drachenfels",
+    "Eichenherz", "Finsterwalde", "Grauhof", "Heldenfall", "Kaiserstadt", "Löwenherz",
+    "Mittwinter", "Nordwind", "Odenwald", "Reichenau", "Schwanensee", "Tannengrün",
+    "Unterberg", "Weißenburg", "Bärenklau", "Dornach", "Felsbrunn", "Goldbach",
+    "Himmelspforte", "Krähenberg", "Moorwasser", "Nachtwacht", "Rittershafen", "Schwarzwald",
+    "Steinfaust", "Teufelsmoor", "Westwacht", "Zornesfeste", "Aschenbach", "Blutfalken",
+    "Dunkeltal", "Erlenhof", "Freistadt", "Graustein", "Holzbrücke", "Klippenrand",
+    "Morgenstern", "Nebelhafen", "Rabenwald", "Schildwacht", "Sonnenberg", "Todestal",
+    "Winterfeste", "Adlershof", "Drachenwacht", "Eisenfaust", "Falkenstein", "Geierfeste",
+    "Hagelsturm", "Kreuzweg", "Lindenhof", "Mühldorf", "Rebenhain", "Schlangengrube", "Altavista", "Buenagua",           "Cazadragones", "El Cruce", "Fuenteoscura", "Garrablanca",
+    "Lanzafuego", "Montaña Negra", "Piedra del Sol", "Ríoseco", "Sierranevada", "Valle de los Héroes",
+    "Villadorada", "Aguasclaras", "Bosque de Sombras", "Corazón de Hierro", "Estrella del Norte", "Gavilán",
+    "Laguna Estigia", "Mirador del Rey", "Paso del Diablo", "Puertoroca", "Sangrefría", "Tierras Baldías",
+    "Valle Salado", "Zarzagosa", "Alborada", "Calavera", "Dos Ríos", "Frontera Salvaje",
+    "Guardia Eterna", "Las Almas Perdidas", "Montefrío", "Ojo del Grifo", "Peñascal", "Roca del Cuervo",
+    "Sombraverde", "Tormenta Eterna", "Valle de la Luna", "Almadena", "Colina del Viento", "El Despertar",
+    "Faro de la Esperanza", "Hondonada del Lobo", "Luz de la Mañana", "Nido de Águilas", "Pico del Trueno",
+    "Riachuelo de Plata", "Sendero Oculto", "Torre Vigía", "Valle de las Espinas", "Brisamarina", "Campo Dorado",
+    "Cueva del Dragón", "Fortaleza del Sol", "Isla Perdida", "Llanura de Huesos", "Mirada del Buitre", "Pueblo Escondido",
+    "Salvatierra", "Sierpes-río", "Tierras de Nadie", "Villaquietud"
 ];
 
     // --- SELECTEURS DOM ---
     const canvas = document.getElementById('hex-map');
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas ? canvas.getContext('2d') : null;
     const mapContainer = document.getElementById('map-container');
     const regionSelect = document.getElementById('region-select');
     const newRegionNameInput = document.getElementById('new-region-name');
@@ -152,10 +188,9 @@ const RANDOM_NAMES = [
     let showRoads = true; 
     let highlightedRoadsForPlaceId = null;
     let animationInProgress = false;
-    let distanceModePlaceId = null; // ID du lieu pour le mode "mesure de distance"
-    let distanceModeActionHitBoxes = []; // Hitboxes for the buttons "+/-" de création/suppression de route
+    let distanceModePlaceId = null; 
+    let distanceModeActionHitBoxes = []; 
     
-    // Etats pour les animations multiples
     let currentlyAnimatingRoads = []; 
     let currentlyFadingPlaces = [];
     let animatedRoadsToDraw = []; 
@@ -163,6 +198,7 @@ const RANDOM_NAMES = [
     // --- FONCTIONS DE NOTIFICATION ---
     let notificationTimeout;
     function showNotification(message, type = 'info', duration = 3000) {
+        if (!notificationBanner) return;
         if (notificationTimeout) {
             clearTimeout(notificationTimeout);
         }
@@ -202,7 +238,7 @@ const RANDOM_NAMES = [
             console.log("Toutes les ressources ont été chargées.");
         } catch (error) {
             console.error("Erreur lors du chargement des images:", error);
-            alert("Impossible de charger les textures de la carte. L'application ne peut pas démarrer. Vérifiez que les fichiers images (terrain_hex.jpg, etc.) sont accessibles.");
+            if(ctx) alert("Impossible de charger les textures de la carte. L'application ne peut pas démarrer. Vérifiez que les fichiers images (terrain_hex.jpg, etc.) sont accessibles.");
         }
     }
 
@@ -247,6 +283,7 @@ const RANDOM_NAMES = [
     }
     
     function axialDistance(a, b) {
+        if (!a || !b) return Infinity;
         const dq = a.q - b.q;
         const dr = a.r - b.r;
         const ds = -dq - dr;
@@ -260,6 +297,7 @@ const RANDOM_NAMES = [
     }
 
     function updateRegionSelect() {
+        if (!regionSelect) return;
         const selectedId = regionSelect.value;
         regionSelect.innerHTML = '<option value="">Aucune région</option>';
         
@@ -289,18 +327,20 @@ const RANDOM_NAMES = [
 
         const lastRegionId = localStorage.getItem(LAST_REGION_KEY);
         if (lastRegionId && regions.some(r => r.id == lastRegionId)) {
-            regionSelect.value = lastRegionId;
+            if (regionSelect) regionSelect.value = lastRegionId;
         }
     }
     
     // --- RENDU GRAPHIQUE ---
     function resizeCanvas() {
+        if (!canvas || !mapContainer) return;
         canvas.width = mapContainer.clientWidth;
         canvas.height = mapContainer.clientHeight;
         drawMap();
     }
 
     function generateRoadLegend() {
+        if (!roadLegend) return;
         roadLegend.innerHTML = '<h4>Légende des routes</h4>';
         for (const [key, road] of Object.entries(ROAD_TYPES)) {
             const item = document.createElement('div');
@@ -330,6 +370,7 @@ const RANDOM_NAMES = [
     }
 
     function drawMap() {
+        if (!ctx) return;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.save();
         ctx.translate(view.x, view.y);
@@ -348,7 +389,6 @@ const RANDOM_NAMES = [
             } 
         }
         
-        // Logique de dessin des routes
         if (animationInProgress) {
             animatedRoadsToDraw.forEach(road => drawSingleRoad(road.start, road.end));
             currentlyAnimatingRoads.forEach(road => drawSingleRoad(road.start, road.end, road.progress));
@@ -356,7 +396,6 @@ const RANDOM_NAMES = [
             drawAllDistances();
         }
 
-        // Logique de dessin des lieux
         if (currentRegion) {
             placeIconHitBoxes = []; 
             currentRegion.places.forEach(place => {
@@ -387,6 +426,7 @@ const RANDOM_NAMES = [
     }
     
     function drawPlace(place) {
+        if (!ctx) return;
         const placeImg = PLACE_TYPES[place.type]?.img;
         if (!placeImg) return;
         
@@ -403,7 +443,7 @@ const RANDOM_NAMES = [
             ctx.drawImage(placeImg, center.x - hexSize.w/2, center.y - hexSize.h/2, hexSize.w, hexSize.h);
         }
 
-        if (animationInProgress) return;
+        if (animationInProgress || !ctx) return;
 
         ctx.save();
         const iconFontSize = 30 / view.zoom;
@@ -437,25 +477,13 @@ const RANDOM_NAMES = [
     }
 
     function formatTravelTime(timeInDays) {
-        if (isNaN(timeInDays) || timeInDays < 0) {
-            return "N/A";
-        }
-
-        const totalMinutes = timeInDays * 24 * 60;
-        if (totalMinutes < 1) return "< 1m";
-
+        if (isNaN(timeInDays) || timeInDays < 0 || timeInDays === Infinity) return "N/A";
         const days = Math.floor(timeInDays);
-        const remainingHours = (timeInDays - days) * 24;
-        const hours = Math.floor(remainingHours);
-        const remainingMinutes = (remainingHours - hours) * 60;
-        const minutes = Math.round(remainingMinutes);
-
+        const hours = Math.floor((timeInDays - days) * 24);
         let parts = [];
         if (days > 0) parts.push(`${days}j`);
         if (hours > 0) parts.push(`${hours}h`);
-        if (minutes > 0 && days === 0) parts.push(`${minutes}m`);
-
-        return parts.length > 0 ? parts.join(' ') : "Instantané";
+        return parts.length > 0 ? parts.join(' ') : "< 1h";
     }
     
     function determineRoadType(placeA, placeB) {
@@ -470,6 +498,7 @@ const RANDOM_NAMES = [
     }
 
     function drawSingleRoad(placeA, placeB, progress = 1.0) {
+        if (!ctx) return;
         const roadKey = getRoadKey(placeA.id, placeB.id);
         let roadData = currentRegion.roads[roadKey] || { type: determineRoadType(placeA, placeB) };
         const roadTypeInfo = ROAD_TYPES[roadData.type];
@@ -508,11 +537,8 @@ const RANDOM_NAMES = [
         ctx.setLineDash([]);
     }
 
-    // ==================================================================
-    // == FONCTION MODIFIÉE : drawAllDistances (pour le calcul de km en temps réel)
-    // ==================================================================
     function drawAllDistances() {
-        if (!currentRegion || currentRegion.places.length < 2) return;
+        if (!currentRegion || currentRegion.places.length < 2 || !ctx) return;
     
         roadHitBoxes = [];
         distanceModeActionHitBoxes = []; 
@@ -520,7 +546,7 @@ const RANDOM_NAMES = [
         ctx.save();
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        const bodyFont = getComputedStyle(document.body).getPropertyValue('--font-body');
+        const bodyFont = document.body ? getComputedStyle(document.body).getPropertyValue('--font-body') : 'sans-serif';
     
         if (distanceModePlaceId) {
             const sourcePlace = currentRegion.places.find(p => p.id === distanceModePlaceId);
@@ -644,18 +670,14 @@ const RANDOM_NAMES = [
                     const midX = (centerA.x + centerB.x) / 2;
                     const midY = (centerA.y + centerB.y) / 2;
                     
-                    // --- MODIFICATION POUR LE CALCUL DE DISTANCE EN TEMPS RÉEL ---
                     let distance;
                     if (isDraggingPlace && (placeA.id === draggedPlace.id || placeB.id === draggedPlace.id)) {
-                        // Pendant le déplacement : calcule la distance à partir des pixels pour un retour en temps réel.
                         const pixelDistance = Math.sqrt(Math.pow(centerB.x - centerA.x, 2) + Math.pow(centerB.y - centerA.y, 2));
-                        const pixelsPerHex = hexSize.w; // Largeur d'un hexagone comme référence.
+                        const pixelsPerHex = hexSize.w; 
                         distance = (pixelDistance / pixelsPerHex) * (currentRegion.scale || 1);
                     } else {
-                        // Hors déplacement : utilise la méthode de calcul standard basée sur la grille.
                         distance = axialDistance(placeA.coords, placeB.coords) * (currentRegion.scale || 1);
                     }
-                    // --- FIN DE LA MODIFICATION ---
 
                     const gearFontSize = 20 / view.zoom;
                     ctx.font = `${gearFontSize}px Arial`;
@@ -703,7 +725,7 @@ const RANDOM_NAMES = [
     // --- GESTION DES INTERACTIONS UTILISATEUR ---
     
     function handleScaleChange() {
-        if (currentRegion) {
+        if (currentRegion && scaleInput) {
             const newScale = parseFloat(scaleInput.value);
             if (!isNaN(newScale) && newScale > 0) {
                 currentRegion.scale = newScale;
@@ -714,6 +736,7 @@ const RANDOM_NAMES = [
     }
 
     function handleCreateRegion() {
+        if (!newRegionNameInput) return;
         const name = newRegionNameInput.value.trim();
         if (name) {
             const newRegion = {
@@ -726,7 +749,7 @@ const RANDOM_NAMES = [
             regions.push(newRegion);
             saveData();
             updateRegionSelect();
-            regionSelect.value = newRegion.id;
+            if(regionSelect) regionSelect.value = newRegion.id;
             handleRegionChange();
             newRegionNameInput.value = '';
         } else {
@@ -739,18 +762,18 @@ const RANDOM_NAMES = [
             regions = regions.filter(r => r.id !== currentRegion.id);
             saveData();
             currentRegion = null;
-            regionSelect.value = '';
+            if(regionSelect) regionSelect.value = '';
             handleRegionChange();
         }
     }
     
     function handleRegionChange() {
-        const selectedId = parseInt(regionSelect.value);
+        const selectedId = regionSelect ? parseInt(regionSelect.value) : null;
         currentRegion = regions.find(r => r.id === selectedId) || null;
         
         highlightedRoadsForPlaceId = null; 
-        distanceModePlaceId = null; // Quitte le mode mesure si on change de région
-        clearRoadFilterBtn.style.display = 'none';
+        distanceModePlaceId = null;
+        if(clearRoadFilterBtn) clearRoadFilterBtn.style.display = 'none';
         
         localStorage.setItem(LAST_REGION_KEY, currentRegion ? currentRegion.id : '');
         updateUIForRegion();
@@ -758,16 +781,18 @@ const RANDOM_NAMES = [
 
     function updateUIForRegion() {
         const hasRegion = !!currentRegion;
-        deleteRegionBtn.disabled = !hasRegion;
-        generateMapBtn.disabled = !hasRegion;
-        scaleInput.disabled = !hasRegion;
+        if(deleteRegionBtn) deleteRegionBtn.disabled = !hasRegion;
+        if(generateMapBtn) generateMapBtn.disabled = !hasRegion;
+        if(scaleInput) scaleInput.disabled = !hasRegion;
 
         if (hasRegion) {
-            document.getElementById('right-panel').querySelector('h3').textContent = `Lieux de ${currentRegion.name}`;
-            scaleInput.value = currentRegion.scale || 10;
+            const rightPanelH3 = document.querySelector('#right-panel h3');
+            if(rightPanelH3) rightPanelH3.textContent = `Lieux de ${currentRegion.name}`;
+            if(scaleInput) scaleInput.value = currentRegion.scale || 10;
         } else {
-            document.getElementById('right-panel').querySelector('h3').textContent = 'Aucune région sélectionnée';
-            scaleInput.value = 10;
+            const rightPanelH3 = document.querySelector('#right-panel h3');
+            if(rightPanelH3) rightPanelH3.textContent = 'Aucune région sélectionnée';
+            if(scaleInput) scaleInput.value = 10;
         }
         updatePlacesList();
         updateNavLinksState(); 
@@ -775,6 +800,7 @@ const RANDOM_NAMES = [
     }
 
     function updatePlacesList() {
+        if (!placesList) return;
         placesList.innerHTML = '';
         if (!currentRegion) {
             placesList.innerHTML = `<li style="padding: 15px; text-align: center;">Créez votre première région pour commencer.</li>`;
@@ -829,11 +855,11 @@ const RANDOM_NAMES = [
                 currentRegion.places = currentRegion.places.filter(p => p.id !== placeId);
                 if(highlightedRoadsForPlaceId === placeId) {
                     highlightedRoadsForPlaceId = null;
-                    clearRoadFilterBtn.style.display = 'none';
+                    if(clearRoadFilterBtn) clearRoadFilterBtn.style.display = 'none';
                 }
                 if (distanceModePlaceId === placeId) {
                     distanceModePlaceId = null;
-                    clearRoadFilterBtn.style.display = 'none';
+                    if(clearRoadFilterBtn) clearRoadFilterBtn.style.display = 'none';
                 }
                 showNotification(`Lieu "${place.name}" et routes associées supprimés.`, 'info');
                 saveData();
@@ -844,6 +870,7 @@ const RANDOM_NAMES = [
     }
     
     function openPlaceModal(coords, placeToEdit = null) {
+        if (!placeModal) return;
         placeForm.dataset.editingId = '';
         if (placeToEdit) {
             modalTitle.textContent = "Éditer le Lieu";
@@ -861,7 +888,7 @@ const RANDOM_NAMES = [
     }
 
     function openRoadModal(roadKey) {
-        if (!currentRegion) return;
+        if (!currentRegion || !roadModal) return;
         activeRoadForModal = roadKey;
         const [placeA, placeB] = getPlacesFromRoadKey(roadKey);
         const roadData = currentRegion.roads[roadKey] || { type: determineRoadType(placeA, placeB) };
@@ -958,6 +985,7 @@ const RANDOM_NAMES = [
     }
 
     function centerOnPlace(place) {
+        if (!canvas) return;
         if (pulseInterval) clearInterval(pulseInterval);
         if (panAnimationId) cancelAnimationFrame(panAnimationId);
         const startX = view.x, startY = view.y;
@@ -994,10 +1022,9 @@ const RANDOM_NAMES = [
         return currentRegion.places.find(p => p.coords.q === hexCoords.q && p.coords.r === hexCoords.r);
     }
     
-    // --- FONCTIONS D'ANIMATION MULTIPLES ---
     function animateViewToFitAllPlaces(places, duration = 350) {
         return new Promise(resolve => {
-            if (!places || places.length === 0) return resolve();
+            if (!places || places.length === 0 || !canvas) return resolve();
             let minQ = Infinity, maxQ = -Infinity, minR = Infinity, maxR = -Infinity;
             places.forEach(p => {
                 minQ = Math.min(minQ, p.coords.q); maxQ = Math.max(maxQ, p.coords.q);
@@ -1068,38 +1095,39 @@ const RANDOM_NAMES = [
     }
 
 
-    // --- FONCTION DE GENERATION DE CARTE (AVEC ROUTES GARANTIES POUR LA CAPITALE) ---
     async function handleGenerateMap() {
         if (!currentRegion || animationInProgress) return;
         if (currentRegion.places.length > 0 && !confirm("Cette action va supprimer tous les lieux et routes existants dans cette région. Continuer ?")) return;
     
         animationInProgress = true;
-        generateMapBtn.disabled = true;
-        generateMapBtn.textContent = "Génération...";
-        document.body.style.cursor = 'wait';
+        if(generateMapBtn) {
+            generateMapBtn.disabled = true;
+            generateMapBtn.textContent = "Génération...";
+        }
+        if(document.body) document.body.style.cursor = 'wait';
     
-        // Réinitialisation complète
         currentRegion.places = [];
         currentRegion.roads = {};
         highlightedRoadsForPlaceId = null;
         distanceModePlaceId = null;
-        clearRoadFilterBtn.style.display = 'none';
+        if(clearRoadFilterBtn) clearRoadFilterBtn.style.display = 'none';
         animatedRoadsToDraw = [];
         currentlyAnimatingRoads = [];
         currentlyFadingPlaces = [];
         updatePlacesList();
         drawMap(); 
     
-        const totalCount = parseInt(randomPlaceCountInput.value);
+        const totalCount = randomPlaceCountInput ? parseInt(randomPlaceCountInput.value) : 15;
         if (totalCount <= 0) {
             animationInProgress = false;
-            generateMapBtn.disabled = !currentRegion;
-            generateMapBtn.textContent = "Carte Aléatoire";
-            document.body.style.cursor = 'default';
+            if(generateMapBtn) {
+                generateMapBtn.disabled = !currentRegion;
+                generateMapBtn.textContent = "Carte Aléatoire";
+            }
+            if(document.body) document.body.style.cursor = 'default';
             return;
         }
     
-        // 1. Génération de toutes les données en mémoire
         let allPlaces = [];
         const occupied = new Set();
         const radius = Math.ceil(Math.sqrt(totalCount)) + 3;
@@ -1128,7 +1156,6 @@ const RANDOM_NAMES = [
         allPlaces.forEach((place, index) => place.type = typesToCreate[index]);
         allPlaces.sort((a, b) => PLACE_TYPE_HIERARCHY.indexOf(a.type) - PLACE_TYPE_HIERARCHY.indexOf(b.type));
 
-        // 2. Calcul des réseaux de routes
         const allEdges = [];
         for (let i = 0; i < allPlaces.length; i++) {
             for (let j = i + 1; j < allPlaces.length; j++) {
@@ -1154,7 +1181,6 @@ const RANDOM_NAMES = [
             }
         });
 
-        // NOUVELLE LOGIQUE: Identifier les routes capitales garanties
         const guaranteedRoads = [];
         const capital = allPlaces.find(p => p.type === 'Capitale');
         if (capital) {
@@ -1170,62 +1196,62 @@ const RANDOM_NAMES = [
             });
         }
         
-
-        // 3. Initialisation de l'animation avec la capitale
         const startCapital = allPlaces.find(p => p.type === 'Capitale');
-        const discoveredPlaceIds = new Set([startCapital.id]);
-        currentRegion.places.push(startCapital);
-        
-        await animateViewToFitAllPlaces([startCapital], 250);
-        await animateMultiplePlacesFadeIn([startCapital], 250);
-        updatePlacesList();
-        saveData();
-
-        // 4. Boucle d'animation de découverte (basée sur le MST)
-        let availableRoads = [...mstEdges];
-        while(discoveredPlaceIds.size < allPlaces.length) {
-            let nextEdge = null;
-            let edgeIndex = -1;
-
-            for(let i=0; i < availableRoads.length; i++) {
-                const edge = availableRoads[i];
-                const aDiscovered = discoveredPlaceIds.has(edge.a.id);
-                const bDiscovered = discoveredPlaceIds.has(edge.b.id);
-                if (aDiscovered !== bDiscovered) {
-                    nextEdge = edge;
-                    edgeIndex = i;
-                    break;
-                }
-            }
+        if (startCapital) {
+            const discoveredPlaceIds = new Set([startCapital.id]);
+            currentRegion.places.push(startCapital);
             
-            if(!nextEdge) break; 
-
-            availableRoads.splice(edgeIndex, 1);
-            
-            const newPlace = discoveredPlaceIds.has(nextEdge.a.id) ? nextEdge.b : nextEdge.a;
-            const existingPlace = discoveredPlaceIds.has(nextEdge.a.id) ? nextEdge.a : nextEdge.b;
-            const connection = { start: existingPlace, end: newPlace };
-            
-            await animateViewToFitAllPlaces([...currentRegion.places, newPlace], 300);
-            await animateMultipleRoads([connection], 350);
-            
-            animatedRoadsToDraw.push(connection);
-            
-            currentRegion.places.push(newPlace);
-            discoveredPlaceIds.add(newPlace.id);
-
-            const roadKey = getRoadKey(newPlace.id, existingPlace.id);
-            currentRegion.roads[roadKey] = {
-                type: determineRoadType(newPlace, existingPlace)
-            };
-
-            await animateMultiplePlacesFadeIn([newPlace], 200);
-
+            await animateViewToFitAllPlaces([startCapital], 250);
+            await animateMultiplePlacesFadeIn([startCapital], 250);
             updatePlacesList();
             saveData();
+
+            let availableRoads = [...mstEdges];
+            while(discoveredPlaceIds.size < allPlaces.length) {
+                let nextEdge = null;
+                let edgeIndex = -1;
+
+                for(let i=0; i < availableRoads.length; i++) {
+                    const edge = availableRoads[i];
+                    const aDiscovered = discoveredPlaceIds.has(edge.a.id);
+                    const bDiscovered = discoveredPlaceIds.has(edge.b.id);
+                    if (aDiscovered !== bDiscovered) {
+                        nextEdge = edge;
+                        edgeIndex = i;
+                        break;
+                    }
+                }
+                
+                if(!nextEdge) break; 
+
+                availableRoads.splice(edgeIndex, 1);
+                
+                const newPlace = discoveredPlaceIds.has(nextEdge.a.id) ? nextEdge.b : nextEdge.a;
+                const existingPlace = discoveredPlaceIds.has(nextEdge.a.id) ? nextEdge.a : nextEdge.b;
+                const connection = { start: existingPlace, end: newPlace };
+                
+                await animateViewToFitAllPlaces([...currentRegion.places, newPlace], 300);
+                await animateMultipleRoads([connection], 350);
+                
+                animatedRoadsToDraw.push(connection);
+                
+                currentRegion.places.push(newPlace);
+                discoveredPlaceIds.add(newPlace.id);
+
+                const roadKey = getRoadKey(newPlace.id, existingPlace.id);
+                currentRegion.roads[roadKey] = {
+                    type: determineRoadType(newPlace, existingPlace)
+                };
+
+                await animateMultiplePlacesFadeIn([newPlace], 200);
+
+                updatePlacesList();
+                saveData();
+            }
+        } else { // Handle case with no capital
+            currentRegion.places = allPlaces;
         }
-        
-        // 5. Animation des routes garanties (si elles existent)
+
         if(guaranteedRoads.length > 0) {
             const connections = guaranteedRoads.map(edge => ({ start: edge.a, end: edge.b }));
             await animateMultipleRoads(connections, 450);
@@ -1239,16 +1265,16 @@ const RANDOM_NAMES = [
             saveData();
         }
 
-        // 6. Nettoyage et finalisation
         animationInProgress = false;
         animatedRoadsToDraw = [];
         drawMap(); 
-        generateMapBtn.disabled = !currentRegion;
-        generateMapBtn.textContent = "Carte Aléatoire";
-        document.body.style.cursor = 'default';
+        if(generateMapBtn) {
+            generateMapBtn.disabled = !currentRegion;
+            generateMapBtn.textContent = "Carte Aléatoire";
+        }
+        if(document.body) document.body.style.cursor = 'default';
     }
     
-    // --- FONCTIONS UTILITAIRES ---
     function checkAllPlacesValidated(region) {
         if (!region || !region.places || region.places.length === 0) {
             return false;
@@ -1257,6 +1283,7 @@ const RANDOM_NAMES = [
     }
 
     function updateNavLinksState() {
+        if (!navStep2 || !navStep3) return;
         const isStep2Ready = currentRegion && currentRegion.places.length > 0;
         const isStep3Ready = checkAllPlacesValidated(currentRegion);
 
@@ -1274,6 +1301,7 @@ const RANDOM_NAMES = [
     }
 
     function populateRoadModal() {
+        if (!roadTypeSelect) return;
         roadTypeSelect.innerHTML = '';
         for (const [key, value] of Object.entries(ROAD_TYPES)) {
             const option = document.createElement('option');
@@ -1284,6 +1312,7 @@ const RANDOM_NAMES = [
     }
     
     function makeModalDraggable(modal, handle) {
+        if (!modal || !handle) return;
         let isDragging = false;
         let startX, startY, initialLeft, initialTop;
 
@@ -1314,8 +1343,8 @@ const RANDOM_NAMES = [
         });
     }
 
-    // --- EVENT LISTENERS ---
     function setupEventListeners() {
+        if (!canvas) return; // Guard for headless execution
         window.addEventListener('resize', resizeCanvas);
         createRegionBtn.addEventListener('click', handleCreateRegion);
         deleteRegionBtn.addEventListener('click', handleDeleteRegion);
@@ -1336,37 +1365,38 @@ const RANDOM_NAMES = [
         });
 
         clearRoadFilterBtn.addEventListener('click', () => {
-            distanceModePlaceId = null; // Quitte le mode mesure
-            showRoads = true; // Réaffiche les routes
-            showRoadsToggle.checked = true; // Met à jour la checkbox
-            clearRoadFilterBtn.textContent = "Voir toutes"; // Rétablit le texte
+            distanceModePlaceId = null; 
+            showRoads = true; 
+            showRoadsToggle.checked = true;
+            clearRoadFilterBtn.textContent = "Voir toutes";
             clearRoadFilterBtn.style.display = 'none';
             drawMap();
         });
-
 
         roadForm.addEventListener('submit', handleRoadFormSubmit);
         cancelRoadBtn.addEventListener('click', () => roadModal.close());
         deleteRoadBtn.addEventListener('click', handleDeleteRoad);
         roadTypeSelect.addEventListener('change', () => {
             const selectedType = ROAD_TYPES[roadTypeSelect.value];
-            if (selectedType) {
+            if (selectedType && roadInfo) {
                 roadInfo.innerHTML = `<strong>Usagers&nbsp;:</strong> ${selectedType.users.join(', ')}<br>
                                       <strong>Description&nbsp;:</strong> ${selectedType.desc}`;
             }
         });
         
-        floatingMenu.addEventListener('click', (e) => {
-            const link = e.target.closest('a');
-            if (link && link.classList.contains('nav-disabled')) {
-                e.preventDefault();
-                if (link.id === 'nav-step-3') {
-                     alert("Veuillez d'abord configurer et valider TOUS les lieux dans l'Étape 2 pour accéder à la simulation.");
-                } else {
-                     alert("Veuillez d'abord créer une région et y ajouter au moins un lieu pour accéder à cette étape.");
+        if (floatingMenu) {
+            floatingMenu.addEventListener('click', (e) => {
+                const link = e.target.closest('a');
+                if (link && link.classList.contains('nav-disabled')) {
+                    e.preventDefault();
+                    if (link.id === 'nav-step3') {
+                         alert("Veuillez d'abord configurer et valider TOUS les lieux dans l'Étape 2 pour accéder à la simulation.");
+                    } else {
+                         alert("Veuillez d'abord créer une région et y ajouter au moins un lieu pour accéder à cette étape.");
+                    }
                 }
-            }
-        });
+            });
+        }
         
         canvas.addEventListener('mousedown', (e) => {
             if (pulseInterval) clearInterval(pulseInterval);
@@ -1382,7 +1412,6 @@ const RANDOM_NAMES = [
             const mouseY = e.clientY - rect.top;
             const iconClicked = placeIconHitBoxes.some(box => mouseX >= box.x && mouseX <= box.x + box.width && mouseY >= box.y && mouseY <= box.y + box.height);
             if (hoveredRoad || iconClicked) return;
-
 
             lastMouse = { x: mouseX, y: mouseY };
             
@@ -1454,7 +1483,7 @@ const RANDOM_NAMES = [
             if (animationInProgress) return;
             if (isPanning) {
                 isPanning = false;
-                canvas.classList.remove('is-dragging');
+                if(canvas) canvas.classList.remove('is-dragging');
             }
             if (isDraggingPlace && draggedPlace) {
                 const rect = canvas.getBoundingClientRect();
@@ -1516,7 +1545,6 @@ const RANDOM_NAMES = [
             const mouseX = e.clientX - rect.left;
             const mouseY = e.clientY - rect.top;
         
-            // --- GESTION DU CLIC EN MODE MESURE ---
             if (distanceModePlaceId) {
                 const clickedActionIcon = distanceModeActionHitBoxes.find(box =>
                     mouseX >= box.x && mouseX <= box.x + box.width &&
@@ -1528,59 +1556,49 @@ const RANDOM_NAMES = [
                     
                     if (clickedActionIcon.action === 'add') {
                         const [placeA, placeB] = getPlacesFromRoadKey(roadKey);
-                        
-                        // Créer la route dans le modèle de données
                         currentRegion.roads[roadKey] = {
                             type: determineRoadType(placeA, placeB)
                         };
-
-                        // Quitter le mode mesure
                         distanceModePlaceId = null;
-                        clearRoadFilterBtn.style.display = 'none';
-                        clearRoadFilterBtn.textContent = "Voir toutes";
+                        if(clearRoadFilterBtn) {
+                            clearRoadFilterBtn.style.display = 'none';
+                            clearRoadFilterBtn.textContent = "Voir toutes";
+                        }
                         showRoads = true;
-                        showRoadsToggle.checked = true;
-
+                        if(showRoadsToggle) showRoadsToggle.checked = true;
                         saveData();
-
-                        // Animer la nouvelle route
                         await animateMultipleRoads([{ start: placeA, end: placeB }], 350);
                         showNotification('Route créée avec succès.', 'success');
                         
                         drawMap();
-                        return; // Action terminée
+                        return;
                     } else if (clickedActionIcon.action === 'remove') {
-                        // Supprimer la route
                         delete currentRegion.roads[roadKey];
                         showNotification('Route supprimée.', 'info');
-                        
-                        // Rester en mode mesure et rafraîchir la carte
                         saveData();
                         drawMap();
-                        return; // Action terminée
+                        return;
                     }
                 }
             }
         
-            // --- GESTION DU CLIC EN MODE NORMAL ---
-        
-            // Clic sur l'icône de mesure (double flèche) pour ENTRER dans le mode
             const clickedPlaceIcon = placeIconHitBoxes.find(box =>
                 mouseX >= box.x && mouseX <= box.x + box.width &&
                 mouseY >= box.y && mouseY <= box.y + box.height
             );
         
             if (clickedPlaceIcon) {
-                distanceModePlaceId = clickedPlaceIcon.placeId; // Active le mode mesure
-                showRoads = false; // Cache les routes réelles pour ne pas surcharger
-                showRoadsToggle.checked = false;
-                clearRoadFilterBtn.style.display = 'inline-block';
-                clearRoadFilterBtn.textContent = "Quitter Mesure"; // Change le texte du bouton
+                distanceModePlaceId = clickedPlaceIcon.placeId; 
+                showRoads = false; 
+                if(showRoadsToggle) showRoadsToggle.checked = false;
+                if(clearRoadFilterBtn) {
+                    clearRoadFilterBtn.style.display = 'inline-block';
+                    clearRoadFilterBtn.textContent = "Quitter Mesure";
+                }
                 drawMap();
                 return;
             }
         
-            // Clic sur l'icône de route (engrenage) pour modifier une route existante
             const clickedRoadIcon = roadHitBoxes.find(box =>
                 mouseX >= box.x && mouseX <= box.x + box.width &&
                 mouseY >= box.y && mouseY <= box.y + box.height
@@ -1598,7 +1616,6 @@ const RANDOM_NAMES = [
         });
     }
     
-    // --- INITIALISATION ---
     async function init() {
         await preloadAssets();
         populateRoadModal();
@@ -1609,12 +1626,45 @@ const RANDOM_NAMES = [
         setupEventListeners();
         makeModalDraggable(placeModal, document.getElementById('place-modal-header'));
         makeModalDraggable(roadModal, document.getElementById('road-modal-header'));
-        view.x = canvas.width / 2;
-        view.y = canvas.height / 2;
+        if (canvas) {
+            view.x = canvas.width / 2;
+            view.y = canvas.height / 2;
+        }
         view.zoom = 0.15;
         drawMap();
         updateNavLinksState(); 
     }
 
+function createRegionWithName(name) {
+    if (name) {
+        const newRegion = {
+            id: Date.now(),
+            name: name,
+            scale: 10,
+            places: [],
+            roads: {}
+        };
+        regions.push(newRegion);
+        currentRegion = newRegion;
+        localStorage.setItem(LAST_REGION_KEY, currentRegion.id);
+        saveData();
+        console.log(`Région '${name}' créée pour l'automatisation.`);
+        return newRegion;
+    } else {
+        console.error("Le nom de la région ne peut pas être vide.");
+        return null;
+    }
+}
+
+
+window.EcoSimStep1 = {
+    createRegion: handleCreateRegion,
+    createRegionWithName: createRegionWithName,
+    run: handleGenerateMap
+};
+
+if (document.getElementById('hex-map')) {
     init();
+}
+
 });

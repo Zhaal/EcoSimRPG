@@ -122,11 +122,18 @@ body {
     display: flex;
     gap: 5px;
     align-items: baseline;
+    flex-wrap: wrap;
 }
 .route-steps.numbered li span, .time-steps.numbered li span {
     font-weight: bold;
     color: #555;
     flex-shrink: 0;
+}
+.route-steps.numbered li .road-type-leg {
+    font-style: italic;
+    color: #666;
+    padding-left: 6px;
+    font-size: 0.9em;
 }
 .time-steps.numbered .total {
     display: block;
@@ -399,4 +406,151 @@ body {
 }
 .social-grid p {
     margin: 5px 0 0 0;
+}
+
+/* --- STYLES POUR LA RECHERCHE GLOBALE --- */
+
+.control-group.search-control-group {
+    position: relative; /* Contexte de positionnement pour les résultats */
+}
+
+#global-character-search {
+    font-size: 1em;
+    padding: 8px;
+    min-width: 220px;
+}
+
+#global-search-results {
+    display: none; /* Caché par défaut */
+    position: absolute;
+    top: 100%; /* S'affiche juste en dessous de l'input */
+    left: 0;
+    right: 0;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-top: none;
+    z-index: 1000;
+    max-height: 300px;
+    overflow-y: auto;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.search-result-item {
+    padding: 10px;
+    cursor: pointer;
+    font-size: 0.9em;
+}
+
+.search-result-item:hover {
+    background-color: #f0f0f0;
+}
+
+/* --- NOUVEAUX STYLES : CA, INITIATIVE & COMPÉTENCES --- */
+
+.char-sheet-secondary-grid {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 20px;
+    padding: 15px;
+    align-items: start;
+    border-top: 1px solid #d6cbbc;
+    margin-top: 10px;
+}
+
+.combat-stats-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    align-items: center;
+}
+
+.combat-box {
+    border: 2px solid #333;
+    background-color: #fff;
+    text-align: center;
+    width: 90px;
+    height: 70px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+}
+
+.combat-box:first-child { /* CA */
+    border-radius: 25px 25px 8px 8px / 20px 20px 8px 8px; /* Forme de bouclier simple */
+}
+
+.combat-box:last-child { /* Initiative */
+    border-radius: 8px;
+}
+
+.combat-box .combat-value {
+    font-family: 'Cinzel', serif;
+    font-size: 1.8em;
+    font-weight: 700;
+    line-height: 1.1;
+}
+
+.combat-box .combat-label {
+    font-size: 0.7em;
+    text-transform: uppercase;
+    font-weight: bold;
+    margin-top: 2px;
+}
+
+.skills-list-container {
+    border: 1px solid #a89e87;
+    padding: 10px 15px;
+    border-radius: 5px;
+    background: #fdfaf2;
+    height: 100%;
+}
+
+.skills-list-container h4 {
+    font-family: 'Cinzel', serif;
+    text-align: center;
+    margin: 0 0 10px 0;
+    font-size: 1.1em;
+    border-bottom: 1px solid #d6cbbc;
+    padding-bottom: 5px;
+}
+
+.skills-list-container ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.skill-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9em;
+    padding: 3px 0;
+    border-bottom: 1px solid #f0e8d6;
+}
+.skill-item:last-child {
+    border-bottom: none;
+}
+
+.skill-mod {
+    font-weight: bold;
+    border: 1px solid #ccc;
+    border-radius: 20px;
+    padding: 1px 4px;
+    background: #fff;
+    width: 30px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.skill-name {
+    flex-grow: 1;
+}
+
+.skill-base {
+    color: #777;
+    font-style: normal;
+    font-size: 0.9em;
 }

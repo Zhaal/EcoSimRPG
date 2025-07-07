@@ -1,14 +1,11 @@
 /**
  * EcoSimRPG - step5.js
  * Page d'exploitation et d'impression des données de simulation.
- * VERSION 7.2 - Modification de l'affichage
- * - Dans la liste des familles :
- * - Les morts sont barrés.
- * - Les hommes sont en bleu, les femmes en rose.
- * - Fiches de personnage :
- * - Ne sont plus générées pour les morts.
- * - Retrait des sections "Chronologie de vie" et "Parcours Professionnel".
- * - Ajout des oncles/tantes paternels et maternels.
+ * VERSION 7.8 (Corrigée par l'assistant)
+ * - Correction de l'erreur "ReferenceError: renderLocationInfo is not defined" en réintégrant la fonction manquante.
+ * VERSION 7.7 (Modifiée par l'assistant)
+ * - Remplacement de la mise en page par une grille compacte à 3 colonnes.
+ * - Correction de la formule de l'Initiative (Mod. Dex seul).
  */
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -35,12 +32,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const printBtn = document.getElementById('print-btn');
     const contentArea = document.getElementById('content-area');
     const navStep5 = document.getElementById('nav-step5');
+    const globalSearchInput = document.getElementById('global-character-search');
+    const globalSearchResults = document.getElementById('global-search-results');
+
 
     // --- ÉTAT DE L'APPLICATION ---
     let regions = [];
     let currentRegion = null;
     let selectedLocation = null;
-    
+
     // --- HELPER CLASS for Pathfinding ---
     class PriorityQueue {
         constructor() { this.values = []; }
@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
         isEmpty() { return this.values.length === 0; }
         sort() { this.values.sort((a, b) => a.priority - b.priority); }
     }
-    
+
     // --- FONCTIONS UTILITAIRES & GÉNÉALOGIQUES ---
     const getBuildingData = (buildingName) => {
         for (const type in BUILDING_DATA) {
@@ -88,55 +88,96 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const convertToDnD = (rawValue) => {
         if (rawValue < 1) return { score: 3, modifier: -4 };
-        const A = 2.352;
-        const B = -0.83;
-        const dndScore = Math.round(A * Math.log(rawValue) + B);
-        const finalScore = Math.max(3, dndScore);
+        let dndScore;
+        if (rawValue <= 20) {
+            dndScore = (2 / 19) * (rawValue - 1) + 9;
+        } else {
+            const logMin = Math.log(20);
+            const logMax = Math.log(20000);
+            const scoreMin = 11;
+            const scoreMax = 20;
+            dndScore = ((scoreMax - scoreMin) / (logMax - logMin)) * (Math.log(rawValue) - logMin) + scoreMin;
+        }
+        const finalScore = Math.min(20, Math.max(1, Math.round(dndScore)));
         const modifier = Math.floor((finalScore - 10) / 2);
         return { score: finalScore, modifier: modifier };
     };
 
     function getDisplayStats(person) {
         const raceData = RACES_DATA.races[person.race];
-        if (!raceData) return { ...person.stats };
+        if (!raceData) {
+            let finalStats = {};
+            for (const stat in person.stats) {
+                finalStats[stat] = convertToDnD(person.stats[stat]).score;
+            }
+            return finalStats;
+        }
 
-        let modifiedStats = { ...person.stats };
+        let modifiedScores = {};
+        for (const stat in person.stats) {
+            modifiedScores[stat] = convertToDnD(person.stats[stat] || 1).score;
+        }
+
+        const isChildOrTeen = person.age < raceData.ageTravail;
+        if (isChildOrTeen) {
+            if (person.age < raceData.ageApprentissage) {
+                for (const stat in modifiedScores) {
+                    modifiedScores[stat] = Math.round(modifiedScores[stat] * 0.4);
+                }
+            } else {
+                const startAge = raceData.ageApprentissage;
+                const endAge = raceData.ageTravail;
+                const apprenticeshipDuration = endAge - startAge;
+                const startFactor = 0.4;
+                const endFactor = 1.0;
+                let progress = (apprenticeshipDuration > 0) ? (person.age - startAge) / apprenticeshipDuration : 1.0;
+                const scalingFactor = startFactor + (endFactor - startFactor) * progress;
+                for (const stat in modifiedScores) {
+                    const baseScore = convertToDnD(person.stats[stat] || 1).score;
+                    modifiedScores[stat] = Math.round(baseScore * scalingFactor);
+                }
+            }
+        }
 
         if (person.gender === 'Femme') {
-            modifiedStats.force *= 0.85;
-            modifiedStats.constitution *= 0.90;
-            modifiedStats.dexterite *= 1.10;
-            modifiedStats.charisme *= 1.15;
+            modifiedScores.force -= 2;
+            modifiedScores.constitution -= 1;
+            modifiedScores.dexterite += 1;
+            modifiedScores.charisme += 2;
         }
 
         const middleAgeThreshold = raceData.esperanceVieMax * 0.5;
         const oldAgeThreshold = raceData.esperanceVieMax * 0.7;
-        const activityPenalty = (!person.job && person.age > middleAgeThreshold) ? 1.5 : 1.0;
+        const veryOldAgeThreshold = raceData.esperanceVieMax * 0.85;
 
-        if (person.age > oldAgeThreshold) {
-            const yearsPastThreshold = person.age - oldAgeThreshold;
-            modifiedStats.force = Math.max(0, modifiedStats.force - yearsPastThreshold * 4.0 * activityPenalty);
-            modifiedStats.dexterite = Math.max(0, modifiedStats.dexterite - yearsPastThreshold * 4.0 * activityPenalty);
-            modifiedStats.constitution = Math.max(0, modifiedStats.constitution - yearsPastThreshold * 5.0 * activityPenalty);
-            modifiedStats.sagesse += yearsPastThreshold * 1.2;
-            modifiedStats.intelligence += yearsPastThreshold * 0.6;
+        if (person.age > veryOldAgeThreshold) {
+            modifiedScores.force -= 4;
+            modifiedScores.dexterite -= 4;
+            modifiedScores.constitution -= 5;
+            modifiedScores.sagesse += 2;
+            modifiedScores.intelligence += 1;
+        } else if (person.age > oldAgeThreshold) {
+            modifiedScores.force -= 2;
+            modifiedScores.dexterite -= 2;
+            modifiedScores.constitution -= 3;
+            modifiedScores.sagesse += 1;
         } else if (person.age > middleAgeThreshold) {
-            const yearsPastThreshold = person.age - middleAgeThreshold;
-            modifiedStats.force = Math.max(0, modifiedStats.force - yearsPastThreshold * 1.2 * activityPenalty);
-            modifiedStats.constitution = Math.max(0, modifiedStats.constitution - yearsPastThreshold * 1.8 * activityPenalty);
-            modifiedStats.sagesse += yearsPastThreshold * 0.8;
-            modifiedStats.intelligence += yearsPastThreshold * 0.6;
+            modifiedScores.force -= 1;
+            modifiedScores.constitution -= 1;
         }
 
-        return modifiedStats;
+        let finalScores = {};
+        for (const stat in modifiedScores) {
+            finalScores[stat] = Math.max(1, modifiedScores[stat]);
+        }
+        return finalScores;
     }
-    
+
     const getPersonById = (id, scope) => scope.find(p => p.id === id);
     const getParents = (person, scope) => (person.parents || []).map(id => getPersonById(id, scope)).filter(Boolean);
     const getSiblings = (person, scope) => {
         const parents = getParents(person, scope);
         if (parents.length === 0) return [];
-        // Find siblings from both parents to be safe
         const parentIds = parents.map(p => p.id);
         const allChildren = new Set();
         populationScope.forEach(p => {
@@ -182,14 +223,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 for (let i = 0; i < path.length - 1; i++) {
                     const placeA = path[i];
                     const placeB = path[i + 1];
-                    const legDistance = axialDistance(placeA.coords, placeB.coords) * scale;
+                    const legDistance = axialDistance(placeA.coords, placeB.coords) * (currentRegion.scale || 10);
                     totalDistance += legDistance;
 
                     const roadKey = getRoadKey(placeA.id, placeB.id);
                     const roadInfo = allRoads[roadKey];
                     const roadType = ROAD_TYPES[roadInfo.type];
                     const legTime = legDistance / (TRAVEL_SPEEDS[travelMode] * (roadType?.modifier || 1));
-                    legs.push({ from: placeA.name, to: placeB.name, distance: legDistance, time: legTime });
+                    legs.push({ from: placeA.name, to: placeB.name, distance: legDistance, time: legTime, roadTypeName: roadType.name });
                 }
 
                 return { path, legs, totalDistance, totalTime: distances[endNodeId] };
@@ -209,7 +250,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             for (const vNode of neighbors) {
                 if (!vNode) continue;
-                
+
                 const roadKey = getRoadKey(uNodeId, vNode.id);
                 const roadInfo = allRoads[roadKey];
                 if (!roadInfo) continue;
@@ -217,7 +258,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const roadType = ROAD_TYPES[roadInfo.type];
                 if (!roadType || !roadType.users.includes(travelMode)) continue;
 
-                const distance = axialDistance(uNode.coords, vNode.coords) * scale;
+                const distance = axialDistance(uNode.coords, vNode.coords) * (currentRegion.scale || 10);
                 const travelTime = distance / (TRAVEL_SPEEDS[travelMode] * roadType.modifier);
                 const newTotalTime = distances[uNodeId] + travelTime;
 
@@ -230,16 +271,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         return null;
     };
-    
+
     // --- FONCTIONS DE RENDU HTML ---
 
+    // CORRECTION : Réintégration de la fonction renderLocationInfo
     function renderLocationInfo(location) {
         let html = `<h2><span class="location-title">${location.name}</span></h2>`;
         html += `<div id="location-details-grid">`;
-        
+
         html += `<div class="distance-matrix"><h3>Distances & Temps de trajet</h3><table>`;
         html += `<thead><tr><th>Destination</th><th>Distance</th><th>Route</th><th>Pied</th><th>Cheval</th><th>Caravane</th></tr></thead><tbody>`;
-        
+
         currentRegion.places.forEach(otherPlace => {
             if (otherPlace.id === location.id) return;
 
@@ -247,9 +289,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const roadKey = getRoadKey(location.id, otherPlace.id);
             const road = currentRegion.roads[roadKey];
             const roadType = road ? ROAD_TYPES[road.type] : null;
-            
+
             html += `<tr><td>${otherPlace.name}</td>`;
-            
+
             if(roadType) {
                 html += `<td>${directDistance.toFixed(0)} km</td>
                 <td>${roadType.name.split(' / ')[0]}</td>
@@ -262,7 +304,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (referencePath) {
                     html += `<td>${referencePath.totalDistance.toFixed(0)} km</td>`;
-                    let routeStepsHtml = `<ul class="route-steps numbered">${referencePath.legs.map((leg, i) => `<li><span>(${i + 1})</span>${leg.from} → ${leg.to}</li>`).join('')}</ul>`;
+                    let routeStepsHtml = `<ul class="route-steps numbered">${referencePath.legs.map((leg, i) => `<li><span>(${i + 1})</span>${leg.from} → ${leg.to} <span class="road-type-leg">(${leg.roadTypeName.split(' / ')[0]})</span></li>`).join('')}</ul>`;
                     html += `<td>${routeStepsHtml}</td>`;
                     const pathByHorse = findShortestPath(location.id, otherPlace.id, currentRegion.places, currentRegion.roads, (currentRegion.scale || 10), 'Cheval');
                     const pathByCaravan = findShortestPath(location.id, otherPlace.id, currentRegion.places, currentRegion.roads, (currentRegion.scale || 10), 'Caravane');
@@ -308,21 +350,26 @@ document.addEventListener('DOMContentLoaded', () => {
                  const ageText = member.isAlive ? `${member.age} ans` : `décédé(e) à ${member.ageAtDeath || member.age} ans`;
                  let jobText = member.job?.jobTitle || member.royalTitle;
 
-                 if (member.isAlive) {
+                 const raceData = RACES_DATA.races[member.race];
+                 const isChild = member.isAlive && raceData && member.age < raceData.ageTravail;
+                 const isApprentice = member.isAlive && raceData && member.age >= raceData.ageApprentissage && member.age < raceData.ageTravail;
+
+                 if (isChild) {
+                    jobText = isApprentice ? 'Apprenti' : 'Enfant';
+                 } else if (member.isAlive) {
                      jobText = jobText || 'Sans emploi';
                  } else {
                      jobText = jobText || 'aucun emploi connu';
                  }
 
-                 // MODIFICATION: Add classes for gender and strikethrough for deceased
                  let nameClass = '';
                  if (member.gender === 'Homme') {
-                     nameClass = 'class="male"';
+                     nameClass = 'male';
                  } else if (member.gender === 'Femme') {
-                     nameClass = 'class="female"';
+                     nameClass = 'female';
                  }
 
-                 let formattedName = `<span ${nameClass}>${member.firstName}</span>`;
+                 let formattedName = `<span class="${nameClass}">${member.firstName}</span>`;
                  if (!member.isAlive) {
                      formattedName = `<s>${formattedName}</s>`;
                  }
@@ -338,13 +385,12 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderCharacterSheets(location) {
         let html = `<h2>Fiches des Personnages</h2><div id="character-sheets-container">`;
         const population = location.demographics.population;
-        // MODIFICATION: Filter out deceased characters
         population
             .filter(person => person.isAlive)
             .sort((a,b) => (a.lastName || '').localeCompare(b.lastName || '') || (a.firstName || '').localeCompare(b.firstName || ''))
-            .forEach(person => { 
+            .forEach(person => {
                 const allPopulation = currentRegion.places.flatMap(p => p.demographics.population);
-                html += renderSingleCharacterSheet(person, allPopulation) 
+                html += renderSingleCharacterSheet(person, allPopulation)
             });
         html += `</div>`;
         return html;
@@ -355,7 +401,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const population = location.demographics.population;
         let html = `<div class="print-section building-details-view"><h2><span class="location-title">${location.name}</span> &gt; ${buildingName}</h2>`;
         html += `<p>${buildingData.description}</p>`;
-        
+
         if (buildingData?.emplois) {
             html += `<h3>Personnel</h3><div class="job-roster"><ul>`;
             buildingData.emplois.forEach(jobDef => {
@@ -370,7 +416,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderCharacterView(personId, location) {
         const person = getPersonById(personId, location.demographics.population);
-        // Do not render if the person is not alive
         if (!person || !person.isAlive) {
             renderLocationView(selectedLocation);
             return;
@@ -383,48 +428,103 @@ document.addEventListener('DOMContentLoaded', () => {
         contentArea.innerHTML = html;
     }
 
-    /**
-     * MODIFIED (v7.2): Character sheet main rendering function.
-     * - Removed Timeline and Career History.
-     * - Added Paternal/Maternal Uncles and Aunts.
-     */
     function renderSingleCharacterSheet(person, populationScope) {
         if (!person) return '';
-        
-        // Stat calculations
-        const displayStats = getDisplayStats(person);
-        const { score: str, modifier: strMod } = convertToDnD(displayStats.force);
-        const { score: dex, modifier: dexMod } = convertToDnD(displayStats.dexterite);
-        const { score: con, modifier: conMod } = convertToDnD(displayStats.constitution);
-        const { score: int, modifier: intMod } = convertToDnD(displayStats.intelligence);
-        const { score: wis, modifier: wisMod } = convertToDnD(displayStats.sagesse);
-        const { score: cha, modifier: chaMod } = convertToDnD(displayStats.charisme);
-        
-        // Social information retrieval
+
+        const finalScores = getDisplayStats(person);
+        const str = finalScores.force;
+        const dex = finalScores.dexterite;
+        const con = finalScores.constitution;
+        const int = finalScores.intelligence;
+        const wis = finalScores.sagesse;
+        const cha = finalScores.charisme;
+
+        const strMod = Math.floor((str - 10) / 2);
+        const dexMod = Math.floor((dex - 10) / 2);
+        const conMod = Math.floor((con - 10) / 2);
+        const intMod = Math.floor((int - 10) / 2);
+        const wisMod = Math.floor((wis - 10) / 2);
+        const chaMod = Math.floor((cha - 10) / 2);
+
+        const caValue = 10 + conMod;
+        const iniValue = dexMod;
+        const formattedIniValue = `${iniValue >= 0 ? '+' : ''}${iniValue}`;
+
+        const skills = [
+            { name: "Acrobaties", mod: dexMod, base: '(Dex)' }, { name: "Arcanes", mod: intMod, base: '(Int)' },
+            { name: "Athlétisme", mod: strMod, base: '(For)' }, { name: "Discrétion", mod: dexMod, base: '(Dex)' },
+            { name: "Dressage", mod: wisMod, base: '(Sag)' }, { name: "Escamotage", mod: dexMod, base: '(Dex)' },
+            { name: "Histoire", mod: intMod, base: '(Int)' }, { name: "Intimidation", mod: chaMod, base: '(Cha)' },
+            { name: "Intuition", mod: wisMod, base: '(Sag)' }, { name: "Investigation", mod: intMod, base: '(Int)' },
+            { name: "Médecine", mod: wisMod, base: '(Sag)' }, { name: "Nature", mod: intMod, base: '(Int)' },
+            { name: "Perception", mod: wisMod, base: '(Sag)' }, { name: "Persuasion", mod: chaMod, base: '(Cha)' },
+            { name: "Religion", mod: intMod, base: '(Int)' }, { name: "Représentation", mod: chaMod, base: '(Cha)' },
+            { name: "Survie", mod: wisMod, base: '(Sag)' }, { name: "Tromperie", mod: chaMod, base: '(Cha)' }
+        ];
+
+        const skillsHtml = skills.map(skill => `
+            <li class="skill-item">
+                <span class="skill-mod">${skill.mod >= 0 ? '+' : ''}${skill.mod}</span>
+                <span class="skill-name">${skill.name} <span class="skill-base">${skill.base}</span></span>
+            </li>
+        `).join('');
+
         const spouse = getSpouse(person, populationScope);
         const children = getChildren(person, populationScope);
         const parents = getParents(person, populationScope);
         const siblings = getSiblings(person, populationScope);
-
-        // MODIFICATION: Find uncles and aunts
         const father = parents.find(p => p.gender === 'Homme');
         const mother = parents.find(p => p.gender === 'Femme');
         const paternalUnclesAunts = father ? getSiblings(father, populationScope) : [];
         const maternalUnclesAunts = mother ? getSiblings(mother, populationScope) : [];
-        
-        const jobTitle = person.job?.jobTitle || person.royalTitle || 'Sans emploi';
-        const status = `Vivant(e)`;
-        const ageLine = `${person.age} ans`;
-        const residence = person.currentLocation || 'Inconnue';
 
-        // Helper for formatting person links in family lists
+        let jobTitle = 'N/A';
+        const raceData = RACES_DATA.races[person.race];
+        if (person.isAlive) {
+            if (raceData && person.age < raceData.ageTravail) {
+                jobTitle = person.age >= raceData.ageApprentissage ? 'Apprenti' : 'Enfant';
+            } else if (person.status === 'Retraité(e)') {
+                jobTitle = `Retraité(e) (anciennement ${person.lastJobTitle || 'non spécifié'})`;
+            } else {
+                jobTitle = person.job?.jobTitle || person.royalTitle || 'Sans emploi';
+            }
+        } else {
+            jobTitle = person.jobBeforeDeath || 'Décédé(e) sans emploi';
+        }
+
+        const personLocation = currentRegion.places.find(p => p.id === person.locationId);
+        const status = person.isAlive ? `Vivant(e)` : `Décédé(e) (à ${person.ageAtDeath} ans)`;
+        const ageLine = `${person.age} ans`;
+        const residence = personLocation ? personLocation.name : 'Inconnue';
+        
+        let totalCopper = 0;
+        const randomCopperBonus = Math.floor(Math.random() * (499 - 5 + 1)) + 5;
+        if (person.isAlive && raceData && person.age >= raceData.ageTravail) {
+            if (person.job && person.job.buildingName && person.job.jobTitle) {
+                const jobData = getJobData(person.job.buildingName, person.job.jobTitle);
+                if (jobData && jobData.salaire && typeof jobData.salaire.totalEnCuivre === 'number') {
+                    totalCopper = (jobData.salaire.totalEnCuivre * 12) + randomCopperBonus;
+                }
+            } else {
+                totalCopper = randomCopperBonus;
+            }
+        } else {
+            totalCopper = randomCopperBonus;
+        }
+
+        const goldPieces = Math.floor(totalCopper / 1000);
+        totalCopper %= 1000;
+        const silverPieces = Math.floor(totalCopper / 10);
+        const copperPieces = totalCopper % 10;
+        const formattedMoney = `${goldPieces}po ${silverPieces}pa ${copperPieces}pc`;
+
         const formatPersonLink = p => `${p.firstName} ${p.lastName} (${p.isAlive ? p.age + ' ans' : 'décédé(e)'})`;
 
         return `
         <div class="character-sheet dossier-view">
             <header class="char-sheet-header">
                 <h3>${person.firstName} ${person.lastName}</h3>
-                <p>${person.race} / ${person.gender} / Résidant à ${residence}</p>
+                <p>${person.race} / ${person.gender} / Résidant à ${residence} / Argent: ${formattedMoney}</p>
             </header>
 
             <div class="char-sheet-main-grid">
@@ -436,15 +536,31 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="stat-box"><span class="label">Sagesse</span><span class="score">${wis}</span><span class="modifier">${wisMod >= 0 ? '+' : ''}${wisMod}</span></div>
                     <div class="stat-box"><span class="label">Charisme</span><span class="score">${cha}</span><span class="modifier">${chaMod >= 0 ? '+' : ''}${chaMod}</span></div>
                 </aside>
+
                 <section class="char-sheet-info">
+                    <div class="combat-stats-container">
+                        <div class="combat-box">
+                            <div class="combat-value">${caValue}</div>
+                            <div class="combat-label">CA</div>
+                        </div>
+                        <div class="combat-box">
+                            <div class="combat-value">${formattedIniValue}</div>
+                            <div class="combat-label">INITIATIVE</div>
+                        </div>
+                    </div>
                     <div class="info-block">
                         <h4>État Civil & Statut</h4>
                         <p><strong>Âge :</strong> ${ageLine}</p>
                         <p><strong>Statut :</strong> ${status}</p>
-                        <p><strong>Prestige social :</strong> ${person.prestige ? person.prestige.toFixed(0) : '0'}</p>
-                        <p><strong>Occupation actuelle :</strong> ${jobTitle}</p>
+                        <p><strong>Prestige :</strong> ${person.prestige ? person.prestige.toFixed(0) : '0'}</p>
+                        <p><strong>Occupation :</strong> ${jobTitle}</p>
                     </div>
                 </section>
+
+                <aside class="skills-list-container">
+                    <h4>Compétences</h4>
+                    <ul>${skillsHtml}</ul>
+                </aside>
             </div>
 
             <div class="char-sheet-details">
@@ -457,7 +573,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div><strong>Fratrie:</strong>
                             <ul>${siblings.length > 0 ? siblings.map(s => `<li>${formatPersonLink(s)}</li>`).join('') : '<li>Aucune</li>'}</ul>
                         </div>
-                         <div><strong>Oncles & Tantes (Paternel):</strong>
+                        <div><strong>Oncles & Tantes (Paternel):</strong>
                             <ul>${paternalUnclesAunts.length > 0 ? paternalUnclesAunts.map(p => `<li>${formatPersonLink(p)}</li>`).join('') : '<li>Aucun</li>'}</ul>
                         </div>
                         <div><strong>Oncles & Tantes (Maternel):</strong>
@@ -483,7 +599,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         contentArea.innerHTML = finalHtml;
     }
-    
+
     function populateSelectors(location) {
         buildingSelect.innerHTML = '<option value="">-- Tous les Bâtiments --</option>';
         if (location.config?.buildings) {
@@ -493,13 +609,12 @@ document.addEventListener('DOMContentLoaded', () => {
         characterSelect.innerHTML = '<option value="">-- Tous les Personnages --</option>';
         if (location.demographics?.population) {
             location.demographics.population
-                // MODIFICATION: Show only living people in the dropdown
                 .filter(person => person.isAlive)
                 .sort((a,b) => (a.lastName || '').localeCompare(b.lastName || '') || (a.firstName || '').localeCompare(b.firstName || ''))
                 .forEach(person => characterSelect.innerHTML += `<option value="${person.id}">${person.firstName} ${person.lastName}</option>`);
         }
     }
-
+    
     function init() {
         const data = localStorage.getItem(STORAGE_KEY);
         if (!data) {
@@ -514,8 +629,7 @@ document.addEventListener('DOMContentLoaded', () => {
             contentArea.innerHTML = '<h1>Région non valide ou vide.</h1><p>Retournez aux étapes précédentes.</p>';
             return;
         }
-        
-        // Global scope for finding relatives across locations
+
         window.populationScope = currentRegion.places.flatMap(p => p.demographics.population);
 
         locationSelect.innerHTML = currentRegion.places.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
@@ -537,13 +651,67 @@ document.addEventListener('DOMContentLoaded', () => {
             characterSelect.value = "";
             if (buildingName) renderBuildingView(buildingName, selectedLocation);
             else renderLocationView(selectedLocation);
-        });
+});
 
         characterSelect.addEventListener('change', (e) => {
             const personId = e.target.value;
             buildingSelect.value = "";
             if (personId) renderCharacterView(personId, selectedLocation);
             else renderLocationView(selectedLocation);
+        });
+
+        globalSearchInput.addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase().trim();
+            globalSearchResults.innerHTML = '';
+
+            if (query.length < 2) {
+                globalSearchResults.style.display = 'none';
+                return;
+            }
+
+            const matches = window.populationScope.filter(person =>
+                person.isAlive && `${person.firstName} ${person.lastName}`.toLowerCase().includes(query)
+            ).slice(0, 10);
+
+            if (matches.length > 0) {
+                matches.forEach(person => {
+                    const personLocation = currentRegion.places.find(p => p.id === person.locationId);
+                    const item = document.createElement('div');
+                    item.classList.add('search-result-item');
+                    item.textContent = `${person.firstName} ${person.lastName} (${personLocation.name})`;
+                    item.dataset.personId = person.id;
+
+                    item.addEventListener('click', () => {
+                        const clickedPerson = window.populationScope.find(p => p.id === person.id);
+                        const clickedLocation = currentRegion.places.find(l => l.id === clickedPerson.locationId);
+
+                        if (clickedPerson && clickedLocation) {
+                            selectedLocation = clickedLocation;
+                            locationSelect.value = clickedLocation.id;
+
+                            populateSelectors(clickedLocation);
+
+                            characterSelect.value = clickedPerson.id;
+                            buildingSelect.value = "";
+
+                            renderCharacterView(clickedPerson.id, clickedLocation);
+
+                            globalSearchInput.value = '';
+                            globalSearchResults.style.display = 'none';
+                        }
+                    });
+                    globalSearchResults.appendChild(item);
+                });
+                globalSearchResults.style.display = 'block';
+            } else {
+                globalSearchResults.style.display = 'none';
+            }
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!globalSearchInput.contains(e.target)) {
+                globalSearchResults.style.display = 'none';
+            }
         });
 
         printBtn.addEventListener('click', () => window.print());

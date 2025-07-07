@@ -12,6 +12,65 @@
     <link rel="stylesheet" href="menu-style.css">
     <link rel="stylesheet" href="step1-style.css"> 
     <link rel="stylesheet" href="index-style.css">
+
+    <style>
+        /* Conteneur pour les cartes de choix */
+        .choice-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 50px;
+            padding: 50px 20px;
+            flex-wrap: wrap;
+        }
+
+        /* Style des cartes de choix */
+        .choice-card {
+            width: 300px;
+            height: 350px;
+            background: var(--color-parchment);
+            border: 3px solid var(--color-border);
+            border-radius: 15px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+            text-align: center;
+            padding: 30px;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .choice-card:hover {
+            transform: translateY(-15px) scale(1.05);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.3), 0 0 15px var(--color-gold);
+        }
+
+        .choice-card .icon {
+            font-size: 5em;
+            margin-bottom: 20px;
+        }
+
+        .choice-card h3 {
+            font-family: 'Cinzel', serif;
+            font-size: 2em;
+            color: var(--color-dark-text);
+            margin: 0 0 15px 0;
+        }
+
+        .choice-card p {
+            font-family: 'Lora', serif;
+            font-size: 1.1em;
+            line-height: 1.6;
+            color: #444;
+        }
+
+        /* Classe pour masquer le contenu */
+        .hidden {
+            display: none;
+        }
+    </style>
 </head>
 <body>
 
@@ -27,7 +86,28 @@
     <a href="races_editor.html" id="nav-races-editor" style="color: #4a90e2;">Éditeur<br><small>(Races)</small></a>
 </nav>
 
-    <div class="main-content-index">
+<div class="main-content-index">
+    
+    <div id="mode-selection-view">
+        <header class="index-header">
+            <h1 class="main-title">EcoSimRPG</h1>
+            <p class="subtitle">Choisissez votre voie, Maître du Monde</p>
+        </header>
+        <div class="choice-container">
+            <div class="choice-card" id="select-forge-mode">
+                <div class="icon">🔨</div>
+                <h3>Mode Forge</h3>
+                <p>Créez votre monde pas à pas, avec un contrôle total sur chaque étape.</p>
+            </div>
+            <div class="choice-card" id="select-auto-mode">
+                <div class="icon">🚀</div>
+                <h3>Mode Full Auto</h3>
+                <p>Laissez la magie opérer et générez un monde complet en un seul clic.</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="forge-view" class="hidden">
         <header class="index-header">
             <h1 class="main-title">EcoSimRPG</h1>
             <p class="subtitle">Votre Outil de Création de Mondes Économiques et Vivants</p>
@@ -54,9 +134,6 @@
                             <li><strong>Définissez l'échelle :</strong> Chaque hexagone représente-t-il une simple lieue ou une vaste étendue ? Vos choix détermineront l'ampleur des défis logistiques.</li>
                         </ul>
                     </div>
-                    <div class="step-card-footer">
-                        <a href="step1.html" class="btn btn-primary">Commencer à Cartographier</a>
-                    </div>
                 </div>
 
                 <div class="step-card" id="card-step2">
@@ -71,9 +148,6 @@
                            <li><strong>Mode Manuel :</strong> Prenez les rênes et choisissez chaque bâtiment. Le système vous guidera en temps réel, indiquant les manques et les besoins de votre économie naissante.</li>
                            <li><strong>Analyse des Flux :</strong> Plongez au cœur de chaque ville pour comprendre ses importations, ses exportations et sa logique interne. Votre capitale dépend-elle du poisson d'un lointain village côtier ? C'est ici que vous le découvrirez.</li>
                         </ul>
-                    </div>
-                    <div class="step-card-footer">
-                        <a href="step2.html" class="btn btn-primary">Configurer les Lieux</a>
                     </div>
                 </div>
 
@@ -90,9 +164,6 @@
                             <li><strong>Forger des Dynasties :</strong> Créez vos propres familles, assignez-leur des emplois clés et définissez les <strong>lois de succession</strong> (primogéniture, élection, etc.) pour dicter l'avenir de vos dynasties.</li>
                         </ul>
                     </div>
-                     <div class="step-card-footer">
-                        <a href="step3.html" class="btn btn-primary">Lancer la Génération 0</a>
-                    </div>
                 </div>
                 
                 <div class="step-card" id="card-step4">
@@ -107,9 +178,6 @@
                             <li><strong>Ambitions et Carrières :</strong> Les individus cherchent du travail, obtiennent des promotions ou migrent vers d'autres cités en quête d'une vie meilleure. Les plus prestigieux gravissent les échelons du pouvoir.</li>
                             <li><strong>Chroniques d'un Monde :</strong> Grâce à un journal d'événements et un arbre généalogique interactif, suivez le destin de chaque âme, de l'humble fermier au puissant souverain.</li>
                         </ul>
-                    </div>
-                     <div class="step-card-footer">
-                        <a href="step4.html" class="btn btn-primary">Démarrer la Simulation</a>
                     </div>
                 </div>
 
@@ -126,11 +194,7 @@
                             <li><strong>Prêt à Jouer :</strong> Imprimez les fiches de personnages, les listes de familles ou les détails d'un lieu pour les utiliser directement dans vos parties de jeu de rôle.</li>
                         </ul>
                     </div>
-                     <div class="step-card-footer">
-                        <a href="step5.html" class="btn btn-primary">Consulter les Données</a>
-                    </div>
                 </div>
-
             </div>
 
             <section class="intro-section editor-section">
@@ -152,9 +216,6 @@
                             <li><strong>Importez et Partagez :</strong> Sauvegardez vos configurations de bâtiments en JSON pour les réutiliser ou les partager avec d'autres maîtres du jeu.</li>
                         </ul>
                     </div>
-                    <div class="step-card-footer">
-                        <a href="editeur.html" class="btn btn-secondary">Ouvrir l'Éditeur de Bâtiments</a>
-                    </div>
                 </div>
                  <div class="step-card editor-card">
                     <div class="step-card-header">
@@ -169,13 +230,38 @@
                              <li><strong>Sauvegardez vos Créations :</strong> Tout comme pour les bâtiments, exportez vos configurations de races en JSON pour les intégrer facilement dans n'importe quel projet.</li>
                         </ul>
                     </div>
-                    <div class="step-card-footer">
-                        <a href="races_editor.html" class="btn btn-secondary">Ouvrir l'Éditeur de Races</a>
-                    </div>
                 </div>
             </div>
         </main>
     </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const selectionView = document.getElementById('mode-selection-view');
+        const forgeView = document.getElementById('forge-view');
+        
+        const selectForgeBtn = document.getElementById('select-forge-mode');
+        const selectAutoBtn = document.getElementById('select-auto-mode');
+
+        // Gère le clic sur le "Mode Forge"
+        selectForgeBtn.addEventListener('click', () => {
+            selectionView.classList.add('hidden'); // Masque l'écran de choix
+            forgeView.classList.remove('hidden');   // Affiche le contenu principal
+        });
+
+        // Gère le clic sur le "Mode Full Auto"
+        selectAutoBtn.addEventListener('click', () => {
+            // Affiche un message de chargement et redirige
+            selectAutoBtn.innerHTML = `
+                <div class="icon">🚀</div>
+                <h3>Lancement...</h3>
+                <p>La génération automatique est en cours. Veuillez patienter.</p>
+            `;
+            window.location.href = 'autorun.html';
+        });
+    });
+</script>
 
 </body>
 </html>

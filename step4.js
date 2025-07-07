@@ -7,6 +7,10 @@
  * - Ajout de la cause du décès sur l'objet 'person' lors de sa mort.
  * MODIFIED: Intégration des lois de succession pour les titres de Tiers 0.
  * MODIFIED: Correction du statut pour les conjoints de la noblesse et suppression de la mort par "difficultés".
+ * MODIFIED: Ajout de la logique des titres Matriarche/Patriarche pour les parents du dirigeant Tier 0.
+ * MODIFIED (par l'assistant) : Correction de la logique d'application des titres nobiliaires et de la succession.
+ * MODIFIED (par l'assistant) : Ajout d'un gain passif de statistiques pour les personnages sans emploi.
+ * MODIFIED (par l'assistant) : Amélioration de la gestion des retraités (conservation de l'ancien métier).
  */
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -117,6 +121,22 @@ document.addEventListener('DOMContentLoaded', () => {
         const dynastyMemberIds = getRulingDynastyMemberIds(rulers, allPopulation);
         
         const { rulingFamilies } = findRulersAndFamilies(allPopulation, allFamilies);
+        
+        const allDynastyMembers = getRulingDynastyMemberIds(rulers, allPopulation);
+
+        allPopulation.forEach(person => {
+            if (person.isAlive && person.royalTitle && !allDynastyMembers.has(person.id)) {
+                const isRuler = rulers.some(r => r.id === person.id);
+                if (!isRuler) {
+                    delete person.royalTitle;
+                }
+            }
+        });
+
+        rulers.forEach(ruler => {
+            applyDynasticTitles(ruler, allPopulation);
+        });
+
 
         currentRegion.places.forEach(place => {
             const population = place.demographics.population;
@@ -127,6 +147,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             population.forEach(person => {
+                if (person.isAlive && person.job) {
+                    person.totalMonthsWorked = (person.totalMonthsWorked || 0) + 1;
+                }
+
                 if (person.status === 'En congé maternité' && person.maternityLeaveEndTick && simulationState.currentTick >= person.maternityLeaveEndTick) {
                     person.status = 'Actif';
                     person.maternityLeaveEndTick = null;
@@ -288,114 +312,185 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    function handleRetirement(population, place) {
-        population.forEach(person => {
-            if (!person.isAlive || !person.job || person.status === 'Retraité(e)') return;
+function handleRetirement(population, place) {
+    population.forEach(person => {
+        if (!person.isAlive || !person.job || person.status === 'Retraité(e)') return;
 
-            const raceData = RACES_DATA.races[person.race];
-            if (!raceData) return;
+        const raceData = RACES_DATA.races[person.race];
+        if (!raceData) return;
 
-            const jobData = getJobData(person.job.buildingName, person.job.jobTitle);
-            if (!jobData || jobData.tier === undefined) return;
+        const jobData = getJobData(person.job.buildingName, person.job.jobTitle);
+        if (!jobData || jobData.tier === undefined) return;
 
-            const jobTier = jobData.tier;
-            const lifespan = raceData.esperanceVieMax;
+        // --- NOUVELLE LOGIQUE DE RETRAITE ---
+        const jobTier = jobData.tier;
+        const lifespan = raceData.esperanceVieMax;
 
-            let retirementAge = -1;
+        let retirementAge = -1;
 
-            if (jobTier === 0) return; // Les dirigeants ne prennent pas leur retraite de cette façon
+        // Les dirigeants de Tiers 0 ne prennent pas leur retraite de cette manière.
+        if (jobTier === 0) return;
 
-            if (jobTier === 1) {
-                retirementAge = Math.floor(lifespan * 0.90);
-            } 
-            else if (jobTier > 1) {
-                retirementAge = Math.floor(lifespan * 0.90);
-            }
+        // On définit l'âge de la retraite en fonction de la pénibilité (Tiers)
+        // Vous pouvez ajuster ces pourcentages comme vous le souhaitez.
+        switch (jobTier) {
+            case 1: // Emplois de prestige (Nobles, etc.)
+                retirementAge = Math.floor(lifespan * 0.85); // Retraite à 85% de l'espérance de vie
+                break;
+            case 2: // Emplois intellectuels/de gestion (Marchands, Clercs...)
+                retirementAge = Math.floor(lifespan * 0.80); // Retraite à 80%
+                break;
+            case 3: // Artisans qualifiés
+                retirementAge = Math.floor(lifespan * 0.75); // Retraite à 75%
+                break;
+            case 4: // Travailleurs manuels, basse qualification
+            case 5: // Emplois les plus basiques
+                retirementAge = Math.floor(lifespan * 0.70); // Retraite à 70%
+                break;
+            default: // Si un Tiers n'est pas reconnu, on garde une valeur par défaut
+                retirementAge = Math.floor(lifespan * 0.99);
+                break;
+        }
+        // --- FIN DE LA NOUVELLE LOGIQUE ---
 
-            if (retirementAge > 0 && person.age >= retirementAge) {
-                const oldJobTitle = person.job.jobTitle;
-                person.job = null;
-                person.status = 'Retraité(e)';
-                logEvent(`🧘 ${person.firstName} ${person.lastName} a pris sa retraite de son poste de ${oldJobTitle} à ${person.age} ans.`, 'system', { familyId: person.familyId, personId: person.id });
-            }
-        });
-    }
+
+        if (retirementAge > 0 && person.age >= retirementAge) {
+            const oldJobTitle = person.job.jobTitle;
+            person.lastJobTitle = oldJobTitle; // Sauvegarde du dernier métier
+            person.job = null;
+            person.status = 'Retraité(e)';
+            logEvent(`🧘 ${person.firstName} ${person.lastName} a pris sa retraite de son poste de ${oldJobTitle} à ${person.age} ans.`, 'system', { familyId: person.familyId, personId: person.id });
+        }
+    });
+}
 
     function getWeightedDesiredChildren() {
-        const weights = [
-            0, 0, 1, 1, 2, 2, 2, 3
-        ];
+        const weights = [ 0, 1, 1, 2, 2, 2, 3, 3 ];
         const randomIndex = Math.floor(Math.random() * weights.length);
         return weights[randomIndex];
     }
+    
+    // REMPLACEZ VOTRE ANCIENNE FONCTION applyDynasticTitles PAR CELLE-CI
 
-    function applyDynasticTitles(ruler, population) {
-        const allPopulation = population;
+// REMPLACEZ VOTRE FONCTION applyDynasticTitles EXISTANTE PAR CELLE-CI
 
-        // 1. Update Spouse
-        const spouse = getPersonById(ruler.spouseId, allPopulation);
-        if (spouse && spouse.isAlive) {
-            spouse.job = null;
-            spouse.royalTitle = 'Famille Gouvernante';
-        }
+function applyDynasticTitles(ruler, population) {
+    const allPopulation = population;
 
-        // 2. Update Children and their families
-        const children = getChildren(ruler, allPopulation);
-        children.forEach(child => {
-            if (child && child.isAlive) {
-                child.job = null;
-                child.royalTitle = child.gender === 'Homme' ? 'Héritier' : 'Héritière';
+    // Mettre à jour le dirigeant lui-même
+    delete ruler.royalTitle;
 
-                const childSpouse = getPersonById(child.spouseId, allPopulation);
-                if (childSpouse && childSpouse.isAlive) {
-                    childSpouse.job = null;
-                    childSpouse.royalTitle = 'Famille Gouvernante';
-                }
-            }
-        });
-
-        // 3. Update Siblings and their families
-        const siblings = getSiblings(ruler, allPopulation);
-        siblings.forEach(sibling => {
-            if (sibling && sibling.isAlive) {
-                sibling.job = null;
-                sibling.royalTitle = sibling.gender === 'Homme' ? 'Frère du pouvoir' : 'Sœur du pouvoir';
-
-                const siblingSpouse = getPersonById(sibling.spouseId, allPopulation);
-                if (siblingSpouse && siblingSpouse.isAlive) {
-                    siblingSpouse.job = null;
-                    siblingSpouse.royalTitle = 'Famille Gouvernante';
-                }
-
-                const nephewsAndNieces = getChildren(sibling, allPopulation);
-                nephewsAndNieces.forEach(nephew => {
-                    if (nephew && nephew.isAlive) {
-                        nephew.job = null;
-                        nephew.royalTitle = 'Noble de la Cour';
-
-                        const nephewSpouse = getPersonById(nephew.spouseId, allPopulation);
-                        if (nephewSpouse && nephewSpouse.isAlive) {
-                            nephewSpouse.job = null;
-                            nephewSpouse.royalTitle = 'Famille Gouvernante';
-                        }
-                    }
-                });
-            }
-        });
+    // 1. Mettre à jour le Conjoint
+    const spouse = getPersonById(ruler.spouseId, allPopulation);
+    if (spouse && spouse.isAlive) {
+        spouse.job = null;
+        spouse.royalTitle = 'Famille Gouvernante';
     }
+
+    // 2. Mettre à jour les Parents (Matriarche/Patriarche)
+    const parents = getParents(ruler, allPopulation);
+    parents.forEach(parent => {
+        if (parent && parent.isAlive) {
+            if (!getJobData(parent.job?.buildingName, parent.job?.jobTitle)?.tier === 0) {
+                 parent.job = null;
+                 parent.royalTitle = parent.gender === 'Homme' ? 'Patriarche' : 'Matriarche';
+                 
+                 const parentSpouse = getPersonById(parent.spouseId, allPopulation);
+                 if(parentSpouse && parentSpouse.isAlive && !parents.some(p => p.id === parentSpouse.id)) {
+                    parentSpouse.job = null;
+                    parentSpouse.royalTitle = 'Famille Gouvernante';
+                 }
+            }
+        }
+    });
+
+    // 3. Mettre à jour les Enfants (Héritiers) et Petits-Enfants
+    const children = getChildren(ruler, allPopulation);
+    children.forEach(child => {
+        if (child && child.isAlive) {
+            child.job = null; 
+            child.royalTitle = child.gender === 'Homme' ? 'Héritier' : 'Héritière';
+
+            const childSpouse = getPersonById(child.spouseId, allPopulation);
+            if (childSpouse && childSpouse.isAlive) {
+                childSpouse.job = null;
+                childSpouse.royalTitle = 'Famille Gouvernante';
+            }
+            
+            // Gestion des Petits-Enfants
+            const grandChildren = getChildren(child, allPopulation);
+            grandChildren.forEach(grandChild => {
+                if (grandChild && grandChild.isAlive) {
+                    grandChild.job = null;
+                    grandChild.royalTitle = 'Noble de la Cour';
+
+                    const grandChildSpouse = getPersonById(grandChild.spouseId, allPopulation);
+                    if (grandChildSpouse && grandChildSpouse.isAlive) {
+                        grandChildSpouse.job = null;
+                        grandChildSpouse.royalTitle = 'Famille Gouvernante';
+                    }
+                }
+            });
+        }
+    });
+
+    // 4. Mettre à jour les Frères/Sœurs, Neveux/Nièces et Petits-Neveux/Nièces
+    const siblings = getSiblings(ruler, allPopulation);
+    siblings.forEach(sibling => {
+        if (sibling && sibling.isAlive) {
+            sibling.job = null;
+            sibling.royalTitle = sibling.gender === 'Homme' ? 'Frère du pouvoir' : 'Sœur du pouvoir';
+
+            const siblingSpouse = getPersonById(sibling.spouseId, allPopulation);
+            if (siblingSpouse && siblingSpouse.isAlive) {
+                siblingSpouse.job = null;
+                siblingSpouse.royalTitle = 'Famille Gouvernante';
+            }
+
+            // Gestion des Neveux/Nièces
+            const nephewsAndNieces = getChildren(sibling, allPopulation);
+            nephewsAndNieces.forEach(nephew => {
+                if (nephew && nephew.isAlive) {
+                    nephew.job = null;
+                    nephew.royalTitle = 'Noble de la Cour';
+
+                    const nephewSpouse = getPersonById(nephew.spouseId, allPopulation);
+                    if (nephewSpouse && nephewSpouse.isAlive) {
+                        nephewSpouse.job = null;
+                        nephewSpouse.royalTitle = 'Famille Gouvernante';
+                    }
+
+                    // NOUVEAU : GESTION DES PETITS-NEVEUX/NIÈCES
+                    const grandNephewsAndNieces = getChildren(nephew, allPopulation);
+                    grandNephewsAndNieces.forEach(grandNephew => {
+                        if (grandNephew && grandNephew.isAlive) {
+                            grandNephew.job = null;
+                            grandNephew.royalTitle = 'Noble de la Cour';
+
+                            const grandNephewSpouse = getPersonById(grandNephew.spouseId, allPopulation);
+                            if (grandNephewSpouse && grandNephewSpouse.isAlive) {
+                                grandNephewSpouse.job = null;
+                                grandNephewSpouse.royalTitle = 'Famille Gouvernante';
+                            }
+                        }
+                    });
+                    // FIN DE L'AJOUT
+                }
+            });
+        }
+    });
+}
 
     function handleSuccession(deceasedPerson, place, population) {
         const job = deceasedPerson.job;
         const jobTitle = job.jobTitle;
         const allPopulation = currentRegion.places.flatMap(p => p.demographics.population);
-    
-        // Récupérer la loi de succession pour le lieu concerné
-        const inheritanceLaw = place.demographics.inheritanceLaw || 'primogeniture_male'; // Fallback
+
+        const inheritanceLaw = place.demographics.inheritanceLaw || 'primogeniture_male';
         logEvent(`📜 La loi de succession à ${place.name} est : ${inheritanceLaw}. Recherche d'un héritier pour ${deceasedPerson.firstName}.`, 'system', { familyId: deceasedPerson.familyId });
-    
+
         let newRuler = null;
-    
-        // 1. Logique pour la succession ÉLECTIVE
+
         if (inheritanceLaw === 'elective') {
             const familyMembers = allPopulation.filter(p =>
                 p.familyId === deceasedPerson.familyId &&
@@ -407,40 +502,62 @@ document.addEventListener('DOMContentLoaded', () => {
                 newRuler = familyMembers[0];
                 logEvent(`👑 Par élection familiale, ${newRuler.firstName} ${newRuler.lastName}, le plus prestigieux, hérite du titre de ${jobTitle}.`, 'system', { familyId: newRuler.familyId, personId: newRuler.id });
             }
-        } 
-        // 2. Logique pour les successions par PRIMOGÉNITURE
-        else {
-            const potentialHeirGroups = [
-                { type: 'enfant(s)', get: (p) => getChildren(p, allPopulation) },
-                { type: 'frère/sœur(s)', get: (p) => getSiblings(p, allPopulation).filter(s => s.familyId === p.familyId) }
-            ];
-    
-            for (const group of potentialHeirGroups) {
-                let candidates = group.get(deceasedPerson).filter(p => p.isAlive && p.age >= RACES_DATA.races[p.race].ageAdulte);
-                
-                // Filtrer par genre selon la loi
-                switch (inheritanceLaw) {
-                    case 'primogeniture_male':
-                        candidates = candidates.filter(p => p.gender === 'Homme');
-                        break;
-                    case 'primogeniture_female':
-                        candidates = candidates.filter(p => p.gender === 'Femme');
-                        break;
-                    case 'primogeniture_absolute':
-                        // Pas de filtre de genre
-                        break;
+        } else {
+            function findPrimogenitureHeir(person) {
+                if (!person || !person.isAlive || person.familyId !== deceasedPerson.familyId) {
+                    return null;
                 }
-    
-                if (candidates.length > 0) {
-                    candidates.sort((a, b) => b.age - a.age); // L'aîné en premier
-                    newRuler = candidates[0];
-                    logEvent(`👑 ${newRuler.firstName} ${newRuler.lastName} hérite du titre de ${jobTitle} de son/sa ${group.type}.`, 'system', { familyId: newRuler.familyId, personId: newRuler.id });
-                    break; // Un héritier a été trouvé, on arrête la recherche
+
+                const isEligible = person.isAlive && person.age >= RACES_DATA.races[person.race].ageAdulte &&
+                                (inheritanceLaw === 'primogeniture_absolute' ||
+                                    (inheritanceLaw === 'primogeniture_male' && person.gender === 'Homme') ||
+                                    (inheritanceLaw === 'primogeniture_female' && person.gender === 'Femme'));
+                if (isEligible) {
+                    return person;
+                }
+
+                const children = getChildren(person, allPopulation)
+                    .filter(c => c.isAlive && c.familyId === deceasedPerson.familyId)
+                    .sort((a, b) => b.age - a.age);
+
+                for (const child of children) {
+                    const heir = findPrimogenitureHeir(child);
+                    if (heir) return heir;
+                }
+                return null;
+            }
+
+            const children = getChildren(deceasedPerson, allPopulation)
+                .filter(c => c.isAlive && c.familyId === deceasedPerson.familyId)
+                .sort((a, b) => b.age - a.age);
+
+            for (const child of children) {
+                const heir = findPrimogenitureHeir(child);
+                if (heir) {
+                    newRuler = heir;
+                    break; 
                 }
             }
+
+            if (!newRuler) {
+                const siblings = getSiblings(deceasedPerson, allPopulation)
+                    .filter(s => s.isAlive && s.familyId === deceasedPerson.familyId)
+                    .sort((a, b) => b.age - a.age);
+
+                for (const sibling of siblings) {
+                    const heir = findPrimogenitureHeir(sibling);
+                    if (heir) {
+                        newRuler = heir;
+                        break;
+                    }
+                }
+            }
+            
+            if (newRuler) {
+                logEvent(`👑 ${newRuler.firstName} ${newRuler.lastName} hérite du titre de ${jobTitle} par la loi de succession.`, 'system', { familyId: newRuler.familyId, personId: newRuler.id });
+            }
         }
-        
-        // 3. Assignation du titre ou recherche d'un remplaçant si aucun héritier n'est trouvé
+
         if (newRuler) {
             newRuler.job = job;
             newRuler.status = 'Actif';
@@ -448,37 +565,35 @@ document.addEventListener('DOMContentLoaded', () => {
             applyDynasticTitles(newRuler, allPopulation);
             return;
         }
-    
-        // --- Logique de fallback si aucun héritier n'est trouvé via la loi de succession ---
-        logEvent(`💀 La lignée directe de ${deceasedPerson.lastName} s'est éteinte selon la loi. Le pouvoir est vacant.`, 'system', { familyId: deceasedPerson.familyId });
-    
-        // (La logique existante pour trouver une famille de remplacement par prestige peut être conservée ici)
+        
+        logEvent(`💀 La lignée de ${deceasedPerson.lastName} semble éteinte ou sans héritier valide. Le pouvoir est vacant.`, 'system', { familyId: deceasedPerson.familyId });
+
         const allFamiliesInPlace = place.demographics.families;
         const familyScores = allFamiliesInPlace.map(family => {
             const members = family.memberIds.map(id => getPersonById(id, allPopulation)).filter(p => p && p.isAlive);
             if (members.length === 0) return { family, score: -1 };
             const totalPrestige = members.reduce((sum, p) => sum + (p.prestige || 0), 0);
             return { family, score: totalPrestige };
-        }).sort((a,b) => b.score - a.score);
-    
-        if(familyScores.length > 0 && familyScores[0].score > -1) {
-             const newRulingFamily = familyScores[0].family;
-             const adultMembers = newRulingFamily.memberIds
+        }).sort((a, b) => b.score - a.score);
+
+        if (familyScores.length > 0 && familyScores[0].score > -1) {
+            const newRulingFamily = familyScores[0].family;
+            const adultMembers = newRulingFamily.memberIds
                 .map(id => getPersonById(id, allPopulation))
                 .filter(p => p && p.isAlive && p.age >= RACES_DATA.races[p.race].ageAdulte);
-            
+
             if (adultMembers.length > 0) {
-                 adultMembers.sort((a,b) => (b.prestige || 0) - (a.prestige || 0));
-                 const chosenRuler = adultMembers[0];
-                 chosenRuler.job = job;
-                 chosenRuler.status = 'Actif';
-                 delete chosenRuler.royalTitle;
-                 logEvent(`👑 La famille ${chosenRuler.lastName}, la plus prestigieuse de ${place.name}, prend le contrôle. ${chosenRuler.firstName} est le nouveau ${jobTitle}.`, 'system', { familyId: chosenRuler.familyId, personId: chosenRuler.id });
-                 applyDynasticTitles(chosenRuler, allPopulation);
-                 return;
+                adultMembers.sort((a, b) => (b.prestige || 0) - (a.prestige || 0));
+                const chosenRuler = adultMembers[0];
+                chosenRuler.job = job;
+                chosenRuler.status = 'Actif';
+                delete chosenRuler.royalTitle;
+                logEvent(`👑 La famille ${chosenRuler.lastName}, la plus prestigieuse de ${place.name}, prend le contrôle. ${chosenRuler.firstName} est le nouveau ${jobTitle}.`, 'system', { familyId: chosenRuler.familyId, personId: chosenRuler.id });
+                applyDynasticTitles(chosenRuler, allPopulation);
+                return;
             }
         }
-        
+
         logEvent(`Le poste de ${jobTitle} à ${place.name} est vacant et personne n'a pu être désigné pour le moment.`, 'system');
     }
     
@@ -566,8 +681,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 person.deathYear = simulationState.currentYear;
                 person.deathMonth = simulationState.currentMonth;
                 person.causeOfDeath = causeOfDeath;
+                
+                // --- MODIFIED LOGIC for jobBeforeDeath ---
                 const jobData = person.job ? getJobData(person.job.buildingName, person.job.jobTitle) : null;
-                person.jobBeforeDeath = jobData ? jobData.titre : (person.royalTitle || 'Sans emploi');
+                let finalJobTitle = 'Sans emploi';
+                if (jobData) {
+                    finalJobTitle = jobData.titre;
+                } else if (person.lastJobTitle) {
+                    finalJobTitle = person.lastJobTitle;
+                } else if (person.royalTitle) {
+                    finalJobTitle = person.royalTitle;
+                }
+                person.jobBeforeDeath = finalJobTitle;
+                // --- END MODIFICATION ---
 
                 person.isAlive = false;
                 
@@ -643,141 +769,124 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function handleMarriages(population, place, satisfaction, dynastyMemberIds) {
-    const singleMen = population.filter(p => 
-        p.isAlive && 
-        p.gender === 'Homme' && 
-        !p.spouseId && 
-        p.hasBeenMarried !== true &&
-        p.age >= RACES_DATA.races[p.race].ageAdulte
-    );
+        const singleMen = population.filter(p => 
+            p.isAlive && p.gender === 'Homme' && !p.spouseId && p.hasBeenMarried !== true && p.age >= RACES_DATA.races[p.race].ageAdulte
+        );
 
-    let singleWomen = population.filter(p => // Modifié en 'let' pour permettre la suppression
-        p.isAlive && 
-        p.gender === 'Femme' && 
-        !p.spouseId && 
-        p.hasBeenMarried !== true &&
-        p.age >= RACES_DATA.races[p.race].ageAdulte
-    );
-        
-    if(singleMen.length === 0 || singleWomen.length === 0) return;
-
-    // Utiliser toute la population de la région pour des recherches généalogiques complètes
-    const allPopulationForGenealogy = currentRegion.places.flatMap(p => p.demographics.population);
-
-    singleMen.forEach(man => {
-        let marriageChance = 0.1; 
-        if(satisfaction < 60) marriageChance *= (satisfaction / 100);
-
-        if (Math.random() < marriageChance) {
-            const compatibleRaces = RACES_DATA.compatibilites[man.race] || [];
+        let singleWomen = population.filter(p => 
+            p.isAlive && p.gender === 'Femme' && !p.spouseId && p.hasBeenMarried !== true && p.age >= RACES_DATA.races[p.race].ageAdulte
+        );
             
-            // --- DÉBUT DE LA CORRECTION ---
-            // Construire un ensemble d'IDs de partenaires interdits pour prévenir l'inceste
-            const forbiddenIds = new Set();
+        if(singleMen.length === 0 || singleWomen.length === 0) return;
 
-            // 1. Exclure les descendantes directes (filles, petites-filles, etc.)
-            const descendantMap = getDescendantMap(man, allPopulationForGenealogy);
-            descendantMap.forEach((generation, personId) => {
-                if (generation > 0) { // génération 0 est la personne elle-même
-                    const person = getPersonById(personId, allPopulationForGenealogy);
-                    if (person && person.gender === 'Femme') {
-                       forbiddenIds.add(personId);
-                    }
-                }
-            });
+        const allPopulationForGenealogy = currentRegion.places.flatMap(p => p.demographics.population);
 
-            // 2. Exclure les ancêtres directes (mère, grand-mères)
-            const parents = getParents(man, allPopulationForGenealogy);
-            parents.forEach(parent => {
-                if(parent.gender === 'Femme') forbiddenIds.add(parent.id);
-                // On pourrait ajouter les grands-parents de manière récursive si nécessaire
-            });
+        singleMen.forEach(man => {
+            let marriageChance = 0.1; 
+            if(satisfaction < 60) marriageChance *= (satisfaction / 100);
 
-            // 3. Exclure les sœurs (et demi-sœurs)
-            getSiblings(man, allPopulationForGenealogy).forEach(sibling => forbiddenIds.add(sibling.id));
-            
-            // 4. Exclure les tantes et les nièces pour être plus complet
-            getUnclesAunts(man, allPopulationForGenealogy)
-                .filter(aunt => aunt.gender === 'Femme')
-                .forEach(aunt => forbiddenIds.add(aunt.id));
-    
-            getSiblings(man, allPopulationForGenealogy).forEach(sibling => {
-                getChildren(sibling, allPopulationForGenealogy)
-                    .filter(niece => niece.gender === 'Femme')
-                    .forEach(niece => forbiddenIds.add(niece.id));
-            });
-
-            // Filtrer les épouses potentielles en excluant les parents interdits
-            const potentialWives = singleWomen.filter(woman =>
-                !forbiddenIds.has(woman.id) && // <-- La vérification de parenté ajoutée
-                Math.abs(man.age - woman.age) <= 10 &&
-                (woman.race === man.race || compatibleRaces.includes(woman.race))
-            );
-            // --- FIN DE LA CORRECTION ---
-
-            if (potentialWives.length > 0) {
-                const wife = findBestPartnerForSimulation(man, potentialWives);
+            if (Math.random() < marriageChance) {
+                const compatibleRaces = RACES_DATA.compatibilites[man.race] || [];
                 
-                if (wife) { 
-                    const wifeIndexInSingleWomen = singleWomen.findIndex(w => w.id === wife.id);
-                    if (wifeIndexInSingleWomen > -1) singleWomen.splice(wifeIndexInSingleWomen, 1);
-                    
-                    man.spouseId = wife.id;
-                    wife.spouseId = man.id;
-                    
-                    man.hasBeenMarried = true;
-                    wife.hasBeenMarried = true;
+                const forbiddenIds = new Set();
 
-                    wife.maidenName = wife.lastName;
-                    wife.lastName = man.lastName;
-                    
-                    const oldWifeFamilyId = wife.familyId;
-                    
-                    const oldFamily = currentRegion.places
-                        .flatMap(p => p.demographics.families)
-                        .find(f => f.id === oldWifeFamilyId);
-                    if (oldFamily) {
-                        const indexInOldFamily = oldFamily.memberIds.indexOf(wife.id);
-                        if (indexInOldFamily > -1) {
-                            oldFamily.memberIds.splice(indexInOldFamily, 1);
+                const descendantMap = getDescendantMap(man, allPopulationForGenealogy);
+                descendantMap.forEach((generation, personId) => {
+                    if (personId !== man.id) {
+                        const person = getPersonById(personId, allPopulationForGenealogy);
+                        if (person && person.gender === 'Femme') {
+                        forbiddenIds.add(personId);
                         }
                     }
+                });
 
-                    wife.familyId = man.familyId;
-                    const newFamily = currentRegion.places
-                        .flatMap(p => p.demographics.families)
-                        .find(f => f.id === man.familyId);
-                    if (newFamily && !newFamily.memberIds.includes(wife.id)) {
-                        newFamily.memberIds.push(wife.id);
+                const parents = getParents(man, allPopulationForGenealogy);
+                parents.forEach(parent => {
+                    if(parent.gender === 'Femme') forbiddenIds.add(parent.id);
+                    getParents(parent, allPopulationForGenealogy)
+                        .filter(grandparent => grandparent.gender === 'Femme')
+                        .forEach(grandparent => forbiddenIds.add(grandparent.id));
+                });
+
+                getSiblings(man, allPopulationForGenealogy).forEach(sibling => forbiddenIds.add(sibling.id));
+                
+                getUnclesAunts(man, allPopulationForGenealogy)
+                    .filter(aunt => aunt.gender === 'Femme')
+                    .forEach(aunt => forbiddenIds.add(aunt.id));
+        
+                getSiblings(man, allPopulationForGenealogy).forEach(sibling => {
+                    getChildren(sibling, allPopulationForGenealogy)
+                        .filter(niece => niece.gender === 'Femme')
+                        .forEach(niece => forbiddenIds.add(niece.id));
+                });
+
+                const potentialWives = singleWomen.filter(woman =>
+                    !forbiddenIds.has(woman.id) && 
+                    Math.abs(man.age - woman.age) <= 10 &&
+                    (woman.race === man.race || compatibleRaces.includes(woman.race))
+                );
+
+                if (potentialWives.length > 0) {
+                    const wife = findBestPartnerForSimulation(man, potentialWives);
+                    
+                    if (wife) { 
+                        const wifeIndexInSingleWomen = singleWomen.findIndex(w => w.id === wife.id);
+                        if (wifeIndexInSingleWomen > -1) singleWomen.splice(wifeIndexInSingleWomen, 1);
+                        
+                        man.spouseId = wife.id;
+                        wife.spouseId = man.id;
+                        
+                        man.hasBeenMarried = true;
+                        wife.hasBeenMarried = true;
+
+                        wife.maidenName = wife.lastName;
+                        wife.lastName = man.lastName;
+                        
+                        const oldWifeFamilyId = wife.familyId;
+                        
+                        const oldFamily = currentRegion.places.flatMap(p => p.demographics.families).find(f => f.id === oldWifeFamilyId);
+                        if (oldFamily) {
+                            const indexInOldFamily = oldFamily.memberIds.indexOf(wife.id);
+                            if (indexInOldFamily > -1) {
+                                oldFamily.memberIds.splice(indexInOldFamily, 1);
+                                if (oldFamily.memberIds.length === 0) {
+                                    const placeOfOldFamily = currentRegion.places.find(p => p.id === oldFamily.locationId);
+                                    if (placeOfOldFamily) {
+                                        placeOfOldFamily.demographics.families = placeOfOldFamily.demographics.families.filter(f => f.id !== oldFamily.id);
+                                    }
+                                }
+                            }
+                        }
+
+                        wife.familyId = man.familyId;
+                        const newFamily = currentRegion.places.flatMap(p => p.demographics.families).find(f => f.id === man.familyId);
+                        if (newFamily && !newFamily.memberIds.includes(wife.id)) {
+                            newFamily.memberIds.push(wife.id);
+                        }
+
+                        const manIsDynasty = dynastyMemberIds.has(man.id);
+                        const wifeIsDynasty = dynastyMemberIds.has(wife.id);
+
+                        if (manIsDynasty && !wifeIsDynasty) {
+                            const oldJobTitle = wife.job ? wife.job.jobTitle : 'aucun';
+                            wife.job = null;
+                            wife.royalTitle = 'Famille Gouvernante';
+                            logEvent(`💍 En épousant ${man.firstName}, ${wife.firstName} a quitté son poste (${oldJobTitle}) pour rejoindre la "Famille Gouvernante".`, 'social', { familyId: man.familyId, personId: wife.id });
+                        } else if (wifeIsDynasty && !manIsDynasty) {
+                            const oldJobTitle = man.job ? man.job.jobTitle : 'aucun';
+                            man.job = null;
+                            man.royalTitle = 'Famille Gouvernante';
+                            logEvent(`💍 En épousant ${wife.firstName}, ${man.firstName} a quitté son poste (${oldJobTitle}) pour rejoindre la "Famille Gouvernante".`, 'social', { familyId: wife.familyId, personId: man.id });
+                        }
+
+                        const message = `💍 ${man.firstName} ${man.lastName} et ${wife.firstName} ${wife.lastName} (née ${wife.maidenName}) se sont mariés à ${place.name}.`;
+                        logEvent(message, 'marriage', { familyId: man.familyId, personId: man.id });
+                        logEvent(message, 'marriage', { familyId: oldWifeFamilyId, personId: wife.id });
                     }
-
-const manIsDynasty = dynastyMemberIds.has(man.id);
-const wifeIsDynasty = dynastyMemberIds.has(wife.id);
-
-if (manIsDynasty && !wifeIsDynasty) {
-    // Le mari est de la dynastie, l'épouse devient "Famille Gouvernante"
-    const oldJobTitle = wife.job ? wife.job.jobTitle : 'aucun';
-    wife.job = null;
-    wife.royalTitle = 'Famille Gouvernante';
-    logEvent(`💍 En épousant ${man.firstName}, ${wife.firstName} a quitté son poste (${oldJobTitle}) pour rejoindre la "Famille Gouvernante".`, 'social', { familyId: man.familyId, personId: wife.id });
-
-} else if (wifeIsDynasty && !manIsDynasty) {
-    // L'épouse est de la dynastie, le mari devient "Famille Gouvernante"
-    const oldJobTitle = man.job ? man.job.jobTitle : 'aucun';
-    man.job = null;
-    man.royalTitle = 'Famille Gouvernante';
-    logEvent(`💍 En épousant ${wife.firstName}, ${man.firstName} a quitté son poste (${oldJobTitle}) pour rejoindre la "Famille Gouvernante".`, 'social', { familyId: wife.familyId, personId: man.id });
-}
-
-
-                    const message = `💍 ${man.firstName} ${man.lastName} et ${wife.firstName} ${wife.lastName} (née ${wife.maidenName}) se sont mariés à ${place.name}.`;
-                    logEvent(message, 'marriage', { familyId: man.familyId, personId: man.id });
-                    logEvent(message, 'marriage', { familyId: oldWifeFamilyId, personId: wife.id });
                 }
             }
-        }
-    });
-}
+        });
+    }
 
     function handlePregnancyAndBirths(population, place, satisfaction) {
         population.filter(p => p.isAlive && p.gender === 'Femme' && p.spouseId && !p.isPregnant && p.status !== 'En congé maternité')
@@ -848,14 +957,15 @@ if (manIsDynasty && !wifeIsDynasty) {
                     const newChild = {
                         id: `person_${Date.now()}_${Math.random()}`, firstName: childFirstName, lastName: father.lastName,
                         race: childRace, gender: childGender, age: 0, isAlive: true, locationId: mother.locationId,
-                        familyId: father.familyId, parents: [father.id, mother.id], childrenIds: [], isCustom: false, prestige: 0,
+                        familyId: father.familyId, parents: [father.id, mother.id].filter(Boolean), childrenIds: [], isCustom: false, prestige: 0,
                         prestigeBuffer: 0, stats: { intelligence: 5, force: 5, constitution: 5, dexterite: 5, sagesse: 5, charisme: 5 },
                         statsBuffer: { intelligence: 0, force: 0, constitution: 0, dexterite: 0, sagesse: 0, charisme: 0 },
                         status: 'Actif',
                         friendIds: [], acquaintanceIds: [],
                         maxFriends: Math.floor(Math.random() * 5) + 1,
                         maxAcquaintances: Math.floor(Math.random() * 12) + 7,
-                        desiredChildren: getWeightedDesiredChildren()
+                        desiredChildren: getWeightedDesiredChildren(),
+                        totalMonthsWorked: 0
                     };
 
                     const fatherInfo = getRulingFamilyInfoForPerson(father, population);
@@ -898,7 +1008,6 @@ if (manIsDynasty && !wifeIsDynasty) {
     }
     
     function handleStatAndPrestigeGrowth(population, rulingFamilies, dynastyMemberIds) {
-        // Appliquer les gains pour les familles dirigeantes
         rulingFamilies.forEach(({ ruler, jobData }) => {
             if (!ruler || !jobData || !jobData.gainsMensuels) return;
     
@@ -910,11 +1019,11 @@ if (manIsDynasty && !wifeIsDynasty) {
                 if (!person || !person.isAlive) return;
     
                 let percentage;
-                if (generation <= 1) { // Dirigeant, conjoint, enfants
+                if (generation <= 1) {
                     percentage = 1.0;
-                } else if (generation === 2) { // Petits-enfants
+                } else if (generation === 2) {
                     percentage = 0.7;
-                } else { // Arrière-petits-enfants et au-delà
+                } else {
                     percentage = 0.4;
                 }
     
@@ -922,7 +1031,6 @@ if (manIsDynasty && !wifeIsDynasty) {
             });
         });
     
-        // Appliquer les gains pour le reste de la population
         population.forEach(person => {
             if (!person.isAlive || dynastyMemberIds.has(person.id)) return;
     
@@ -935,7 +1043,42 @@ if (manIsDynasty && !wifeIsDynasty) {
             if (person.job && person.age >= raceData.ageTravail) {
                 const jobData = getJobData(person.job.buildingName, person.job.jobTitle);
                 if (jobData && jobData.gainsMensuels) {
-                    applyGainsToPerson(person, jobData.gainsMensuels, 1.0);
+                    let ageMultiplier = 1.0;
+                    const PEAK_GAIN_AGE = raceData.ageTravail + 20;
+                    const DECAY_START_AGE = raceData.esperanceVieMax * 0.7;
+                    
+                    if (person.age > PEAK_GAIN_AGE) {
+                        if (person.age >= DECAY_START_AGE) {
+                            const decayProgress = (person.age - DECAY_START_AGE) / (raceData.esperanceVieMax - DECAY_START_AGE);
+                            ageMultiplier = Math.max(0, 1.0 - decayProgress);
+                        }
+                    }
+
+                    let workTimeMultiplier = 1.0;
+                    const WORK_DECAY_START_YEARS = 25;
+                    const WORK_CEASE_YEARS = 50;
+                    const totalYearsWorked = (person.totalMonthsWorked || 0) / 12;
+
+                    if (totalYearsWorked >= WORK_DECAY_START_YEARS) {
+                        if (totalYearsWorked >= WORK_CEASE_YEARS) {
+                            workTimeMultiplier = 0;
+                        } else {
+                            const decayRange = WORK_CEASE_YEARS - WORK_DECAY_START_YEARS;
+                            const currentDecay = totalYearsWorked - WORK_DECAY_START_YEARS;
+                            workTimeMultiplier = Math.max(0, 1.0 - (currentDecay / decayRange));
+                        }
+                    }
+                    
+                    const finalMultiplier = ageMultiplier * workTimeMultiplier;
+
+                    const modifiedGains = {
+                        prestige: (jobData.gainsMensuels.prestige || 0) * finalMultiplier,
+                        stats: {}
+                    };
+                    for (const stat in jobData.gainsMensuels.stats) {
+                        modifiedGains.stats[stat] = (jobData.gainsMensuels.stats[stat] || 0) * finalMultiplier;
+                    }
+                    applyGainsToPerson(person, modifiedGains, 1.0);
                 }
             } 
             else if (person.parents && person.parents.length > 0 && person.age >= raceData.ageApprentissage && person.age < raceData.ageTravail) {
@@ -957,6 +1100,22 @@ if (manIsDynasty && !wifeIsDynasty) {
     
                 const combinedGains = { prestige: parentPrestigeGain, stats: parentStatGains };
                 applyGainsToPerson(person, combinedGains, 1.0);
+            }
+            // MODIFICATION : Ajout du gain passif pour les chômeurs
+            else if (!person.job && !person.royalTitle && person.isAlive && person.age >= raceData.ageTravail) {
+                const passiveGain = Math.random() * 0.2; // Gain aléatoire entre 0.1 et 0.3
+                const gains = {
+                    prestige: passiveGain,
+                    stats: {
+                        intelligence: passiveGain,
+                        force: passiveGain,
+                        constitution: passiveGain,
+                        dexterite: passiveGain,
+                        sagesse: passiveGain,
+                        charisme: passiveGain
+                    }
+                };
+                applyGainsToPerson(person, gains, 1.0);
             }
         });
     }
@@ -997,10 +1156,7 @@ if (manIsDynasty && !wifeIsDynasty) {
         });
     
         const employedPopulation = population.filter(p =>
-            p.isAlive &&
-            p.job &&
-            p.status === 'Actif' &&
-            !dynastyMemberIds.has(p.id)
+            p.isAlive && p.job && p.status === 'Actif' && !dynastyMemberIds.has(p.id)
         );
         if (employedPopulation.length === 0) return;
     
@@ -1014,30 +1170,25 @@ if (manIsDynasty && !wifeIsDynasty) {
                 const currentJobData = getJobData(person.job.buildingName, person.job.jobTitle);
                 if (!currentJobData) return false;
     
-                // Condition: promotion only within the same building, to a better tier, and meeting prestige requirement.
                 return currentJobData.tier > vacantJobData.tier &&
                        person.job.buildingName === vacantJob.buildingName &&
                        (person.prestige || 0) >= (vacantJobData.prerequis.prestige || 0);
             });
     
             if (candidates.length > 0) {
-                // Find the best candidate based on prestige
                 candidates.sort((a, b) => (b.prestige || 0) - (a.prestige || 0));
                 const bestCandidate = candidates[0];
     
                 const oldJobTitle = bestCandidate.job.jobTitle;
                 const oldBuildingName = bestCandidate.job.buildingName;
     
-                // Promote the candidate
                 bestCandidate.job = { locationId: place.id, buildingName: vacantJob.buildingName, jobTitle: vacantJob.jobTitle };
                 
                 logEvent(`⏫ ${bestCandidate.firstName} ${bestCandidate.lastName} a été promu(e) au poste de ${vacantJob.jobTitle}, quittant son poste de ${oldJobTitle}.`, 'job', { familyId: bestCandidate.familyId, personId: bestCandidate.id });
     
-                // The vacant job is now filled, remove it from the list
                 availableJobs.splice(i, 1);
-                i--; // Adjust index because we removed an element
+                i--;
     
-                // The candidate's old job is now vacant, add it to the list of available jobs for this cycle
                 const newlyVacantJob = { buildingName: oldBuildingName, jobTitle: oldJobTitle };
                 availableJobs.push(newlyVacantJob);
             }
@@ -1051,12 +1202,7 @@ if (manIsDynasty && !wifeIsDynasty) {
         }
 
         const unemployedAdults = population.filter(p =>
-            p.isAlive &&
-            !p.job &&
-            !p.royalTitle &&
-            p.status === 'Actif' &&
-            !dynastyMemberIds.has(p.id) &&
-            p.age >= RACES_DATA.races[p.race].ageTravail
+            p.isAlive && !p.job && !p.royalTitle && p.status === 'Actif' && !dynastyMemberIds.has(p.id) && p.age >= RACES_DATA.races[p.race].ageTravail
         ).sort((a, b) => (b.prestige || 0) - (b.prestige || 0));
 
         unemployedAdults.forEach(person => {
@@ -1066,7 +1212,7 @@ if (manIsDynasty && !wifeIsDynasty) {
                 const jobData = getJobData(job.buildingName, job.jobTitle);
                 if (!jobData || !jobData.prerequis) return true;
                 if(jobData.tier === 0) return false;
-                
+
                 return (person.prestige || 0) >= (jobData.prerequis.prestige || 0);
             });
     
@@ -1111,7 +1257,6 @@ if (manIsDynasty && !wifeIsDynasty) {
                             p1.acquaintanceIds.push(p2.id);
                             p2.acquaintanceIds.push(p1.id);
     
-                            // Log l'événement pour les deux personnes
                             const message = `🤝 ${p1.firstName} ${p1.lastName} et ${p2.firstName} ${p2.lastName} ont fait connaissance.`;
                             logEvent(message, 'social', { familyId: p1.familyId, personId: p1.id });
                             logEvent(message, 'social', { familyId: p2.familyId, personId: p2.id });
@@ -1137,7 +1282,6 @@ if (manIsDynasty && !wifeIsDynasty) {
                     acquaintance.friendIds.push(person.id);
                     acquaintance.acquaintanceIds = acquaintance.acquaintanceIds.filter(id => id !== person.id);
     
-                    // Log l'événement pour les deux personnes
                     const message = `❤️ ${person.firstName} ${person.lastName} et ${acquaintance.firstName} ${acquaintance.lastName} sont maintenant amis.`;
                     logEvent(message, 'social', { familyId: person.familyId, personId: person.id });
                     logEvent(message, 'social', { familyId: acquaintance.familyId, personId: acquaintance.id });
@@ -1169,7 +1313,6 @@ if (manIsDynasty && !wifeIsDynasty) {
                     personA.acquaintanceIds.push(personB.id);
                     personB.acquaintanceIds.push(personA.id);
     
-                    // Log l'événement pour les deux personnes
                     const message = `🤝 ${personA.firstName} ${personA.lastName} et ${personB.firstName} ${personB.lastName} ont fait connaissance par le biais de la famille.`;
                     logEvent(message, 'social', { familyId: personA.familyId, personId: personA.id });
                     logEvent(message, 'social', { familyId: personB.familyId, personId: personB.id });
@@ -1184,12 +1327,8 @@ if (manIsDynasty && !wifeIsDynasty) {
     function getJobData(buildingName, jobTitle) { const building = getBuildingData(buildingName); if (building && building.emplois) { return building.emplois.find(j => j.titre === jobTitle) || null; } return null; }
     
     function getAvailableJobs(place) {
-        if (!place.config || !place.config.buildings) {
-            return [];
-        }
-    
+        if (!place.config || !place.config.buildings) return [];
         const availableJobs = [];
-    
         const filledJobs = place.demographics.population
             .filter(p => p.isAlive && p.job)
             .reduce((acc, p) => {
@@ -1206,17 +1345,12 @@ if (manIsDynasty && !wifeIsDynasty) {
                     const totalSlots = job.postes;
                     const filledSlots = filledJobs[key] || 0;
                     const availableSlots = totalSlots - filledSlots;
-    
                     for (let i = 0; i < availableSlots; i++) {
-                        availableJobs.push({
-                            buildingName: building.name,
-                            jobTitle: job.titre
-                        });
+                        availableJobs.push({ buildingName: building.name, jobTitle: job.titre });
                     }
                 });
             }
         });
-    
         return availableJobs;
     }
     
@@ -1226,21 +1360,12 @@ if (manIsDynasty && !wifeIsDynasty) {
 
     function updateGlobalStats() {
         if (!currentRegion) return;
-    
         const allLivingPopulation = currentRegion.places.flatMap(place => place.demographics.population.filter(p => p.isAlive));
         const allLivingPopulationIds = new Set(allLivingPopulation.map(p => p.id));
-    
         const allFamilies = currentRegion.places.flatMap(place => place.demographics.families);
-    
-        const activeFamilies = allFamilies.filter(family => 
-            family.memberIds.some(memberId => allLivingPopulationIds.has(memberId))
-        );
-    
-        const totalPop = allLivingPopulation.length;
-        const totalFam = activeFamilies.length;
-    
-        globalPopulationDisplay.textContent = totalPop;
-        globalFamiliesDisplay.textContent = totalFam;
+        const activeFamilies = allFamilies.filter(family => family.memberIds.some(memberId => allLivingPopulationIds.has(memberId)));
+        globalPopulationDisplay.textContent = allLivingPopulation.length;
+        globalFamiliesDisplay.textContent = activeFamilies.length;
     }
 
     function updateLocationPopulationSummary() {
@@ -1257,11 +1382,9 @@ if (manIsDynasty && !wifeIsDynasty) {
             summaryHTML += `<li><strong>${place.name}:</strong> <span>${livingPop} hab. | ${availableJobsCount} poste(s) vacant(s)</span>`;
             if (availableJobsCount > 0) {
                 const jobCounts = availableJobs.reduce((acc, job) => {
-                    const jobTitle = job.jobTitle;
-                    acc[jobTitle] = (acc[jobTitle] || 0) + 1;
+                    acc[job.jobTitle] = (acc[job.jobTitle] || 0) + 1;
                     return acc;
                 }, {});
-
                 summaryHTML += `<ul class="vacant-jobs-list">`;
                 for (const [title, count] of Object.entries(jobCounts).sort((a,b) => a[0].localeCompare(b[0]))) {
                     summaryHTML += `<li>- ${title} (${count})</li>`;
@@ -1347,7 +1470,6 @@ if (manIsDynasty && !wifeIsDynasty) {
         });
 
         const allFamilyMembers = Array.from(familyMemberMap.values());
-
         const totalInfluence = allFamilyMembers.reduce((sum, member) => sum + (member.prestige || 0), 0);
         familyInfluenceValue.textContent = totalInfluence.toFixed(2);
     
@@ -1360,7 +1482,7 @@ if (manIsDynasty && !wifeIsDynasty) {
             if (!p.parents || p.parents.length === 0) return true;
             return !p.parents.some(parentId => allFamilyMembers.find(m => m.id === parentId));
         }).sort((a, b) => (b.age || 0) - (a.age || 0));
-    
+
         if (mainTreeRoots.length === 0 && allFamilyMembers.length > 0) {
             familyTreeDisplayArea.innerHTML = renderTreeHTML(buildGenealogyTree(allFamilyMembers[0].id, allPopulation, new Set()), allPopulation);
         } else {
@@ -1369,7 +1491,9 @@ if (manIsDynasty && !wifeIsDynasty) {
             mainTreeRoots.forEach(rootPerson => {
                 if (processedMainTree.has(rootPerson.id)) return;
                 const treeData = buildGenealogyTree(rootPerson.id, allPopulation, processedMainTree);
-                treeHTML += renderTreeHTML(treeData, allPopulation);
+                if (treeData) {
+                    treeHTML += renderTreeHTML(treeData, allPopulation);
+                }
             });
             treeHTML += '</ul>';
             familyTreeDisplayArea.innerHTML = treeHTML;
@@ -1378,30 +1502,23 @@ if (manIsDynasty && !wifeIsDynasty) {
 
     function buildGenealogyTree(personId, populationScope, processedNodes) {
         const person = populationScope.find(p => p.id === personId);
-        if (!person) return null; 
-        if (processedNodes.has(personId)) return null; 
+        if (!person || processedNodes.has(personId)) return null; 
 
         processedNodes.add(personId);
-
         const node = { person, spouse: null, children: [] };
 
-        let foundSpouse = null;
         if (person.spouseId) {
-            foundSpouse = populationScope.find(p => p.id === person.spouseId);
+            const foundSpouse = populationScope.find(p => p.id === person.spouseId);
+            if (foundSpouse) {
+                node.spouse = foundSpouse;
+                processedNodes.add(foundSpouse.id);
+            }
         }
 
-        if (foundSpouse) {
-            node.spouse = foundSpouse;
-            processedNodes.add(foundSpouse.id);
-        }
-
-        const childrenIds = new Set();
-        if (person.childrenIds) {
-            person.childrenIds.forEach(id => childrenIds.add(id));
-        }
-        if (node.spouse && node.spouse.childrenIds) {
-            node.spouse.childrenIds.forEach(id => childrenIds.add(id));
-        }
+        const childrenIds = new Set(person.childrenIds || []); 
+        if (node.spouse && node.spouse.childrenIds) { 
+            node.spouse.childrenIds.forEach(id => childrenIds.add(id)); 
+        } 
 
         if (childrenIds.size > 0) {
             childrenIds.forEach(childId => {
@@ -1409,7 +1526,6 @@ if (manIsDynasty && !wifeIsDynasty) {
                 if (childNode) node.children.push(childNode);
             });
         }
-        
         return node;
     }
     
@@ -1438,27 +1554,25 @@ if (manIsDynasty && !wifeIsDynasty) {
         const raceData = RACES_DATA.races[person.race];
         const rulingFamilyInfo = getRulingFamilyInfoForPerson(person, allPopulation);
 
-        if (person.job && person.job.jobTitle) {
+        if (person.royalTitle) {
+            jobInfo = person.royalTitle;
+        } else if (person.job && person.job.jobTitle) {
             const jobData = getJobData(person.job.buildingName, person.job.jobTitle);
             if (jobData && jobData.tier === 0) {
                 jobInfo = jobData.titre;
             } else {
                 jobInfo = person.job.jobTitle;
             }
-        } else if (person.royalTitle) {
-            jobInfo = person.royalTitle;
-        } else if (rulingFamilyInfo) {
-            if (rulingFamilyInfo.isHeir) {
-                jobInfo = person.gender === 'Femme' ? 'Héritière' : 'Héritier';
-            } else if (rulingFamilyInfo.isRulerSpouse || rulingFamilyInfo.isHeirSpouse) {
-                jobInfo = 'Famille Gouvernante';
-            }
         } else if (person.status === 'Retraité(e)') {
-            jobInfo = 'Retraité(e)';
+            jobInfo = `Retraité(e) (${person.lastJobTitle || 'ancien métier'})`;
         } else if (person.status === 'En congé maternité') {
             jobInfo = 'Congé maternité';
         } else if (person.age < raceData.ageTravail) {
             jobInfo = 'Enfant';
+        } else if (rulingFamilyInfo) {
+            if (rulingFamilyInfo.isHeir) { jobInfo = person.gender === 'Femme' ? 'Héritière' : 'Héritier'; }
+            else if (rulingFamilyInfo.isRulerSpouse || rulingFamilyInfo.isHeirSpouse) { jobInfo = 'Famille Gouvernante'; }
+            else if (rulingFamilyInfo.isParentOfRuler) { jobInfo = person.gender === 'Femme' ? 'Matriarche' : 'Patriarche'; }
         }
 
         let nameHTML = `${person.firstName} ${person.lastName}`;
@@ -1499,11 +1613,21 @@ if (manIsDynasty && !wifeIsDynasty) {
         return `<li>${personHTML}${childrenHTML}</li>`;
     }
     
-    // --- Genealogical & Ruling Family Helper Functions ---
     function getPersonById(id, scope) { return scope.find(p => p.id === id); }
     function getParents(person, scope) { if (!person.parents || person.parents.length === 0) return []; return person.parents.map(id => getPersonById(id, scope)).filter(Boolean); }
-    function getSiblings(person, scope) { const parents = getParents(person, scope); if (parents.length === 0) return []; const parent = parents[0]; const siblingIds = new Set(parent.childrenIds || []); if(parents[1] && parents[1].childrenIds) { parents[1].childrenIds.forEach(id => siblingIds.add(id)); } return Array.from(siblingIds).filter(id => id !== person.id).map(id => getPersonById(id, scope)).filter(Boolean); }
-    function getChildren(person, scope) { const childrenIds = new Set(person.childrenIds || []); const spouse = person.spouseId ? getPersonById(person.spouseId, scope) : null; if(spouse && spouse.childrenIds) { spouse.childrenIds.forEach(id => childrenIds.add(id)); } return Array.from(childrenIds).map(id => getPersonById(id, scope)).filter(Boolean); }
+    function getSiblings(person, scope) { 
+        const parents = getParents(person, scope); 
+        if (parents.length === 0) return []; 
+        const siblingIds = new Set();
+        parents.forEach(p => { if (p.childrenIds) { p.childrenIds.forEach(childId => siblingIds.add(childId)); } });
+        return Array.from(siblingIds).filter(id => id !== person.id).map(id => getPersonById(id, scope)).filter(Boolean); 
+    }
+    function getChildren(person, scope) { 
+        const childrenIds = new Set(person.childrenIds || []); 
+        const spouse = person.spouseId ? getPersonById(person.spouseId, scope) : null; 
+        if(spouse && spouse.childrenIds) { spouse.childrenIds.forEach(id => childrenIds.add(id)); } 
+        return Array.from(childrenIds).map(id => getPersonById(id, scope)).filter(Boolean); 
+    }
     function getFamily(person, scope) { const familyMembers = new Set(); const family = currentRegion.places.flatMap(p => p.demographics.families).find(f => f.id === person.familyId); if(family) { family.memberIds.forEach(id => { const member = getPersonById(id, scope); if(member) familyMembers.add(member); }); } return Array.from(familyMembers); }
     function getUnclesAunts(person, scope) { const parents = getParents(person, scope); const unclesAunts = new Set(); parents.forEach(p => { getSiblings(p, scope).forEach(s => unclesAunts.add(s)); }); return Array.from(unclesAunts); }
     function getCousins(person, scope) { const unclesAunts = getUnclesAunts(person, scope); const cousins = new Set(); unclesAunts.forEach(ua => { getChildren(ua, scope).forEach(c => cousins.add(c)); }); return Array.from(cousins); }
@@ -1511,7 +1635,6 @@ if (manIsDynasty && !wifeIsDynasty) {
     function findRulersAndFamilies(population, families) {
         const rulingFamilies = new Map();
         const rulingFamilyMemberIds = new Set();
-    
         population.forEach(person => {
             if (person.isAlive && person.job) {
                 const jobData = getJobData(person.job.buildingName, person.job.jobTitle);
@@ -1520,26 +1643,26 @@ if (manIsDynasty && !wifeIsDynasty) {
                 }
             }
         });
-    
         rulingFamilies.forEach(({ ruler }) => {
             const family = families.find(f => f.id === ruler.familyId);
-            if (family) {
-                family.memberIds.forEach(id => rulingFamilyMemberIds.add(id));
-            }
+            if (family) { family.memberIds.forEach(id => rulingFamilyMemberIds.add(id)); }
         });
-    
         return { rulingFamilies, rulingFamilyMemberIds };
     }
     
     function getDescendantMap(ruler, population) {
         const descendantMap = new Map();
         const queue = [{ personId: ruler.id, generation: 0 }];
-        const visited = new Set([ruler.id]);
-    
+        const visited = new Set();
+        descendantMap.set(ruler.id, 0);
+        visited.add(ruler.id);
+        const spouse = getPersonById(ruler.spouseId, population);
+        if (spouse && spouse.isAlive && !visited.has(spouse.id)) {
+            descendantMap.set(spouse.id, 0);
+            visited.add(spouse.id);
+        }
         while (queue.length > 0) {
             const { personId, generation } = queue.shift();
-            descendantMap.set(personId, generation);
-    
             const person = getPersonById(personId, population);
             if (person && person.childrenIds) {
                 person.childrenIds.forEach(childId => {
@@ -1557,7 +1680,6 @@ if (manIsDynasty && !wifeIsDynasty) {
         const dynastyIds = new Set();
         rulers.forEach(ruler => {
             if (dynastyIds.has(ruler.id)) return;
-            
             const descendants = getDescendantMap(ruler, population);
             descendants.forEach((generation, personId) => {
                 dynastyIds.add(personId);
@@ -1566,25 +1688,25 @@ if (manIsDynasty && !wifeIsDynasty) {
                     dynastyIds.add(person.spouseId);
                 }
             });
-
             const siblings = getSiblings(ruler, population);
             siblings.forEach(sibling => {
                 if(sibling) {
                     dynastyIds.add(sibling.id);
-                    if (sibling.spouseId) {
-                        dynastyIds.add(sibling.spouseId);
-                    }
-
-                const nephewsAndNieces = getChildren(sibling, population);
-                nephewsAndNieces.forEach(nephew => {
-                    if (nephew) {
-                        dynastyIds.add(nephew.id);
-                        if (nephew.spouseId) {
-                            dynastyIds.add(nephew.spouseId);
+                    if (sibling.spouseId) dynastyIds.add(sibling.spouseId);
+                    const nephewsAndNieces = getChildren(sibling, population);
+                    nephewsAndNieces.forEach(nephew => {
+                        if (nephew) {
+                            dynastyIds.add(nephew.id);
+                            if (nephew.spouseId) dynastyIds.add(nephew.spouseId);
                         }
-                    }
-                });
-
+                    });
+                }
+            });
+            const parents = getParents(ruler, population);
+            parents.forEach(parent => {
+                if(parent) {
+                    dynastyIds.add(parent.id);
+                    if (parent.spouseId) dynastyIds.add(parent.spouseId);
                 }
             });
         });
@@ -1594,268 +1716,200 @@ if (manIsDynasty && !wifeIsDynasty) {
     function getRulingFamilyInfoForPerson(person, allPopulation) {
         const rulers = allPopulation.filter(p => p.isAlive && p.job && getJobData(p.job.buildingName, p.job.jobTitle)?.tier === 0);
         if (rulers.length === 0) return null;
-    
         for (const ruler of rulers) {
             if (person.id === ruler.id) return { isRuler: true };
-
-            const deceasedRulerSpouse = getPersonById(ruler.spouseId, allPopulation);
-            if(deceasedRulerSpouse && !deceasedRulerSpouse.isAlive && person.id === ruler.id) {
-                return { isRuler: true };
-            }
-
-            if (person.id === ruler.spouseId) return { isRulerSpouse: true };
-    
+            if (person.id === ruler.spouseId) return { isRulerSpouse: true, rulerJobTitle: getJobData(ruler.job.buildingName, ruler.job.jobTitle)?.titre };
             const descendantMap = getDescendantMap(ruler, allPopulation);
-            if (descendantMap.has(person.id)) {
-                if (descendantMap.get(person.id) > 0) {
-                    return { isHeir: true };
-                }
+            if (descendantMap.has(person.id) && descendantMap.get(person.id) > 0) {
+                return { isHeir: true };
             }
-    
             for (const descendantId of descendantMap.keys()) {
-                if (descendantId === ruler.id) continue;
+                if (descendantId === ruler.id || descendantId === ruler.spouseId) continue;
                 const descendant = getPersonById(descendantId, allPopulation);
-                if (descendant && descendant.spouseId === person.id) {
-                    return { isHeirSpouse: true };
-                }
+                if (descendant && descendant.spouseId === person.id) return { isHeirSpouse: true };
             }
+            const parentsOfRuler = getParents(ruler, allPopulation);
+            if (parentsOfRuler.some(p => p.id === person.id)) return { isParentOfRuler: true };
         }
         return null;
     }
 
-function openCharacterModal(personId, spouseId = null) {
-    const allPopulation = currentRegion.places.flatMap(p => p.demographics ? p.demographics.population : []);
-    const person = getPersonById(personId, allPopulation);
-    if (!person) return;
-
-    const spouse = spouseId ? getPersonById(spouseId, allPopulation) : null;
-
-    const tabsContainer = characterDetailsModal.querySelector('#char-modal-tabs-container');
-    tabsContainer.innerHTML = ''; 
-
-    // Reset view tabs to "General"
-    const viewTabs = characterDetailsModal.querySelectorAll('.char-view-tab');
-    const viewContents = characterDetailsModal.querySelectorAll('.char-tab-content');
-    viewTabs.forEach(tab => tab.classList.remove('active'));
-    viewContents.forEach(content => content.classList.remove('active'));
-    characterDetailsModal.querySelector('.char-view-tab[data-tab="general"]').classList.add('active');
-    characterDetailsModal.querySelector('#char-tab-general').classList.add('active');
-
-
-    const displayPersonData = (p) => {
-        populateGeneralTab(p, allPopulation);
-        populateSocialTab(p, allPopulation);
-        populateHistoryTab(p);
-    };
-
-    const createTab = (p, isActive) => {
-        const personTabButton = document.createElement('button');
-        personTabButton.className = 'char-modal-tab person-tab';
-        if (isActive) personTabButton.classList.add('active');
-
-        const genderSymbol = p.gender === 'Homme' ? '♂' : '♀';
-        personTabButton.innerHTML = `${p.firstName} ${genderSymbol}`;
-        personTabButton.dataset.personId = p.id;
-
-        personTabButton.addEventListener('click', (e) => {
-            tabsContainer.querySelectorAll('.person-tab').forEach(t => t.classList.remove('active'));
-            e.currentTarget.classList.add('active');
-            displayPersonData(p);
-        });
-        tabsContainer.prepend(personTabButton);
-    };
-
-    if (spouse) {
-        createTab(spouse, false);
+    function openCharacterModal(personId, spouseId = null) {
+        const allPopulation = currentRegion.places.flatMap(p => p.demographics ? p.demographics.population : []);
+        const person = getPersonById(personId, allPopulation);
+        if (!person) return;
+        const spouse = spouseId ? getPersonById(spouseId, allPopulation) : null;
+        const tabsContainer = characterDetailsModal.querySelector('#char-modal-tabs-container');
+        tabsContainer.innerHTML = ''; 
+        const viewTabs = characterDetailsModal.querySelectorAll('.char-view-tab');
+        const viewContents = characterDetailsModal.querySelectorAll('.char-tab-content');
+        viewTabs.forEach(tab => tab.classList.remove('active'));
+        viewContents.forEach(content => content.classList.remove('active'));
+        characterDetailsModal.querySelector('.char-view-tab[data-tab="general"]').classList.add('active');
+        characterDetailsModal.querySelector('#char-tab-general').classList.add('active');
+        const displayPersonData = (p) => {
+            populateGeneralTab(p, allPopulation);
+            populateSocialTab(p, allPopulation);
+            populateHistoryTab(p);
+        };
+        const createTab = (p, isActive) => {
+            const personTabButton = document.createElement('button');
+            personTabButton.className = 'char-modal-tab person-tab';
+            if (isActive) personTabButton.classList.add('active');
+            personTabButton.innerHTML = `${p.firstName} ${p.gender === 'Homme' ? '♂' : '♀'}`;
+            personTabButton.dataset.personId = p.id;
+            personTabButton.addEventListener('click', (e) => {
+                tabsContainer.querySelectorAll('.person-tab').forEach(t => t.classList.remove('active'));
+                e.currentTarget.classList.add('active');
+                displayPersonData(p);
+            });
+            tabsContainer.prepend(personTabButton);
+        };
+        if (spouse) createTab(spouse, false);
+        createTab(person, true);
+        displayPersonData(person);
+        characterDetailsModal.showModal();
     }
-    createTab(person, true);
 
-    displayPersonData(person);
-    characterDetailsModal.showModal();
-}
-
- function populateGeneralTab(person, scope) {
-    // === IDENTITY SECTION ===
-    let fullName = `${person.firstName} ${person.lastName}`;
-    if (person.gender === 'Femme' && person.maidenName && person.maidenName !== person.lastName) {
-        fullName += ` (née ${person.maidenName})`;
-    }
-    characterDetailsModal.querySelector('#char-modal-fullname').textContent = fullName;
-    characterDetailsModal.querySelector('#char-modal-race').textContent = person.race;
-    characterDetailsModal.querySelector('#char-modal-gender').textContent = person.gender;
-    characterDetailsModal.querySelector('#char-modal-age').textContent = person.age;
-    
-    const raceData = RACES_DATA.races[person.race];
-    characterDetailsModal.querySelector('#char-modal-lifespan').textContent = raceData ? raceData.esperanceVieMax : 'Inconnue';
-
-    let statusText;
-    const deathCauseContainer = characterDetailsModal.querySelector('#char-modal-death-cause-container');
-    if (person.isAlive) {
-        statusText = person.status || 'Actif';
-        if (person.isPregnant) statusText += ' (Enceinte)';
-        deathCauseContainer.style.display = 'none';
-    } else {
-        statusText = `Décédé(e) (An ${person.deathYear}, Mois ${person.deathMonth} à l'âge de ${person.ageAtDeath} ans)`;
-        if (person.causeOfDeath) {
-            let causeText;
-            switch(person.causeOfDeath) {
-                case 'maladie': causeText = 'Maladie'; break;
-                case 'vieillesse': causeText = 'Vieillesse'; break;
-                case 'accident': causeText = 'Accident'; break;
-                default: causeText = person.causeOfDeath; break;
-            }
-            characterDetailsModal.querySelector('#char-modal-death-cause').textContent = causeText;
-            deathCauseContainer.style.display = 'block';
-        } else {
+    function populateGeneralTab(person, scope) {
+        let fullName = `${person.firstName} ${person.lastName}`;
+        if (person.gender === 'Femme' && person.maidenName && person.maidenName !== person.lastName) {
+            fullName += ` (née ${person.maidenName})`;
+        }
+        characterDetailsModal.querySelector('#char-modal-fullname').textContent = fullName;
+        characterDetailsModal.querySelector('#char-modal-race').textContent = person.race;
+        characterDetailsModal.querySelector('#char-modal-gender').textContent = person.gender;
+        characterDetailsModal.querySelector('#char-modal-age').textContent = person.age;
+        characterDetailsModal.querySelector('#char-modal-lifespan').textContent = RACES_DATA.races[person.race]?.esperanceVieMax || 'Inconnue';
+        let statusText;
+        const deathCauseContainer = characterDetailsModal.querySelector('#char-modal-death-cause-container');
+        if (person.isAlive) {
+            statusText = person.status || 'Actif';
+            if (person.isPregnant) statusText += ' (Enceinte)';
             deathCauseContainer.style.display = 'none';
-        }
-    }
-    characterDetailsModal.querySelector('#char-modal-status').textContent = statusText;
-
-    const personPlace = currentRegion.places.find(p => p.id === person.locationId);
-    characterDetailsModal.querySelector('#char-modal-location').textContent = personPlace ? personPlace.name : 'Inconnue';
-
-    const desiredChildrenStrong = characterDetailsModal.querySelector('#char-modal-desired-children');
-    if (typeof person.desiredChildren === 'number') {
-        desiredChildrenStrong.textContent = person.desiredChildren;
-    } else {
-        desiredChildrenStrong.textContent = 'Non spécifié';
-    }
-
-    // === PROFESSION SECTION ===
-    let jobText = 'N/A', workplaceText = 'N/A', salaryText = '0';
-    let gainsHTML = '<p>Aucun gain de carrière défini.</p>';
-
-    if (!person.isAlive) {
-        jobText = person.jobBeforeDeath ? `Était ${person.jobBeforeDeath}` : 'Sans emploi';
-    } else {
-        const rulingInfo = getRulingFamilyInfoForPerson(person, scope);
-        if (person.job) {
-            const jobData = getJobData(person.job.buildingName, person.job.jobTitle);
-            const workPlace = currentRegion.places.find(p => p.id === person.job.locationId);
-            jobText = person.job.jobTitle;
-            workplaceText = `${person.job.buildingName} (${workPlace ? workPlace.name : 'Inconnu'})`;
-            salaryText = jobData?.salaire.totalEnCuivre || 'N/A';
-            if (jobData && jobData.gainsMensuels) {
-                gainsHTML = `<p class="gain-item"><strong>Prestige/mois :</strong> +${(jobData.gainsMensuels.prestige || 0).toFixed(2)}</p>`;
-                if (jobData.gainsMensuels.stats) {
-                    const statGains = Object.entries(jobData.gainsMensuels.stats).map(([stat, val]) => `+${val.toFixed(2)} ${stat.slice(0, 3)}.`);
-                    gainsHTML += `<p class="gain-item"><strong>Stats/mois :</strong> ${statGains.join(', ')}</p>`;
+        } else {
+            statusText = `Décédé(e) (An ${person.deathYear}, Mois ${person.deathMonth} à l'âge de ${person.ageAtDeath} ans)`;
+            if (person.causeOfDeath) {
+                let causeText;
+                switch(person.causeOfDeath) {
+                    case 'maladie': causeText = 'Maladie'; break;
+                    case 'vieillesse': causeText = 'Vieillesse'; break;
+                    case 'accident': causeText = 'Accident'; break;
+                    default: causeText = person.causeOfDeath;
                 }
+                characterDetailsModal.querySelector('#char-modal-death-cause').textContent = causeText;
+                deathCauseContainer.style.display = 'block';
+            } else {
+                deathCauseContainer.style.display = 'none';
             }
-        } else if (person.royalTitle) {
-            jobText = person.royalTitle;
-            workplaceText = 'Cour Royale';
-            salaryText = 'N/A';
-            gainsHTML = "<p>Reçoit des gains de sa famille dirigeante.</p>";
-        } else if (rulingInfo) {
-            if (rulingInfo.isHeir) { jobText = person.gender === 'Femme' ? 'Héritière' : 'Héritier'; }
-            else if (rulingInfo.isRulerSpouse || rulingInfo.isHeirSpouse) { jobText = 'Famille Gouvernante'; }
-             gainsHTML = "<p>Reçoit des gains de sa famille dirigeante.</p>";
-        } else if (person.status === 'Retraité(e)' || person.status === 'En congé maternité') {
-            jobText = person.status;
-            gainsHTML = `<p>${person.status}.</p>`;
         }
-    }
-
-    characterDetailsModal.querySelector('#char-modal-job').textContent = jobText;
-    characterDetailsModal.querySelector('#char-modal-workplace').textContent = workplaceText;
-    characterDetailsModal.querySelector('#char-modal-salary').textContent = salaryText;
-    characterDetailsModal.querySelector('#char-modal-monthly-gains').innerHTML = gainsHTML;
-    characterDetailsModal.querySelector('#char-modal-prestige').textContent = (person.prestige || 0).toFixed(2);
-
-    // === ATTRIBUTES & FAMILY SUMMARY ===
-    const statsList = characterDetailsModal.querySelector('#char-modal-stats');
-    statsList.innerHTML = '';
-    if (person.stats) {
-        for (const [stat, value] of Object.entries(person.stats)) {
-            statsList.innerHTML += `<li><span>${stat.charAt(0).toUpperCase() + stat.slice(1)}</span> <span class="dnd-stat">${Math.round(value)}</span></li>`;
+        characterDetailsModal.querySelector('#char-modal-status').textContent = statusText;
+        characterDetailsModal.querySelector('#char-modal-location').textContent = currentRegion.places.find(p => p.id === person.locationId)?.name || 'Inconnue';
+        characterDetailsModal.querySelector('#char-modal-desired-children').textContent = typeof person.desiredChildren === 'number' ? person.desiredChildren : 'Non spécifié';
+        let jobText = 'N/A', workplaceText = 'N/A', salaryText = '0';
+        let gainsHTML = '<p>Aucun gain de carrière défini.</p>';
+        if (!person.isAlive) {
+            jobText = person.jobBeforeDeath || 'Sans emploi';
+        } else {
+            const rulingInfo = getRulingFamilyInfoForPerson(person, scope);
+            if (person.job) {
+                const jobData = getJobData(person.job.buildingName, person.job.jobTitle);
+                const workPlace = currentRegion.places.find(p => p.id === person.job.locationId);
+                jobText = person.job.jobTitle;
+                workplaceText = `${person.job.buildingName} (${workPlace?.name || 'Inconnu'})`;
+                salaryText = jobData?.salaire.totalEnCuivre || 'N/A';
+                if (jobData?.gainsMensuels) {
+                    gainsHTML = `<p class="gain-item"><strong>Prestige/mois :</strong> +${(jobData.gainsMensuels.prestige || 0).toFixed(2)}</p>`;
+                    if (jobData.gainsMensuels.stats) {
+                        const statGains = Object.entries(jobData.gainsMensuels.stats).map(([stat, val]) => `+${val.toFixed(2)} ${stat.slice(0, 3)}.`);
+                        gainsHTML += `<p class="gain-item"><strong>Stats/mois :</strong> ${statGains.join(', ')}</p>`;
+                    }
+                }
+            } else if (person.royalTitle) {
+                jobText = person.royalTitle;
+                workplaceText = 'Famille Dirigeante';
+                salaryText = 'N/A';
+                gainsHTML = "<p>Bénéficie des avantages liés à sa position noble.</p>";
+            } else if (rulingInfo) {
+                if (rulingInfo.isHeir) jobText = person.gender === 'Femme' ? 'Héritière' : 'Héritier';
+                else if (rulingInfo.isRulerSpouse || rulingInfo.isHeirSpouse) jobText = 'Famille Gouvernante';
+                else if (rulingInfo.isParentOfRuler) jobText = person.gender === 'Femme' ? 'Matriarche' : 'Patriarche';
+                gainsHTML = "<p>Bénéficie des revenus de sa famille.</p>";
+            } else if (person.status === 'Retraité(e)') {
+                jobText = `Retraité(e) (${person.lastJobTitle || 'ancien métier'})`;
+                gainsHTML = `<p>A pris sa retraite du poste de ${person.lastJobTitle || 'non spécifié'}.</p>`;
+            } else if (person.status === 'En congé maternité') {
+                jobText = person.status;
+                gainsHTML = `<p>${person.status}.</p>`;
+            }
         }
+        characterDetailsModal.querySelector('#char-modal-job').textContent = jobText;
+        characterDetailsModal.querySelector('#char-modal-workplace').textContent = workplaceText;
+        characterDetailsModal.querySelector('#char-modal-salary').textContent = salaryText;
+        characterDetailsModal.querySelector('#char-modal-monthly-gains').innerHTML = gainsHTML;
+        characterDetailsModal.querySelector('#char-modal-prestige').textContent = (person.prestige || 0).toFixed(2);
+        const totalMonthsWorkedElement = characterDetailsModal.querySelector('#char-modal-total-months-worked');
+        if (totalMonthsWorkedElement) {
+            totalMonthsWorkedElement.textContent = person.totalMonthsWorked ?? 0;
+        }
+        const statsList = characterDetailsModal.querySelector('#char-modal-stats');
+        statsList.innerHTML = '';
+        if (person.stats) {
+            for (const [stat, value] of Object.entries(person.stats)) {
+                statsList.innerHTML += `<li><span>${stat.charAt(0).toUpperCase() + stat.slice(1)}</span> <span class="dnd-stat">${Math.round(value)}</span></li>`;
+            }
+        }
+        const familySummaryContainer = characterDetailsModal.querySelector('#char-modal-family-summary');
+        let familyHTML = '<ul>';
+        const createLink = p => {
+             if (!p) return 'N/A';
+             return `<span class="character-link" data-person-id="${p.id}">${p.firstName} ${p.lastName}</span> ${p.isAlive ? `(${p.age} ans)` : `(décédé(e))`}`;
+        };
+        const parents = getParents(person, scope);
+        familyHTML += `<li><strong>Parents:</strong> ${parents.length > 0 ? parents.map(createLink).join(' & ') : 'Inconnus'}</li>`;
+        let spouse = person.spouseId ? getPersonById(person.spouseId, scope) : null;
+        familyHTML += `<li><strong>Conjoint(e):</strong> ${spouse ? createLink(spouse) : 'Aucun(e)'}</li>`;
+        const children = getChildren(person, scope);
+        familyHTML += `<li><strong>Enfants:</strong> ${children.length > 0 ? children.length : '0'}</li>`;
+        familyHTML += '</ul>';
+        familySummaryContainer.innerHTML = familyHTML;
     }
-
-    const familySummaryContainer = characterDetailsModal.querySelector('#char-modal-family-summary');
-    let familyHTML = '<ul>';
-    const createLink = p => {
-         if (!p) return 'N/A';
-         const status = p.isAlive ? `(${p.age} ans)` : `(décédé(e))`;
-         return `<span class="character-link" data-person-id="${p.id}">${p.firstName} ${p.lastName}</span> ${status}`;
-    };
-    const parents = getParents(person, scope);
-    familyHTML += `<li><strong>Parents:</strong> ${parents.length > 0 ? parents.map(createLink).join(' & ') : 'Inconnus'}</li>`;
-    
-    let spouse = null;
-    if (person.spouseId) {
-        spouse = getPersonById(person.spouseId, scope);
-    }
-    
-    familyHTML += `<li><strong>Conjoint(e):</strong> ${spouse ? createLink(spouse) : 'Aucun(e)'}</li>`;
-    const children = getChildren(person, scope);
-    familyHTML += `<li><strong>Enfants:</strong> ${children.length > 0 ? children.length : '0'}</li>`;
-    familyHTML += '</ul>';
-    familySummaryContainer.innerHTML = familyHTML;
-}
 
     function populateSocialTab(person, scope) {
         const container = characterDetailsModal.querySelector('#social-family-circle');
         let html = '<ul class="social-list">';
-
         const createLink = p => {
             if (!p) return '';
-            const status = p.isAlive ? `(${p.age} ans)` : `(décédé(e) à ${p.ageAtDeath} ans)`;
-            return `<span class="character-link" data-person-id="${p.id}">${p.firstName} ${p.lastName}</span> ${status}`;
+            return `<span class="character-link" data-person-id="${p.id}">${p.firstName} ${p.lastName}</span> ${p.isAlive ? `(${p.age} ans)` : `(décédé(e) à ${p.ageAtDeath} ans)`}`;
         };
-        
         const parents = getParents(person, scope);
         if(parents.length > 0) html += `<li><strong>Parents:</strong> ${parents.map(createLink).join(' & ')}</li>`;
-        
-        let spouse = null;
-        if (person.spouseId) {
-            spouse = getPersonById(person.spouseId, scope);
-        }
+        let spouse = person.spouseId ? getPersonById(person.spouseId, scope) : null;
         if(spouse) html += `<li><strong>Conjoint(e):</strong> ${createLink(spouse)}</li>`;
-
         const siblings = getSiblings(person, scope);
         if(siblings.length > 0) html += `<li><strong>Frères & Sœurs:</strong><ul>${siblings.map(p => `<li>${createLink(p)}</li>`).join('')}</ul></li>`;
-
         const children = getChildren(person, scope);
         if(children.length > 0) html += `<li><strong>Enfants:</strong><ul>${children.map(p => `<li>${createLink(p)}</li>`).join('')}</ul></li>`;
-        
         const unclesAunts = getUnclesAunts(person, scope);
         if(unclesAunts.length > 0) html += `<li><strong>Oncles & Tantes:</strong><ul>${unclesAunts.map(p => `<li>${createLink(p)}</li>`).join('')}</ul></li>`;
-
         const cousins = getCousins(person, scope);
         if(cousins.length > 0) html += `<li><strong>Cousins:</strong><ul>${cousins.map(p => `<li>${createLink(p)}</li>`).join('')}</ul></li>`;
-        
         html += '</ul>';
         container.innerHTML = `<h4>Cercle Familial</h4>${html}`;
-
         const friendsContainer = characterDetailsModal.querySelector('#social-friends');
         const friends = (person.friendIds || []).map(id => getPersonById(id, scope)).filter(Boolean);
         friendsContainer.innerHTML = `<h4>Amis (${friends.length}/${person.maxFriends})</h4>`;
-        if (friends.length > 0) {
-            friendsContainer.innerHTML += `<ul class="social-list">${friends.map(p => `<li>${createLink(p)}</li>`).join('')}</ul>`;
-        } else {
-            friendsContainer.innerHTML += '<p>Aucun ami pour le moment.</p>';
-        }
-
+        friendsContainer.innerHTML += friends.length > 0 ? `<ul class="social-list">${friends.map(p => `<li>${createLink(p)}</li>`).join('')}</ul>` : '<p>Aucun ami pour le moment.</p>';
         const acqContainer = characterDetailsModal.querySelector('#social-acquaintances');
         const acquaintances = (person.acquaintanceIds || []).map(id => getPersonById(id, scope)).filter(Boolean);
         acqContainer.innerHTML = `<h4>Connaissances (${acquaintances.length}/${person.maxAcquaintances})</h4>`;
-        if (acquaintances.length > 0) {
-            acqContainer.innerHTML += `<ul class="social-list">${acquaintances.map(p => `<li>${createLink(p)}</li>`).join('')}</ul>`;
-        } else {
-            acqContainer.innerHTML += '<p>Aucune connaissance pour le moment.</p>';
-        }
+        acqContainer.innerHTML += acquaintances.length > 0 ? `<ul class="social-list">${acquaintances.map(p => `<li>${createLink(p)}</li>`).join('')}</ul>` : '<p>Aucune connaissance pour le moment.</p>';
     }
 
     function populateHistoryTab(person) {
         const historyLog = characterDetailsModal.querySelector('#char-history-log');
         const personEvents = simulationState.log.filter(e => e.personId === person.id);
-        if (personEvents.length > 0) {
-            historyLog.innerHTML = personEvents.map(e => `<li><strong>[An ${e.year}]</strong> ${e.message}</li>`).join('');
-        } else {
-            historyLog.innerHTML = '<li>Aucun événement majeur enregistré pour ce personnage.</li>';
-        }
+        historyLog.innerHTML = personEvents.length > 0 ? personEvents.map(e => `<li><strong>[An ${e.year}]</strong> ${e.message}</li>`).join('') : '<li>Aucun événement majeur enregistré pour ce personnage.</li>';
     }
 
     function startSimulation() { if (simulationState.isRunning) return; simulationState.isRunning = true; startSimBtn.disabled = true; pauseSimBtn.disabled = false; resetSimBtn.disabled = true; simulationState.intervalId = setInterval(mainLoop, simulationState.tickSpeed); logEvent('▶️ Simulation démarrée.', 'system'); updateEventLogUI(); }
@@ -1865,48 +1919,35 @@ function openCharacterModal(personId, spouseId = null) {
     function handleResetClick() {
         if (confirm("Réinitialiser la simulation à l'Année 1, Mois 1 ? Toute la progression (naissances, morts, événements, etc.) sera perdue, mais la population initiale sera conservée.")) {
             pauseSimulation();
-            
             if (initialSimulationData) {
                 regions = JSON.parse(JSON.stringify(initialSimulationData));
                 const lastRegionId = localStorage.getItem(LAST_REGION_KEY);
-                if (lastRegionId) {
-                    currentRegion = regions.find(r => r.id == lastRegionId) || null;
-                }
+                if (lastRegionId) { currentRegion = regions.find(r => r.id == lastRegionId) || null; }
             }
-            
             setupInitialState();
-            
             logEvent('🔄 Simulation réinitialisée.', 'system');
             updateEventLogUI();
         }
     }
 
     function makeModalDraggable(modal, handle) {
-        let isDragging = false;
-        let startX, startY, initialLeft, initialTop;
-
+        let isDragging = false, startX, startY, initialLeft, initialTop;
         handle.addEventListener('mousedown', (e) => {
             if (e.target.classList.contains('modal-close-btn') || e.target.classList.contains('char-modal-tab')) return;
             isDragging = true;
-            startX = e.clientX;
-            startY = e.clientY;
+            startX = e.clientX; startY = e.clientY;
             const rect = modal.getBoundingClientRect();
-            initialLeft = rect.left;
-            initialTop = rect.top;
+            initialLeft = rect.left; initialTop = rect.top;
             handle.style.cursor = 'grabbing';
             document.body.style.userSelect = 'none';
         });
-
         document.addEventListener('mousemove', (e) => {
             if (!isDragging) return;
             e.preventDefault();
-            const dx = e.clientX - startX;
-            const dy = e.clientY - startY;
-            modal.style.left = `${initialLeft + dx}px`;
-            modal.style.top = `${initialTop + dy}px`;
+            modal.style.left = `${initialLeft + e.clientX - startX}px`;
+            modal.style.top = `${initialTop + e.clientY - startY}px`;
             modal.style.transform = '';
         });
-
         document.addEventListener('mouseup', () => {
             if (isDragging) {
                 isDragging = false;
@@ -1917,28 +1958,14 @@ function openCharacterModal(personId, spouseId = null) {
     }
 
     function setupInitialState() {
-        if (!currentRegion || !currentRegion.places.some(p => p.config && p.config.isValidated)) {
+        if (!currentRegion || !currentRegion.places.some(p => p.config?.isValidated)) {
             document.body.innerHTML = `<div class="error-container"><h1>Erreur de Simulation</h1><p>Aucune donnée de simulation valide trouvée.</p><a href="step3.html" class="btn btn-primary">Retourner à l'Étape 3</a></div>`;
             return false;
         }
-
-        currentRegion.places.forEach(place => {
-            place.state = { satisfaction: 100, production: {}, consumption: {}, shortages: [], surpluses: [] };
-        });
-
+        currentRegion.places.forEach(place => { place.state = { satisfaction: 100, production: {}, consumption: {}, shortages: [], surpluses: [] }; });
         treeZoomLevel = 1.0;
         if(familyTreeDisplayArea) familyTreeDisplayArea.style.transform = `scale(${treeZoomLevel})`;
-
-        simulationState = {
-            isRunning: false,
-            currentTick: 0,
-            currentMonth: 1,
-            currentYear: 1,
-            tickSpeed: TICK_SPEEDS[speedControl.value] || 1000,
-            intervalId: null,
-            log: []
-        };
-
+        simulationState = { isRunning: false, currentTick: 0, currentMonth: 1, currentYear: 1, tickSpeed: TICK_SPEEDS[speedControl.value] || 1000, intervalId: null, log: [] };
         updateGlobalStats();
         updateLocationPopulationSummary();
         updateDateUI();
@@ -1947,52 +1974,180 @@ function openCharacterModal(personId, spouseId = null) {
         updateFamilySelector();
         displaySelectedFamilyTree();
         updateEventLogUI();
-
         startSimBtn.disabled = false;
         pauseSimBtn.disabled = true;
         resetSimBtn.disabled = false;
-        
         return true;
     }
 
-    function init() { loadData(); if(regions) { initialSimulationData = JSON.parse(JSON.stringify(regions)); } if (!setupInitialState()) { return; } logEvent('Simulation prête à démarrer...', 'system'); updateEventLogUI(); startSimBtn.addEventListener('click', startSimulation); pauseSimBtn.addEventListener('click', pauseSimulation); resetSimBtn.addEventListener('click', handleResetClick); speedControl.addEventListener('input', handleSpeedChange); familySelector.addEventListener('change', () => { selectedFamilyId = familySelector.value; characterSearchInput.value = ''; displaySelectedFamilyTree(); updateEventLogUI(); }); familyTreeDisplayAreaWrapper.addEventListener('click', e => {
-    const personNode = e.target.closest('.person-node');
-    if (personNode) {
-        const personInfoClicked = e.target.closest('.person-info');
-        const allPersonInfos = personNode.querySelectorAll('.person-info');
-
-        let clickedPersonId = personNode.dataset.personId;
-        let otherPersonId = personNode.dataset.spouseId || null;
-
-        if (otherPersonId && allPersonInfos.length > 1 && personInfoClicked === allPersonInfos[1]) {
-            [clickedPersonId, otherPersonId] = [otherPersonId, clickedPersonId];
+    function init() {
+        loadData();
+        if(regions) initialSimulationData = JSON.parse(JSON.stringify(regions));
+        if (!setupInitialState()) return;
+        logEvent('Simulation prête à démarrer...', 'system');
+        updateEventLogUI();
+        startSimBtn.addEventListener('click', startSimulation);
+        pauseSimBtn.addEventListener('click', pauseSimulation);
+        resetSimBtn.addEventListener('click', handleResetClick);
+        speedControl.addEventListener('input', handleSpeedChange);
+        familySelector.addEventListener('change', () => {
+            selectedFamilyId = familySelector.value;
+            characterSearchInput.value = '';
+            displaySelectedFamilyTree();
+            updateEventLogUI();
+        });
+        familyTreeDisplayAreaWrapper.addEventListener('click', e => {
+            const personNode = e.target.closest('.person-node');
+            if (personNode) {
+                const personInfoClicked = e.target.closest('.person-info');
+                const allPersonInfos = personNode.querySelectorAll('.person-info');
+                let clickedPersonId = personNode.dataset.personId;
+                let otherPersonId = personNode.dataset.spouseId || null;
+                if (otherPersonId && allPersonInfos.length > 1 && personInfoClicked === allPersonInfos[1]) {
+                    [clickedPersonId, otherPersonId] = [otherPersonId, clickedPersonId];
+                }
+                if (clickedPersonId) openCharacterModal(clickedPersonId, otherPersonId);
+            }
+        });
+        characterSearchInput.addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase().trim();
+            searchResultsContainer.innerHTML = '';
+            if (query.length < 2) return;
+            const allPopulation = currentRegion.places.flatMap(p => p.demographics.population);
+            const results = allPopulation.filter(p => p.firstName.toLowerCase().includes(query) || p.lastName.toLowerCase().includes(query)).slice(0, 10);
+            results.forEach(person => {
+                const item = document.createElement('div');
+                item.className = 'search-result-item';
+                item.textContent = `${person.firstName} ${person.lastName} (${person.age}, ${currentRegion.places.find(p=>p.id===person.locationId).name})`;
+                item.addEventListener('click', () => {
+                    characterSearchInput.value = `${person.firstName} ${person.lastName}`;
+                    searchResultsContainer.innerHTML = '';
+                    selectedFamilyId = person.familyId;
+                    selectedLocationId = person.locationId;
+                    updateLocationTabs();
+                    updateFamilySelector();
+                    displaySelectedFamilyTree();
+                    updateEventLogUI();
+                });
+                searchResultsContainer.appendChild(item);
+            });
+        });
+        familyTreeDisplayAreaWrapper.addEventListener('mousedown', e => {
+            if (e.target.closest('.person-node')) return;
+            isPanningTree = true;
+            startPanX = e.pageX - familyTreeDisplayAreaWrapper.offsetLeft;
+            startPanY = e.pageY - familyTreeDisplayAreaWrapper.offsetTop;
+            scrollLeftStart = familyTreeDisplayAreaWrapper.scrollLeft;
+            scrollTopStart = familyTreeDisplayAreaWrapper.scrollTop;
+            familyTreeDisplayAreaWrapper.style.cursor = 'grabbing';
+        });
+        familyTreeDisplayAreaWrapper.addEventListener('mouseleave', () => { isPanningTree = false; familyTreeDisplayAreaWrapper.style.cursor = 'grab'; });
+        familyTreeDisplayAreaWrapper.addEventListener('mouseup', () => { isPanningTree = false; familyTreeDisplayAreaWrapper.style.cursor = 'grab'; });
+        familyTreeDisplayAreaWrapper.addEventListener('mousemove', e => {
+            if (!isPanningTree) return;
+            e.preventDefault();
+            const walkX = (e.pageX - familyTreeDisplayAreaWrapper.offsetLeft - startPanX);
+            const walkY = (e.pageY - familyTreeDisplayAreaWrapper.offsetTop - startPanY);
+            familyTreeDisplayAreaWrapper.scrollLeft = scrollLeftStart - walkX;
+            familyTreeDisplayAreaWrapper.scrollTop = scrollTopStart - walkY;
+        });
+        familyTreeDisplayAreaWrapper.addEventListener('wheel', e => {
+            if (e.altKey) {
+                e.preventDefault();
+                treeZoomLevel += e.deltaY < 0 ? 0.1 : -0.1;
+                treeZoomLevel = Math.max(0.3, Math.min(treeZoomLevel, 2.5));
+                familyTreeDisplayArea.style.transformOrigin = 'top center';
+                familyTreeDisplayArea.style.transform = `scale(${treeZoomLevel})`;
+            }
+        });
+        if(characterDetailsModal) {
+            characterDetailsModal.querySelector('.modal-close-btn').addEventListener('click', () => characterDetailsModal.close());
+            makeModalDraggable(characterDetailsModal, characterDetailsModal.querySelector('#char-modal-header'));
+            characterDetailsModal.addEventListener('click', e => {
+                if (e.target.classList.contains('character-link')) {
+                    const personId = e.target.dataset.personId;
+                    const allPopulation = currentRegion.places.flatMap(p => p.demographics ? p.demographics.population : []);
+                    const linkedPerson = allPopulation.find(p => p.id === personId);
+                    if (linkedPerson) {
+                        characterDetailsModal.close();
+                        setTimeout(() => openCharacterModal(linkedPerson.id), 50);
+                    }
+                }
+            });
         }
-
-        if (clickedPersonId) {
-            openCharacterModal(clickedPersonId, otherPersonId);
+        const viewTabControls = document.getElementById('char-view-tab-controls');
+        if (viewTabControls) {
+            viewTabControls.addEventListener('click', (e) => {
+                if (e.target.matches('.char-view-tab')) {
+                    const tabName = e.target.dataset.tab;
+                    viewTabControls.querySelectorAll('.char-view-tab').forEach(tab => tab.classList.remove('active'));
+                    e.target.classList.add('active');
+                    const contentContainer = document.getElementById('char-tab-content-container');
+                    contentContainer.querySelectorAll('.char-tab-content').forEach(content => content.classList.remove('active'));
+                    contentContainer.querySelector(`#char-tab-${tabName}`).classList.add('active');
+                }
+            });
+        }
+        const jobsByTierModal = document.getElementById('jobs-by-tier-modal');
+        const viewJobsBtn = document.getElementById('view-jobs-btn');
+        const jobsByTierContent = document.getElementById('jobs-by-tier-content');
+        if (viewJobsBtn && jobsByTierModal) {
+            viewJobsBtn.addEventListener('click', () => {
+                const allJobsByTier = { 0: new Set(), 1: new Set(), 2: new Set(), 3: new Set(), 4: new Set(), 5: new Set() };
+                for (const placeType in BUILDING_DATA) {
+                    for (const category in BUILDING_DATA[placeType]) {
+                        for (const buildingName in BUILDING_DATA[placeType][category]) {
+                            const building = BUILDING_DATA[placeType][category][buildingName];
+                            if (building.emplois) {
+                                building.emplois.forEach(job => {
+                                    if (allJobsByTier[job.tier] !== undefined) {
+                                        allJobsByTier[job.tier].add(`${job.titre} <i>(Bâtiment: ${buildingName})</i>`);
+                                    }
+                                });
+                            }
+                        }
+                    }
+                }
+                let modalHTML = '';
+                for (const tier in allJobsByTier) {
+                    if (allJobsByTier[tier].size > 0) {
+                        modalHTML += `<h4>Tier ${tier}</h4><ul>`;
+                        Array.from(allJobsByTier[tier]).sort().forEach(jobInfo => { modalHTML += `<li>${jobInfo}</li>`; });
+                        modalHTML += '</ul>';
+                    }
+                }
+                jobsByTierContent.innerHTML = modalHTML;
+                jobsByTierModal.showModal();
+            });
+            jobsByTierModal.querySelector('.modal-close-btn').addEventListener('click', () => { jobsByTierModal.close(); });
         }
     }
-}); characterSearchInput.addEventListener('input', (e) => { const query = e.target.value.toLowerCase().trim(); searchResultsContainer.innerHTML = ''; if (query.length < 2) return; const allPopulation = currentRegion.places.flatMap(p => p.demographics.population); const results = allPopulation.filter(p => p.firstName.toLowerCase().includes(query) || p.lastName.toLowerCase().includes(query)).slice(0, 10); results.forEach(person => { const item = document.createElement('div'); item.className = 'search-result-item'; item.textContent = `${person.firstName} ${person.lastName} (${person.age}, ${currentRegion.places.find(p => p.id === person.locationId).name})`; item.addEventListener('click', () => { characterSearchInput.value = `${person.firstName} ${person.lastName}`; searchResultsContainer.innerHTML = ''; selectedFamilyId = person.familyId; selectedLocationId = person.locationId; updateLocationTabs(); updateFamilySelector(); displaySelectedFamilyTree(); updateEventLogUI(); }); searchResultsContainer.appendChild(item); }); }); familyTreeDisplayAreaWrapper.addEventListener('mousedown', (e) => { if (e.target.closest('.person-node')) return; isPanningTree = true; startPanX = e.pageX - familyTreeDisplayAreaWrapper.offsetLeft; startPanY = e.pageY - familyTreeDisplayAreaWrapper.offsetTop; scrollLeftStart = familyTreeDisplayAreaWrapper.scrollLeft; scrollTopStart = familyTreeDisplayAreaWrapper.scrollTop; familyTreeDisplayAreaWrapper.style.cursor = 'grabbing'; }); familyTreeDisplayAreaWrapper.addEventListener('mouseleave', () => { isPanningTree = false; familyTreeDisplayAreaWrapper.style.cursor = 'grab'; }); familyTreeDisplayAreaWrapper.addEventListener('mouseup', () => { isPanningTree = false; familyTreeDisplayAreaWrapper.style.cursor = 'grab'; }); familyTreeDisplayAreaWrapper.addEventListener('mousemove', (e) => { if (!isPanningTree) return; e.preventDefault(); const x = e.pageX - familyTreeDisplayAreaWrapper.offsetLeft; const y = e.pageY - familyTreeDisplayAreaWrapper.offsetTop; const walkX = (x - startPanX); const walkY = (y - startPanY); familyTreeDisplayAreaWrapper.scrollLeft = scrollLeftStart - walkX; familyTreeDisplayAreaWrapper.scrollTop = scrollTopStart - walkY; }); familyTreeDisplayAreaWrapper.addEventListener('wheel', (e) => { if (e.altKey) { e.preventDefault(); const zoomFactor = 0.1; if (e.deltaY < 0) { treeZoomLevel += zoomFactor; } else { treeZoomLevel -= zoomFactor; } treeZoomLevel = Math.max(0.3, Math.min(treeZoomLevel, 2.5)); familyTreeDisplayArea.style.transformOrigin = 'top center'; familyTreeDisplayArea.style.transform = `scale(${treeZoomLevel})`; } }); if(characterDetailsModal) { characterDetailsModal.querySelector('.modal-close-btn').addEventListener('click', () => characterDetailsModal.close()); makeModalDraggable(characterDetailsModal, characterDetailsModal.querySelector('#char-modal-header')); characterDetailsModal.addEventListener('click', e => { if (e.target.classList.contains('character-link')) { const personId = e.target.dataset.personId; const allPopulation = currentRegion.places.flatMap(p => p.demographics ? p.demographics.population : []); const linkedPerson = allPopulation.find(p => p.id === personId); if (linkedPerson) { characterDetailsModal.close(); setTimeout(() => openCharacterModal(linkedPerson.id), 50); } } }); 
-// --- NOUVEAU CODE POUR GÉRER LES ONGLETS DE VUE ---
-const viewTabControls = document.getElementById('char-view-tab-controls');
-if (viewTabControls) {
-    viewTabControls.addEventListener('click', (e) => {
-        if (e.target.matches('.char-view-tab')) {
-            const tabName = e.target.dataset.tab;
 
-            // Mettre à jour les boutons
-            viewTabControls.querySelectorAll('.char-view-tab').forEach(tab => tab.classList.remove('active'));
-            e.target.classList.add('active');
+    function runSimulationForYears(targetYears) {
+        return new Promise((resolve, reject) => {
+            loadData(); 
+            if (!setupInitialState()) {
+                reject(new Error("Échec de l'initialisation de la simulation."));
+                return;
+            }
+            simulationState.tickSpeed = 1;
+            startSimulation();
+            const checkInterval = setInterval(() => {
+                if (simulationState.currentYear >= targetYears) {
+                    clearInterval(checkInterval);
+                    pauseSimulation();
+                    saveData();
+                    resolve();
+                }
+            }, 100);
+        });
+    }
 
-            // Mettre à jour le contenu
-            const contentContainer = document.getElementById('char-tab-content-container');
-            contentContainer.querySelectorAll('.char-tab-content').forEach(content => content.classList.remove('active'));
-            contentContainer.querySelector(`#char-tab-${tabName}`).classList.add('active');
-        }
-    });
-}
-// --- FIN DU NOUVEAU CODE ---
-} const jobsByTierModal = document.getElementById('jobs-by-tier-modal'); const viewJobsBtn = document.getElementById('view-jobs-btn'); const jobsByTierContent = document.getElementById('jobs-by-tier-content'); if (viewJobsBtn && jobsByTierModal) { viewJobsBtn.addEventListener('click', () => { const allJobsByTier = { 0: new Set(), 1: new Set(), 2: new Set(), 3: new Set(), 4: new Set(), 5: new Set() }; for (const placeType in BUILDING_DATA) { for (const category in BUILDING_DATA[placeType]) { for (const buildingName in BUILDING_DATA[placeType][category]) { const building = BUILDING_DATA[placeType][category][buildingName]; if (building.emplois) { building.emplois.forEach(job => { if (allJobsByTier[job.tier] !== undefined) { allJobsByTier[job.tier].add(`${job.titre} <i>(Bâtiment: ${buildingName})</i>`); } }); } } } } let modalHTML = ''; for (const tier in allJobsByTier) { if (allJobsByTier[tier].size > 0) { modalHTML += `<h4>Tier ${tier}</h4><ul>`; Array.from(allJobsByTier[tier]).sort().forEach(jobInfo => { modalHTML += `<li>${jobInfo}</li>`; }); modalHTML += '</ul>'; } } jobsByTierContent.innerHTML = modalHTML; jobsByTierModal.showModal(); }); jobsByTierModal.querySelector('.modal-close-btn').addEventListener('click', () => { jobsByTierModal.close(); }); } }
+    window.EcoSimStep4 = {
+        run: runSimulationForYears
+    };
 
-    init();
+    if (document.querySelector('.page-container-step4')) {
+        init();
+    }
 });
