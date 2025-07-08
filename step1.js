@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         'comtal': { 
             name: 'Routes Comtales / Ducales', 
-            modifier: 0.85, 
+            modifier: 0.90, 
             users: ['Caravane', 'Cheval', 'Pied'],
             desc: 'Pavage partiel, bonne tenue en saison sèche, ralenties sinon.',
             color: '#E53935', // Rouge vif
@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         'marchand': { 
             name: 'Chemins de Halle / Voies Marchandes', 
-            modifier: 0.70, 
+            modifier: 0.80, 
             users: ['Caravane', 'Cheval', 'Pied'],
             desc: 'Vitales mais vulnérables aux intempéries (boue, ornières).',
             color: '#D84315', // Orange foncé
@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         'seigneurial': { 
             name: 'Chemins Seigneuriaux', 
-            modifier: 0.60, 
+            modifier: 0.70, 
             users: ['Caravane', 'Cheval', 'Pied'],
             desc: 'Très boueux en automne/printemps, souvent mal entretenus.',
             color: '#212121', // Noir / Gris très foncé
@@ -46,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         'traverse': { 
             name: 'Chemins de Traverse / Raccourcis', 
-            modifier: 0.50, 
+            modifier: 0.60, 
             users: ['Cheval', 'Pied'],
             desc: 'Étroits, sinueux, mal drainés. Non praticables pour les charrettes.',
             color: '#1E88E5', // Bleu vif
@@ -54,7 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         'forestier': { 
             name: 'Sentiers Forestiers / Sentes', 
-            modifier: 0.40, 
+            modifier: 0.50, 
             users: ['Cheval', 'Pied'],
             desc: 'Traîtres par temps humide. Utilisés par chasseurs et hors-la-loi.',
             color: '#8E24AA', // Violet
@@ -62,7 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         'montagne': { 
             name: 'Sentiers de Montagne / Passes', 
-            modifier: 0.25, 
+            modifier: 0.40, 
             users: ['Cheval', 'Pied'],
             desc: 'Dangereux, utilisables uniquement en été. Infranchissables l’hiver.',
             color: '#00BCD4', // Cyan
@@ -1537,23 +1537,36 @@ document.addEventListener('DOMContentLoaded', () => {
         }, { passive: false });
 
         canvas.addEventListener('dblclick', (e) => {
-             if (animationInProgress) return;
-             if (!currentRegion) {
-                 alert("Veuillez créer ou sélectionner une région avant d'ajouter un lieu.");
-                 return;
-             }
-             const rect = canvas.getBoundingClientRect();
-             const mouseX = e.clientX - rect.left;
-             const mouseY = e.clientY - rect.top;
-             const hexCoords = getPixelToHex(mouseX, mouseY);
-             const place = getPlaceAt(hexCoords); 
+            if (animationInProgress) return;
 
-             if (place) {
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            const hexCoords = getPixelToHex(mouseX, mouseY);
+
+            if (!currentRegion) {
+                const regionName = prompt("Aucune région n'est sélectionnée. Veuillez entrer un nom pour créer une nouvelle région et y placer votre premier lieu :");
+                if (regionName && regionName.trim()) {
+                    if (newRegionNameInput) {
+                        newRegionNameInput.value = regionName.trim();
+                        handleCreateRegion(); // Crée la région et la définit comme active
+                    }
+                    // Maintenant que la région est créée et active, on peut ouvrir la modale du lieu
+                    openPlaceModal(hexCoords);
+                } else {
+                    showNotification("Création de région annulée.", "info");
+                }
+                return; // On arrête ici après la tentative de création
+            }
+            
+            // Le reste de la logique si une région existe déjà
+            const place = getPlaceAt(hexCoords);
+            if (place) {
                 openPlaceModal(place.coords, place);
-             } else {
-                 openPlaceModal(hexCoords);
-             }
-        });
+            } else {
+                openPlaceModal(hexCoords);
+            }
+       });
         
         canvas.addEventListener('click', async (e) => {
             if (animationInProgress) return;
@@ -1637,7 +1650,10 @@ document.addEventListener('DOMContentLoaded', () => {
         populateRoadModal();
         generateRoadLegend();
         loadData(); 
-        handleRegionChange(); 
+        handleRegionChange();
+        if (!currentRegion) {
+            showNotification("<-- Bienvenue ! Créez votre première région en utilisant le bouton '+' pour commencer.", 'info', 3000);
+        }
         resizeCanvas();
         setupEventListeners();
         makeModalDraggable(placeModal, document.getElementById('place-modal-header'));

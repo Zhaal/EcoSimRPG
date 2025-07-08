@@ -105,37 +105,45 @@ body {
     text-align: center;
     vertical-align: top;
 }
+/* NOUVEAU: Aligne à gauche les cellules contenant une liste pour une meilleure lisibilité */
+.distance-matrix td.cell-has-list {
+    text-align: left;
+}
+
 .distance-matrix th {
     background-color: var(--section-bg);
 }
 
-/* Styles for indirect route steps */
-.route-steps.numbered, .time-steps.numbered {
+/* MODIFIÉ: Ajout de .distance-steps pour un style cohérent */
+.route-steps.numbered, .time-steps.numbered, .distance-steps.numbered {
     list-style: none;
     padding: 0;
     margin: 0;
     text-align: left;
     font-size: 0.9em;
 }
-.route-steps.numbered li, .time-steps.numbered li {
+.route-steps.numbered li, .time-steps.numbered li, .distance-steps.numbered li {
     padding: 2px 0;
     display: flex;
     gap: 5px;
     align-items: baseline;
     flex-wrap: wrap;
 }
-.route-steps.numbered li span, .time-steps.numbered li span {
+.route-steps.numbered li span, .time-steps.numbered li span, .distance-steps.numbered li span {
     font-weight: bold;
     color: #555;
     flex-shrink: 0;
 }
+
 .route-steps.numbered li .road-type-leg {
     font-style: italic;
     color: #666;
     padding-left: 6px;
     font-size: 0.9em;
 }
-.time-steps.numbered .total {
+
+/* MODIFIÉ: Ajout de .distance-steps pour un style cohérent */
+.time-steps.numbered .total, .distance-steps.numbered .total {
     display: block;
     border-top: 1px solid #ccc;
     margin-top: 4px;
@@ -580,4 +588,60 @@ body {
     font-weight: bold; /* Met le bonus en gras */
     flex-shrink: 0; /* Empêche le bonus de se réduire si le nom est long */
     padding-left: 10px; /* Ajoute un espace entre le nom et le bonus */
+}
+
+
+/* --- STYLES POUR LES ONGLETS (TABS) --- */
+
+.tabs-container {
+    width: 100%;
+}
+
+.tab-links {
+    display: flex;
+    flex-wrap: wrap;
+    border-bottom: 2px solid #c8bca5; /* Ligne de fond pour les onglets */
+    margin-bottom: 20px;
+}
+
+.tab-link {
+    padding: 12px 20px;
+    cursor: pointer;
+    background-color: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    font-family: var(--font-title);
+    font-size: 1.1em;
+    color: var(--title-color);
+    margin-bottom: -2px; /* Aligne la bordure de l'onglet actif avec la bordure du conteneur */
+    transition: all 0.2s ease-in-out;
+}
+
+.tab-link:hover {
+    background-color: #f5f0e1; /* Léger fond au survol */
+}
+
+.tab-link.active {
+    border-bottom-color: var(--location-title-color);
+    color: var(--location-title-color);
+    font-weight: bold;
+}
+
+.tab-content {
+    display: none; /* Cache les onglets inactifs */
+    animation: fadeIn 0.5s; /* Animation d'apparition */
+    background-color: var(--sheet-bg);
+    border: 1px solid var(--sheet-border);
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.tab-content.active {
+    display: block; /* Affiche l'onglet actif */
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
 }

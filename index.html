@@ -14,6 +14,16 @@
     <link rel="stylesheet" href="index-style.css">
 
     <style>
+        /* Variables de couleur (supposées à partir du design) */
+        :root {
+            --color-parchment: #f5eeda;
+            --color-border: #8d6e63;
+            --color-border-light: #a1887f;
+            --color-dark-text: #3e2723;
+            --color-gold: #ffd700;
+            --color-parchment-darker: #e9e0c7;
+        }
+
         /* Conteneur pour les cartes de choix */
         .choice-container {
             display: flex;
@@ -97,6 +107,38 @@
             font-family: 'Courier New', Courier, monospace;
             color: #5d4037;
         }
+        
+        /* Style pour le bouton "Commencer" */
+        .cta-button {
+            display: inline-block;
+            text-align: center;
+            margin-top: 30px; /* Espace par rapport au texte au-dessus */
+            margin-bottom: 20px; /* Espace par rapport aux cartes en-dessous */
+            padding: 15px 40px;
+            background-color: var(--color-border);
+            color: var(--color-parchment);
+            font-family: 'Cinzel', serif;
+            font-size: 1.4em;
+            font-weight: 700;
+            text-decoration: none;
+            border-radius: 10px;
+            border-bottom: 4px solid #5d4037;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+            transition: all 0.2s ease-in-out;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            border-bottom-width: 8px;
+            color: #fff;
+        }
+        
+        .cta-button:active {
+             transform: translateY(1px);
+             box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+             border-bottom-width: 4px;
+        }
 
     </style>
 </head>
@@ -142,9 +184,11 @@
         </header>
 
         <main class="index-main">
-            <section class="intro-section">
+            <section class="intro-section" style="text-align: center;">
                 <h2>Bienvenue, Maître du Monde !</h2>
-                <p>EcoSimRPG est bien plus qu'un simple générateur. C'est une forge divine, une suite d'outils conçue pour vous, l'architecte de mondes, afin de donner naissance à des royaumes fantastiques d'une cohérence et d'une profondeur inégalées. Chaque étape est un acte de création, de la première lueur de votre capitale à la dernière rumeur dans la taverne du hameau le plus isolé. Préparez-vous à insuffler la vie à un univers qui respire, commerce et évolue selon vos desseins.</p>
+                <p style="text-align: left;">EcoSimRPG est bien plus qu'un simple générateur. C'est une forge divine, une suite d'outils conçue pour vous, l'architecte de mondes, afin de donner naissance à des royaumes fantastiques d'une cohérence et d'une profondeur inégalées. Chaque étape est un acte de création, de la première lueur de votre capitale à la dernière rumeur dans la taverne du hameau le plus isolé. Préparez-vous à insuffler la vie à un univers qui respire, commerce et évolue selon vos desseins.</p>
+                
+                <a href="step1.html" class="cta-button">Commencer</a>
             </section>
 
             <div class="steps-container">

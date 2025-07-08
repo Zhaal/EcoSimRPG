@@ -1,9 +1,9 @@
 /**
  * EcoSimRPG - step5.js
  * Page d'exploitation et d'impression des données de simulation.
- * VERSION 8.2 - Simplification de la fiche Pathfinder
- * - La vue des compétences Pathfinder n'affiche plus que le nom de la compétence et le bonus total.
- * - Le rendu HTML passe d'un `<table>` complexe à une `<ul>` simple pour plus de clarté.
+ * VERSION 9.2 - Amélioration de l'affichage des distances et de l'alignement
+ * - La colonne "Distance" affiche désormais le détail de chaque étape pour les trajets indirects.
+ * - L'alignement des cellules du tableau de distance est amélioré pour une meilleure lisibilité.
  */
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -15,12 +15,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const TRAVEL_SPEEDS = { Pied: 30, Cheval: 70, Caravane: 20 };
     const ROAD_TYPES = {
         'royal':      { name: 'Route Royale',       modifier: 1.0,  users: ['Pied', 'Cheval', 'Caravane'] },
-        'comtal':     { name: 'Route Comtale',      modifier: 0.85, users: ['Pied', 'Cheval', 'Caravane'] },
-        'marchand':   { name: 'Voie Marchande',     modifier: 0.70, users: ['Pied', 'Cheval', 'Caravane'] },
-        'seigneurial':{ name: 'Chemin Seigneurial', modifier: 0.60, users: ['Pied', 'Cheval', 'Caravane'] },
-        'traverse':   { name: 'Chemin de Traverse', modifier: 0.50, users: ['Pied', 'Cheval'] },
-        'forestier':  { name: 'Sentier Forestier',  modifier: 0.40, users: ['Pied', 'Cheval'] },
-        'montagne':   { name: 'Sentier de Montagne',modifier: 0.25, users: ['Pied', 'Cheval'] }
+        'comtal':     { name: 'Route Comtale',      modifier: 0.90, users: ['Pied', 'Cheval', 'Caravane'] },
+        'marchand':   { name: 'Voie Marchande',     modifier: 0.80, users: ['Pied', 'Cheval', 'Caravane'] },
+        'seigneurial':{ name: 'Chemin Seigneurial', modifier: 0.70, users: ['Pied', 'Cheval', 'Caravane'] },
+        'traverse':   { name: 'Chemin de Traverse', modifier: 0.60, users: ['Pied', 'Cheval'] },
+        'forestier':  { name: 'Sentier Forestier',  modifier: 0.50, users: ['Pied', 'Cheval'] },
+        'montagne':   { name: 'Sentier de Montagne',modifier: 0.40, users: ['Pied', 'Cheval'] }
     };
 
     // --- SÉLECTEURS DOM ---
@@ -310,51 +310,83 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- FONCTIONS DE RENDU HTML ---
 
-    function renderLocationInfo(location) {
-        let html = `<h2><span class="location-title">${location.name}</span></h2>`;
-        html += `<div id="location-details-grid">`;
-
-        html += `<div class="distance-matrix"><h3>Distances & Temps de trajet</h3><table>`;
+    function renderDistanceMatrix(location) {
+        let html = `<h3>Distances & Temps de trajet</h3><table>`;
         html += `<thead><tr><th>Destination</th><th>Distance</th><th>Route</th><th>Pied</th><th>Cheval</th><th>Caravane</th></tr></thead><tbody>`;
 
+        // Helper pour générer le HTML du détail de la distance
+        const getDistanceBreakdownHtml = (path) => {
+            if (!path) return { html: 'N/A', isList: false };
+            if (path.legs.length <= 1) {
+                return { html: `${path.totalDistance.toFixed(0)} km`, isList: false };
+            }
+            const legsHtml = path.legs.map((leg, i) => `<li><span>(${i + 1})</span> ${leg.distance.toFixed(0)} km</li>`).join('');
+            const totalHtml = `<li><span class="total">Total: ${path.totalDistance.toFixed(0)} km</span></li>`;
+            const finalHtml = `<ul class="distance-steps numbered">${legsHtml}${totalHtml}</ul>`;
+            return { html: finalHtml, isList: true };
+        };
+    
+        // Helper pour générer le HTML du détail du temps de trajet
+        const getTimeBreakdownHtml = (path) => {
+            if (!path) return { html: 'N/A', isList: false };
+            if (path.legs.length <= 1) {
+                return { html: formatTravelTime(path.totalTime), isList: false };
+            }
+            const legsHtml = path.legs.map((leg, i) => `<li><span>(${i + 1})</span> ${formatTravelTime(leg.time)}</li>`).join('');
+            const totalHtml = `<li><span class="total">Total: ${formatTravelTime(path.totalTime)}</span></li>`;
+            const finalHtml = `<ul class="time-steps numbered">${legsHtml}${totalHtml}</ul>`;
+            return { html: finalHtml, isList: true };
+        };
+    
         currentRegion.places.forEach(otherPlace => {
             if (otherPlace.id === location.id) return;
-
+    
             const directDistance = axialDistance(location.coords, otherPlace.coords) * (currentRegion.scale || 10);
             const roadKey = getRoadKey(location.id, otherPlace.id);
             const road = currentRegion.roads[roadKey];
             const roadType = road ? ROAD_TYPES[road.type] : null;
-
-            html += `<tr><td>${otherPlace.name}</td>`;
-
+    
+            html += `<tr><td>${location.name} → ${otherPlace.name}</td>`;
+    
             if(roadType) {
                 html += `<td>${directDistance.toFixed(0)} km</td>
-                <td>${roadType.name.split(' / ')[0]}</td>
+                <td class="cell-has-list">${roadType.name.split(' / ')[0]}</td>
                 <td>${roadType.users.includes('Pied') ? formatTravelTime(directDistance / (TRAVEL_SPEEDS.Pied * roadType.modifier)) : 'N/A'}</td>
                 <td>${roadType.users.includes('Cheval') ? formatTravelTime(directDistance / (TRAVEL_SPEEDS.Cheval * roadType.modifier)) : 'N/A'}</td>
                 <td>${roadType.users.includes('Caravane') ? formatTravelTime(directDistance / (TRAVEL_SPEEDS.Caravane * roadType.modifier)) : 'N/A'}</td>`;
             } else {
                 const pathByFoot = findShortestPath(location.id, otherPlace.id, currentRegion.places, currentRegion.roads, (currentRegion.scale || 10), 'Pied');
-                const referencePath = pathByFoot;
-
-                if (referencePath) {
-                    html += `<td>${referencePath.totalDistance.toFixed(0)} km</td>`;
-                    let routeStepsHtml = `<ul class="route-steps numbered">${referencePath.legs.map((leg, i) => `<li><span>(${i + 1})</span>${leg.from} → ${leg.to} <span class="road-type-leg">(${leg.roadTypeName.split(' / ')[0]})</span></li>`).join('')}</ul>`;
-                    html += `<td>${routeStepsHtml}</td>`;
+    
+                if (pathByFoot) {
+                    const distanceInfo = getDistanceBreakdownHtml(pathByFoot);
+                    html += `<td class="${distanceInfo.isList ? 'cell-has-list' : ''}">${distanceInfo.html}</td>`;
+    
+                    let routeStepsHtml = `<ul class="route-steps numbered">${pathByFoot.legs.map((leg, i) => `<li><span>(${i + 1})</span>${leg.from} → ${leg.to} <span class="road-type-leg">(${leg.roadTypeName.split(' / ')[0]})</span></li>`).join('')}</ul>`;
+                    html += `<td class="cell-has-list">${routeStepsHtml}</td>`;
+                    
                     const pathByHorse = findShortestPath(location.id, otherPlace.id, currentRegion.places, currentRegion.roads, (currentRegion.scale || 10), 'Cheval');
                     const pathByCaravan = findShortestPath(location.id, otherPlace.id, currentRegion.places, currentRegion.roads, (currentRegion.scale || 10), 'Caravane');
-                    html += `<td>${formatTravelTime(referencePath.totalTime)}</td>`;
-                    html += `<td>${pathByHorse ? formatTravelTime(pathByHorse.totalTime) : 'N/A'}</td>`;
-                    html += `<td>${pathByCaravan ? formatTravelTime(pathByCaravan.totalTime) : 'N/A'}</td>`;
+                    
+                    const timeFootInfo = getTimeBreakdownHtml(pathByFoot);
+                    const timeHorseInfo = getTimeBreakdownHtml(pathByHorse);
+                    const timeCaravanInfo = getTimeBreakdownHtml(pathByCaravan);
+
+                    html += `<td class="${timeFootInfo.isList ? 'cell-has-list' : ''}">${timeFootInfo.html}</td>`;
+                    html += `<td class="${timeHorseInfo.isList ? 'cell-has-list' : ''}">${timeHorseInfo.html}</td>`;
+                    html += `<td class="${timeCaravanInfo.isList ? 'cell-has-list' : ''}">${timeCaravanInfo.html}</td>`;
+    
                 } else {
                     html += `<td>${directDistance.toFixed(0)} km (à vol d'oiseau)</td><td colspan="4">Aucun itinéraire terrestre</td>`;
                 }
             }
             html += `</tr>`;
         });
-        html += `</tbody></table></div>`;
+        html += `</tbody></table>`;
+        return `<div class="distance-matrix">${html}</div>`;
+    }
 
-        html += `<div class="job-roster"><h3>Emplois & Occupants</h3>`;
+    function renderJobRoster(location) {
+        let html = `<h3>Emplois & Occupants</h3>`;
         const population = location.demographics.population;
         const buildings = location.config.buildings;
         for (const category in buildings) {
@@ -371,12 +403,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 html += `</ul></div>`;
             });
         }
-        html += `</div></div>`;
-        return html;
+        return `<div class="job-roster">${html}</div>`;
     }
 
     function renderFamilies(location) {
-        let html = `<h2>Familles du lieu : ${location.name}</h2><div id="families-grid">`;
+        let html = `<div id="families-grid">`;
         const { families, population } = location.demographics;
         families.sort((a,b) => (a.name || '').localeCompare(b.name || '')).forEach(family => {
             html += `<div class="family-card"><h3>Famille ${family.name}</h3><ul>`;
@@ -418,7 +449,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderCharacterSheets(location) {
-        let html = `<h2>Fiches des Personnages</h2><div id="character-sheets-container">`;
+        let html = `<div id="character-sheets-container">`;
         const population = location.demographics.population;
         population
             .filter(person => person.isAlive)
@@ -697,12 +728,70 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderLocationView(location) {
-        let finalHtml = `<div class="print-section" id="location-info-section">${renderLocationInfo(location)}</div>`;
-        if (location.demographics?.population.length > 0) {
-            finalHtml += `<div class="print-section" id="families-section">${renderFamilies(location)}</div>`;
-            finalHtml += `<div class="print-section" id="characters-section">${renderCharacterSheets(location)}</div>`;
+        const hasPopulation = location.demographics?.population.length > 0;
+    
+        let tabLinks = `
+            <button class="tab-link active" data-tab="tab-distances">Distances & Temps de trajet</button>
+            <button class="tab-link" data-tab="tab-jobs">Emplois & Occupants</button>
+        `;
+        let tabContent = `
+            <div id="tab-distances" class="tab-content active">
+                ${renderDistanceMatrix(location)}
+            </div>
+            <div id="tab-jobs" class="tab-content">
+                ${renderJobRoster(location)}
+            </div>
+        `;
+    
+        if (hasPopulation) {
+            tabLinks += `
+                <button class="tab-link" data-tab="tab-families">Les Familles du lieu</button>
+                <button class="tab-link" data-tab="tab-characters">Fiches des Personnages</button>
+            `;
+            tabContent += `
+                <div id="tab-families" class="tab-content">
+                    ${renderFamilies(location)}
+                </div>
+                <div id="tab-characters" class="tab-content">
+                    ${renderCharacterSheets(location)}
+                </div>
+            `;
         }
+    
+        const finalHtml = `
+            <h2><span class="location-title">${location.name}</span></h2>
+            <div class="tabs-container">
+                <div class="tab-links">
+                    ${tabLinks}
+                </div>
+                <div class="tab-content-container">
+                    ${tabContent}
+                </div>
+            </div>`;
+    
         contentArea.innerHTML = finalHtml;
+    
+        // Add event listeners for the new tabs
+        contentArea.querySelector('.tab-links').addEventListener('click', (e) => {
+            if (e.target.tagName === 'BUTTON') {
+                const tabId = e.target.dataset.tab;
+                
+                // Don't do anything if the clicked tab is already active
+                if (e.target.classList.contains('active')) return;
+    
+                // Update button active state
+                contentArea.querySelectorAll('.tab-link').forEach(btn => btn.classList.remove('active'));
+                e.target.classList.add('active');
+    
+                // Update content active state
+                contentArea.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.remove('active');
+                    if (content.id === tabId) {
+                        content.classList.add('active');
+                    }
+                });
+            }
+        });
     }
 
     function populateSelectors(location) {

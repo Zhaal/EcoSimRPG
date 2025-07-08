@@ -49,6 +49,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let startPanX, startPanY, scrollLeftStart, scrollTopStart;
     let treeZoomLevel = 1.0;
     let initialSimulationData = null;
+let lastEventLogTick = -1;
+let lastEventLogViewId = null;
 
     // --- NOUVEAU : GESTION DE LA NAVIGATION ---
     /**
@@ -88,34 +90,67 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 
-    // --- FONCTIONS DE LOG ---
-    function logEvent(message, type = 'system', details = {}) {
-        const event = {
-            message, type,
-            year: simulationState.currentYear,
-            month: simulationState.currentMonth,
-            familyId: details.familyId || null,
-            personId: details.personId || null,
-        };
-        simulationState.log.unshift(event); 
-        if (simulationState.log.length > 5000) { 
-            simulationState.log.pop();
+// --- FONCTIONS DE LOG ---
+function logEvent(message, type = 'system', details = {}) {
+    const event = {
+        message, type,
+        year: simulationState.currentYear,
+        month: simulationState.currentMonth,
+        tick: simulationState.currentTick, // Ajout de cette ligne
+        familyId: details.familyId || null,
+        personId: details.personId || null,
+    };
+    simulationState.log.unshift(event); 
+    if (simulationState.log.length > 5000) { 
+        simulationState.log.pop();
+    }
+}
+
+function updateEventLogUI() {
+    const currentViewId = selectedFamilyId || 'global';
+
+    // Si la vue a changé (ex: passage de Global à Famille), on vide tout et on rafraîchit.
+    if (currentViewId !== lastEventLogViewId) {
+        eventLog.innerHTML = '';
+        lastEventLogTick = -1; // Réinitialise le compteur de ticks
+        lastEventLogViewId = currentViewId;
+    }
+
+    let allRelevantEvents;
+    // On filtre les événements pertinents pour la vue actuelle
+    if (selectedFamilyId) {
+        const family = currentRegion.places.flatMap(p => p.demographics.families).find(f => f.id === selectedFamilyId);
+        eventLogFamilyTitle.textContent = `Famille ${family?.name || 'Inconnue'}`;
+        allRelevantEvents = simulationState.log.filter(e => e.familyId === selectedFamilyId);
+    } else {
+        eventLogFamilyTitle.textContent = 'Journal Global';
+        allRelevantEvents = simulationState.log.filter(e => e.type === 'system' || !e.familyId);
+    }
+
+    // On ne sélectionne que les événements qui n'ont pas encore été affichés
+    const newEvents = allRelevantEvents.filter(e => e.tick > lastEventLogTick);
+
+    if (newEvents.length > 0) {
+        // On met à jour le dernier tick affiché avec le plus récent des nouveaux événements
+        lastEventLogTick = newEvents[0].tick;
+
+        // On ajoute les nouveaux événements en haut de la liste (prepend)
+        // On parcourt la liste à l'envers pour que les événements apparaissent dans l'ordre chronologique
+        for (let i = newEvents.length - 1; i >= 0; i--) {
+            const event = newEvents[i];
+            const li = document.createElement('li');
+            li.className = `event-${event.type}`;
+            li.innerHTML = `<strong>[An ${event.year}]</strong> ${event.message}`;
+            eventLog.prepend(li); // C'est la méthode clé qui évite le clignotement
         }
     }
 
-    function updateEventLogUI() {
-        eventLog.innerHTML = '';
-        let eventsToShow;
-
-        if (selectedFamilyId) {
-            const family = currentRegion.places.flatMap(p => p.demographics.families).find(f => f.id === selectedFamilyId);
-            eventLogFamilyTitle.textContent = `Famille ${family?.name || 'Inconnue'}`;
-            eventsToShow = simulationState.log.filter(e => e.familyId === selectedFamilyId).slice(0, 200);
-        } else {
-            eventLogFamilyTitle.textContent = 'Journal Global';
-            eventsToShow = simulationState.log.filter(e => e.type === 'system' || !e.familyId).slice(0, 200);
+    // Cas spécial: si le journal est vide (1er chargement), on le remplit.
+    if (eventLog.children.length === 0 && allRelevantEvents.length > 0) {
+        const eventsToShow = allRelevantEvents.slice(0, 200);
+        if (eventsToShow.length > 0) {
+            lastEventLogTick = eventsToShow[0].tick;
         }
-
         eventsToShow.forEach(event => {
             const li = document.createElement('li');
             li.className = `event-${event.type}`;
@@ -123,6 +158,13 @@ document.addEventListener('DOMContentLoaded', () => {
             eventLog.appendChild(li);
         });
     }
+
+    // On s'assure que le journal ne dépasse pas une certaine taille pour garder de bonnes performances
+    const maxLogEntries = 200;
+    while (eventLog.children.length > maxLogEntries) {
+        eventLog.removeChild(eventLog.lastChild);
+    }
+}
 
     // --- FONCTIONS DE SIMULATION PRINCIPALES ---
     function mainLoop() {
@@ -711,7 +753,8 @@ function applyDynasticTitles(ruler, population) {
                     person.friendIds.forEach(friendId => {
                         const friend = population.find(f => f.id === friendId);
                         if (friend && friend.isAlive) {
-                            const friendMessage = `😢 Vous avez appris le décès de votre ami(e) ${person.firstName} ${person.lastName}.`;
+// Nouvelle ligne
+const friendMessage = `😢 ${friend.firstName} ${friend.lastName} a appris le décès de son ami(e) ${person.firstName} ${person.lastName}.`;
                             logEvent(friendMessage, 'social', { familyId: friend.familyId, personId: friend.id });
                             if (friend.friendIds) {
                                 const index = friend.friendIds.indexOf(person.id);
@@ -1001,14 +1044,15 @@ function applyDynasticTitles(ruler, population) {
                     if (family && !family.memberIds.includes(newChild.id)) { family.memberIds.push(newChild.id); }
 
                     // Log pour l'enfant, la famille, et les parents
-                    const birthMessage = `👶 Un enfant nommé ${newChild.firstName} ${newChild.lastName} est né de ${father.firstName} et ${mother.firstName} à ${place.name}.`;
+                    const birthMessage = `👶 Naissance de ${newChild.firstName} ${newChild.lastName} est né de ${father.firstName} et ${mother.firstName} à ${place.name}.`;
                     logEvent(birthMessage, 'birth', { familyId: father.familyId, personId: newChild.id });
                     
-                    const motherMessage = `👶 Vous avez donné naissance à ${newChild.firstName}.`;
-                    logEvent(motherMessage, 'birth', { familyId: mother.familyId, personId: mother.id });
-                    
-                    const fatherMessage = `👶 Vous êtes devenu le père de ${newChild.firstName}.`;
-                    logEvent(fatherMessage, 'birth', { familyId: father.familyId, personId: father.id });
+// Nouveau code
+const motherMessage = `👶 ${mother.firstName} ${mother.lastName} a donné naissance à ${newChild.firstName}.`;
+logEvent(motherMessage, 'birth', { familyId: mother.familyId, personId: mother.id });
+
+const fatherMessage = `👶 ${father.firstName} ${father.lastName} est devenu le père de ${newChild.firstName}.`;
+logEvent(fatherMessage, 'birth', { familyId: father.familyId, personId: father.id });
                     
                     if (mother.job) {
                         const jobData = getJobData(mother.job.buildingName, mother.job.jobTitle);
