@@ -1,11 +1,9 @@
 /**
  * EcoSimRPG - step2.js
- * VERSION 11.0 - Intégration de la restauration de session et validation par menu
- * - NOUVEAU : Un bouton "Restaurer" apparaît si une configuration précédente existe pour la région.
- * - NOUVEAU : Cliquer sur le lien de navigation "Étape 3" (s'il est actif) déclenche la validation finale.
- * - MODIFIÉ : La fonction `init` gère les nouveaux boutons et la nouvelle logique de navigation.
- * - MODIFIÉ : `validateManualConfiguration` et `startManualConfiguration` mettent à jour l'état du lien de navigation.
- * CORRIGÉ POUR AUTORUN : Ajout de gardes pour empêcher les erreurs lorsque les éléments DOM sont absents.
+ * VERSION MODIFIÉE - Intégration de la navigation verrouillée
+ * - Ajout d'une fonction `updateAllNavLinksState` complète pour gérer l'état de tous les liens de navigation.
+ * - Ajout d'un écouteur d'événements pour fournir des alertes contextuelles sur les liens désactivés.
+ * - Remplacement des anciennes fonctions de mise à jour de la navigation.
  */
 document.addEventListener('DOMContentLoaded', () => {
     // --- CONSTANTES & CONFIGURATION ---
@@ -30,7 +28,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const generationLog = document.getElementById('generation-log');
     const placeStatusPanel = document.getElementById('place-status-panel');
     const regionNameDisplay = document.getElementById('region-name-display');
-    const navStep3 = document.getElementById('nav-step3');
     const validateAllBtn = document.getElementById('validate-all-btn');
     const rerollRegionBtn = document.getElementById('reroll-region-btn');
     const manualConfigBtn = document.getElementById('manual-config-btn');
@@ -58,7 +55,45 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentPage = 1;
     let placeStatusElements = new Map();
     let customBuildingsData = null;
-    let BUILDING_DATA = window.EcoSimData.buildings; // Modifié en let
+    let BUILDING_DATA = window.EcoSimData.buildings;
+
+    // --- NOUVELLE FONCTION DE MISE À JOUR DE LA NAVIGATION ---
+    /**
+     * Met à jour l'état (activé/désactivé) de tous les liens de navigation principaux.
+     * @param {object | null} region - L'objet de la région actuelle.
+     */
+    function updateAllNavLinksState(region) {
+        const navStep2 = document.getElementById('nav-step2');
+        const navStep3 = document.getElementById('nav-step3');
+        const navStep4 = document.getElementById('nav-step4');
+        const navStep5 = document.getElementById('nav-step5');
+
+        // Étape 2: Doit avoir une région avec au moins un lieu.
+        const isStep2Ready = region && region.places && region.places.length > 0;
+        if (navStep2) {
+            if (isStep2Ready) navStep2.classList.remove('nav-disabled');
+            else navStep2.classList.add('nav-disabled');
+        }
+
+        // Étape 3: Tous les lieux de l'étape 2 doivent être marqués comme valides.
+        const isStep3Ready = isStep2Ready && region.places.every(place => place.config && place.config.isValidated === true);
+        if (navStep3) {
+            if (isStep3Ready) navStep3.classList.remove('nav-disabled');
+            else navStep3.classList.add('nav-disabled');
+        }
+
+        // Étape 4 & 5: Au moins un lieu doit avoir une population générée (depuis l'étape 3).
+        const isStep4Ready = isStep3Ready && region.places.some(place => place.demographics && place.demographics.population.length > 0);
+        if (navStep4) {
+            if (isStep4Ready) navStep4.classList.remove('nav-disabled');
+            else navStep4.classList.add('nav-disabled');
+        }
+        if (navStep5) {
+            if (isStep4Ready) navStep5.classList.remove('nav-disabled'); // L'étape 5 est débloquée avec la 4.
+            else navStep5.classList.add('nav-disabled');
+        }
+    }
+
 
     // --- FONCTIONS UTILITAIRES ---
     function axialDistance(a, b) {
@@ -125,7 +160,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- FONCTIONS POUR LE PANNEAU D'ÉTAT ---
     function initializePlaceStatusPanel() {
-        if (!placeStatusPanel) return; // CORRECTION: Ajout d'une garde
+        if (!placeStatusPanel) return;
         placeStatusPanel.innerHTML = '';
         placeStatusElements.clear();
         if (!currentRegion) return;
@@ -425,11 +460,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function saveData() {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(regions));
-        updateNavLinksState();
+        updateAllNavLinksState(currentRegion);
     }
 
     function displayPlaces() {
-        if (!placesContainer) return; // CORRECTION: Ajout d'une garde
+        if (!placesContainer) return;
         if (!currentRegion) {
             placesContainer.innerHTML = `<p>Aucune région sélectionnée. Retournez à l'étape 1.</p>`;
             if (paginationControls) paginationControls.style.display = 'none';
@@ -467,7 +502,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updatePaginationUI(totalPages) {
-        if (!paginationControls) return; // CORRECTION: Ajout d'une garde
+        if (!paginationControls) return;
         if (totalPages <= 1) {
             paginationControls.style.display = 'none';
             return;
@@ -768,8 +803,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         finalStatusHTML += '</ul>';
         statusContent.innerHTML = finalStatusHTML;
-        validateAllBtn.disabled = !isAllValid;
-        updateNavLinksState();
+        
+        const allPlacesHaveBuildings = currentRegion.places.every(p => p.config.buildings && Object.keys(p.config.buildings).length > 0);
+        
+        validateAllBtn.disabled = !isAllValid || !allPlacesHaveBuildings;
+        updateAllNavLinksState(currentRegion);
     }
 
     function openAnalysisModal(placeId) {
@@ -882,34 +920,25 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         return html + '</ul>';
     }
-
-    function checkAllPlacesValidated() {
+    
+    function checkAllPlacesConfigured() {
         if (!currentRegion || !currentRegion.places || currentRegion.places.length === 0) return false;
         if (isManualMode) {
-            return !validateAllBtn.disabled;
+            return validateAllBtn && !validateAllBtn.disabled;
         }
         return currentRegion.places.every(place => place.config && Object.keys(place.config.buildings).length > 0);
     }
-
-    function updateNavLinksState() {
-        if (!navStep3) return; // CORRECTION: Ajout d'une garde
-        if (checkAllPlacesValidated()) {
-            navStep3.classList.remove('nav-disabled');
-        } else {
-            navStep3.classList.add('nav-disabled');
-        }
-    }
-
+    
     function handleValidateAll() {
-        if (!checkAllPlacesValidated()) {
+        if (!checkAllPlacesConfigured()) {
             alert("Impossible de valider : tous les prérequis ne sont pas satisfaits ou la configuration est incomplète.");
             return;
         }
 
-        if (confirm("Finaliser cette configuration et passer à l'étape de simulation ?")) {
+        if (confirm("Finaliser cette configuration et passer à l'étape de génération de la population ?")) {
             currentRegion.places.forEach(place => place.config.isValidated = true);
             saveData();
-            if (validationModal) validationModal.showModal(); // CORRECTION: Ajout d'une garde
+            if (validationModal) validationModal.showModal();
             setTimeout(() => {
                 window.location.href = "step3.html";
             }, 2500);
@@ -917,41 +946,41 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 
-async function startAutomaticGeneration() {
-    if (sourceSelectionModal) sourceSelectionModal.close();
-    if (mainContentWrapper) mainContentWrapper.style.visibility = 'visible';
-    if (statusPanel) statusPanel.classList.add('hidden');
-    
-    initializePlaceStatusPanel(); 
-    
-    if (generationOverlay) generationOverlay.style.display = 'flex';
+    async function startAutomaticGeneration() {
+        if (sourceSelectionModal) sourceSelectionModal.close();
+        if (mainContentWrapper) mainContentWrapper.style.visibility = 'visible';
+        if (statusPanel) statusPanel.classList.add('hidden');
+        
+        initializePlaceStatusPanel(); 
+        
+        if (generationOverlay) generationOverlay.style.display = 'flex';
 
-    currentRegion.places.forEach(place => {
-        place.config = {
-            buildings: {},
-            isValidated: false
-        };
-    });
+        currentRegion.places.forEach(place => {
+            place.config = {
+                buildings: {},
+                isValidated: false
+            };
+        });
 
-    await generateRegionConfiguration();
+        await generateRegionConfiguration();
 
-    saveData();
-    
-    if (generationOverlay) generationOverlay.style.display = 'none';
-    isManualMode = false;
-    if (validateAllBtn) validateAllBtn.disabled = false;
-    
-    currentPage = 1;
-    displayPlaces(); 
-    updateNavLinksState(); 
-}
+        saveData();
+        
+        if (generationOverlay) generationOverlay.style.display = 'none';
+        isManualMode = false;
+        if (validateAllBtn) validateAllBtn.disabled = false;
+        
+        currentPage = 1;
+        displayPlaces(); 
+        updateAllNavLinksState(currentRegion); 
+    }
 
     function startManualConfiguration() {
-        sourceSelectionModal.close();
-        mainContentWrapper.style.visibility = 'visible';
+        if (sourceSelectionModal) sourceSelectionModal.close();
+        if (mainContentWrapper) mainContentWrapper.style.visibility = 'visible';
         currentPage = 1;
         isManualMode = true;
-        statusPanel.classList.remove('hidden');
+        if (statusPanel) statusPanel.classList.remove('hidden');
 
         currentRegion.places.forEach(place => {
             if (!place.config || !place.config.buildings || Object.keys(place.config.buildings).length === 0) {
@@ -1026,24 +1055,22 @@ async function startAutomaticGeneration() {
             return;
         }
 
-        // --- NOUVEAU : Logique pour le bouton de restauration ---
         const restoreBtnGroup = document.getElementById('restore-config-group');
         const isRestorable = currentRegion.places.some(p => p.config && p.config.buildings && Object.keys(p.config.buildings).length > 0);
 
         if (isRestorable && restoreBtnGroup) {
             restoreBtnGroup.style.display = 'block';
             document.getElementById('restore-config-btn').addEventListener('click', () => {
-                sourceSelectionModal.close();
-                mainContentWrapper.style.visibility = 'visible';
-                isManualMode = true; // Restaurer en mode manuel pour permettre l'édition
-                statusPanel.classList.remove('hidden');
+                if (sourceSelectionModal) sourceSelectionModal.close();
+                if (mainContentWrapper) mainContentWrapper.style.visibility = 'visible';
+                isManualMode = true; 
+                if (statusPanel) statusPanel.classList.remove('hidden');
                 currentPage = 1;
                 displayPlaces();
-                updateNavLinksState();
+                updateAllNavLinksState(currentRegion);
             });
         }
 
-        // Setup button listeners for generation
         document.getElementById('select-auto-default-btn').addEventListener('click', () => {
             initializeWithDataSource('default');
             startAutomaticGeneration();
@@ -1054,63 +1081,84 @@ async function startAutomaticGeneration() {
         });
 
         if (customBuildingsData) {
-            document.getElementById('custom-data-group').style.display = 'block';
-            document.getElementById('select-auto-custom-btn').addEventListener('click', () => {
+            const customDataGroup = document.getElementById('custom-data-group');
+            if(customDataGroup) customDataGroup.style.display = 'block';
+            
+            const autoCustomBtn = document.getElementById('select-auto-custom-btn');
+            if(autoCustomBtn) autoCustomBtn.addEventListener('click', () => {
                 initializeWithDataSource('custom');
                 startAutomaticGeneration();
             });
-            document.getElementById('select-manual-custom-btn').addEventListener('click', () => {
+            const manualCustomBtn = document.getElementById('select-manual-custom-btn');
+            if(manualCustomBtn) manualCustomBtn.addEventListener('click', () => {
                 initializeWithDataSource('custom');
                 startManualConfiguration();
             });
         }
 
-
-        rerollRegionBtn.addEventListener('click', () => {
+        if(rerollRegionBtn) rerollRegionBtn.addEventListener('click', () => {
             if (confirm("Relancer la génération automatique ? La configuration actuelle sera effacée.")) {
                 startAutomaticGeneration();
             }
         });
 
-        manualConfigBtn.addEventListener('click', () => {
+        if(manualConfigBtn) manualConfigBtn.addEventListener('click', () => {
             if (confirm("Passer en mode manuel ? La configuration actuelle sera effacée.")) {
                 startManualConfiguration();
             }
         });
 
-        validateAllBtn.addEventListener('click', handleValidateAll);
+        if(validateAllBtn) validateAllBtn.addEventListener('click', handleValidateAll);
 
-        // --- NOUVEAU : Écouteur pour le lien de navigation de l'étape 3 ---
-        navStep3.addEventListener('click', (e) => {
+        const navStep3 = document.getElementById('nav-step3');
+        if (navStep3) navStep3.addEventListener('click', (e) => {
+            if (navStep3.classList.contains('nav-disabled')) return;
             e.preventDefault();
-            if (!navStep3.classList.contains('nav-disabled')) {
-                handleValidateAll();
-            }
+            handleValidateAll();
         });
 
-        placesContainer.addEventListener('click', (e) => {
+        if(placesContainer) placesContainer.addEventListener('click', (e) => {
             const target = e.target;
             if (target.closest('.info-icon')) openAnalysisModal(target.closest('.info-icon').dataset.placeId);
             if (target.matches('.btn-add-building')) openAddBuildingModal(target.dataset.placeId, target.dataset.placeType);
             if (target.matches('.btn-remove-building')) removeBuildingFromPlace(target.dataset.placeId, target.dataset.buildingName);
         });
 
-        addBuildingModal.addEventListener('click', (e) => {
+        if(addBuildingModal) addBuildingModal.addEventListener('click', (e) => {
             if (e.target.matches('.btn-add-this-building')) {
                 addBuildingToPlace(e.target.dataset.placeId, e.target.dataset.buildingName);
             }
         });
 
-        nextPageBtn.addEventListener('click', () => {
-            currentPage++;
-            displayPlaces();
-        });
-        prevPageBtn.addEventListener('click', () => {
-            currentPage--;
-            displayPlaces();
-        });
+        if(nextPageBtn) nextPageBtn.addEventListener('click', () => { currentPage++; displayPlaces(); });
+        if(prevPageBtn) prevPageBtn.addEventListener('click', () => { currentPage--; displayPlaces(); });
+        
+        // Setup listener for disabled nav links
+        const floatingMenu = document.querySelector('.floating-menu');
+        if (floatingMenu) {
+            floatingMenu.addEventListener('click', (e) => {
+                const link = e.target.closest('a');
+                if (link && link.classList.contains('nav-disabled')) {
+                    e.preventDefault();
+                    let message = "Cette étape est verrouillée.";
+                    switch(link.id) {
+                        case 'nav-step2':
+                            message = "Veuillez d'abord créer une région et y ajouter au moins un lieu (Étape 1).";
+                            break;
+                        case 'nav-step3':
+                            message = "Veuillez configurer et valider la structure économique de tous les lieux (Étape 2).";
+                            break;
+                        case 'nav-step4':
+                        case 'nav-step5':
+                            message = "Veuillez d'abord générer la population initiale (Étape 3).";
+                            break;
+                    }
+                    alert(message);
+                }
+            });
+        }
 
-        updateNavLinksState();
+        updateAllNavLinksState(currentRegion);
     }
 
     window.EcoSimStep2 = {
@@ -1120,7 +1168,7 @@ async function startAutomaticGeneration() {
             return startAutomaticGeneration(); // Retourne la promesse
         }
     };
-if (document.getElementById('top-bar-step2')) {
-    init();
-}
+    if (document.getElementById('top-bar-step2')) {
+        init();
+    }
 });

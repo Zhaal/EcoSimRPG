@@ -778,3 +778,41 @@
     transform: translateY(-1px);
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
+
+/* --- STYLES POUR LE BOUTON DE VALIDATION AMÉLIORÉ --- */
+
+#action-footer {
+    padding: 20px;
+    background: rgba(0,0,0,0.05);
+    border-top: 1px solid var(--color-border);
+    text-align: center;
+}
+
+#validate-all-btn {
+    padding: 15px 35px;
+    font-size: 1.4em; /* Police plus grande */
+    font-family: var(--font-title);
+    font-weight: 700;
+    color: white;
+    background-color: #2e7d32; /* Vert foncé et affirmé */
+    border: none;
+    border-radius: 50px; /* Forme de "pilule" */
+    box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-block;
+}
+
+#validate-all-btn:hover:not(:disabled) {
+    background-color: #388e3c; /* Vert plus clair au survol */
+    transform: translateY(-3px) scale(1.02); /* Effet de soulèvement */
+    box-shadow: 0 7px 15px rgba(0,0,0,0.3);
+}
+
+#validate-all-btn:disabled {
+    background-color: #a5d6a7; /* Vert désaturé */
+    color: #e8f5e9;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}

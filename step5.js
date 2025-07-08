@@ -1,11 +1,9 @@
 /**
  * EcoSimRPG - step5.js
  * Page d'exploitation et d'impression des données de simulation.
- * VERSION 7.8 (Corrigée par l'assistant)
- * - Correction de l'erreur "ReferenceError: renderLocationInfo is not defined" en réintégrant la fonction manquante.
- * VERSION 7.7 (Modifiée par l'assistant)
- * - Remplacement de la mise en page par une grille compacte à 3 colonnes.
- * - Correction de la formule de l'Initiative (Mod. Dex seul).
+ * VERSION 8.2 - Simplification de la fiche Pathfinder
+ * - La vue des compétences Pathfinder n'affiche plus que le nom de la compétence et le bonus total.
+ * - Le rendu HTML passe d'un `<table>` complexe à une `<ul>` simple pour plus de clarté.
  */
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -29,9 +27,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const locationSelect = document.getElementById('location-select');
     const buildingSelect = document.getElementById('building-select');
     const characterSelect = document.getElementById('character-select');
+    const systemSelect = document.getElementById('system-select');
     const printBtn = document.getElementById('print-btn');
     const contentArea = document.getElementById('content-area');
-    const navStep5 = document.getElementById('nav-step5');
     const globalSearchInput = document.getElementById('global-character-search');
     const globalSearchResults = document.getElementById('global-search-results');
 
@@ -40,6 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let regions = [];
     let currentRegion = null;
     let selectedLocation = null;
+    let currentGameSystem = 'dnd5'; // 'dnd5' or 'pathfinder'
 
     // --- HELPER CLASS for Pathfinding ---
     class PriorityQueue {
@@ -48,6 +47,43 @@ document.addEventListener('DOMContentLoaded', () => {
         dequeue() { return this.values.shift(); }
         isEmpty() { return this.values.length === 0; }
         sort() { this.values.sort((a, b) => a.priority - b.priority); }
+    }
+
+    // --- NOUVEAU : GESTION DE LA NAVIGATION ---
+    /**
+     * Met à jour l'état (activé/désactivé) de tous les liens de navigation principaux.
+     * @param {object | null} region - L'objet de la région actuelle.
+     */
+    function updateAllNavLinksState(region) {
+        const navStep2 = document.getElementById('nav-step2');
+        const navStep3 = document.getElementById('nav-step3');
+        const navStep4 = document.getElementById('nav-step4');
+        const navStep5 = document.getElementById('nav-step5');
+
+        // Étape 2: Doit avoir une région avec au moins un lieu.
+        const isStep2Ready = region && region.places && region.places.length > 0;
+        if (navStep2) {
+            if (isStep2Ready) navStep2.classList.remove('nav-disabled');
+            else navStep2.classList.add('nav-disabled');
+        }
+
+        // Étape 3: Tous les lieux de l'étape 2 doivent être marqués comme valides.
+        const isStep3Ready = isStep2Ready && region.places.every(place => place.config && place.config.isValidated === true);
+        if (navStep3) {
+            if (isStep3Ready) navStep3.classList.remove('nav-disabled');
+            else navStep3.classList.add('nav-disabled');
+        }
+
+        // Étape 4 & 5: Au moins un lieu doit avoir une population générée (depuis l'étape 3).
+        const isStep4Ready = isStep3Ready && region.places.some(place => place.demographics && place.demographics.population.length > 0);
+        if (navStep4) {
+            if (isStep4Ready) navStep4.classList.remove('nav-disabled');
+            else navStep4.classList.add('nav-disabled');
+        }
+        if (navStep5) {
+            if (isStep4Ready) navStep5.classList.remove('nav-disabled'); // L'étape 5 est débloquée avec la 4.
+            else navStep5.classList.add('nav-disabled');
+        }
     }
 
     // --- FONCTIONS UTILITAIRES & GÉNÉALOGIQUES ---
@@ -274,7 +310,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- FONCTIONS DE RENDU HTML ---
 
-    // CORRECTION : Réintégration de la fonction renderLocationInfo
     function renderLocationInfo(location) {
         let html = `<h2><span class="location-title">${location.name}</span></h2>`;
         html += `<div id="location-details-grid">`;
@@ -427,6 +462,66 @@ document.addEventListener('DOMContentLoaded', () => {
         html += `</div>`;
         contentArea.innerHTML = html;
     }
+    
+    function renderPathfinderSkills(mods) {
+        const { strMod, dexMod, intMod, wisMod, chaMod } = mods;
+        const skills = [
+            { name: "Acrobaties", mod: dexMod },
+            { name: "Artisanat (____________)", mod: intMod },
+            { name: "Artisanat (____________)", mod: intMod },
+            { name: "Artisanat (____________)", mod: intMod },
+            { name: "Art de la magie*", mod: chaMod },
+            { name: "Bluff", mod: chaMod },
+            { name: "Connaissances (exploration)*", mod: intMod },
+            { name: "Connaissances (folklore local)*", mod: intMod },
+            { name: "Connaissances (géographie)*", mod: intMod },
+            { name: "Connaissances (histoire)*", mod: intMod },
+            { name: "Connaissances (ingénierie)*", mod: intMod },
+            { name: "Connaissances (mystères)*", mod: intMod },
+            { name: "Connaissances (nature)*", mod: intMod },
+            { name: "Connaissances (noblesse)*", mod: intMod },
+            { name: "Connaissances (plans)*", mod: intMod },
+            { name: "Connaissances (religion)*", mod: intMod },
+            { name: "Déguisement", mod: chaMod },
+            { name: "Diplomatie", mod: chaMod },
+            { name: "Discrétion", mod: dexMod },
+            { name: "Dressage*", mod: chaMod },
+            { name: "Équitation", mod: dexMod },
+            { name: "Escalade", mod: strMod },
+            { name: "Escamotage*", mod: dexMod },
+            { name: "Estimation", mod: intMod },
+            { name: "Intimidation", mod: chaMod },
+            { name: "Linguistique*", mod: intMod },
+            { name: "Natation", mod: strMod },
+            { name: "Perception", mod: wisMod },
+            { name: "Premiers secours", mod: wisMod },
+            { name: "Profession* (____________)", mod: wisMod },
+            { name: "Profession* (____________)", mod: wisMod },
+            { name: "Représentation (____________)", mod: chaMod },
+            { name: "Représentation (____________)", mod: chaMod },
+            { name: "Sabotage*", mod: dexMod },
+            { name: "Survie", mod: wisMod },
+            { name: "Utilisation d'objets magiques*", mod: chaMod },
+            { name: "Vol", mod: dexMod }
+        ];
+    
+        const totalBonus = (mod) => mod >= 0 ? `+${mod}` : mod;
+    
+        const skillsHtml = skills.map(skill => `
+            <li class="pf-skill-item">
+                <span class="pf-skill-name">${skill.name}</span>
+                <span class="pf-skill-total">${totalBonus(skill.mod)}</span>
+            </li>
+        `).join('');
+    
+        return `
+        <aside class="pathfinder-skills-container">
+            <h4>Compétences</h4>
+            <ul class="pathfinder-skills-list">
+                ${skillsHtml}
+            </ul>
+        </aside>`;
+    }
 
     function renderSingleCharacterSheet(person, populationScope) {
         if (!person) return '';
@@ -449,25 +544,37 @@ document.addEventListener('DOMContentLoaded', () => {
         const caValue = 10 + conMod;
         const iniValue = dexMod;
         const formattedIniValue = `${iniValue >= 0 ? '+' : ''}${iniValue}`;
+        
+        let skillsSectionHtml = '';
+        if (currentGameSystem === 'pathfinder') {
+            skillsSectionHtml = renderPathfinderSkills({ strMod, dexMod, intMod, wisMod, chaMod });
+        } else { // D&D 5e (default)
+            const skills = [
+                { name: "Acrobaties", mod: dexMod, base: '(Dex)' }, { name: "Arcanes", mod: intMod, base: '(Int)' },
+                { name: "Athlétisme", mod: strMod, base: '(For)' }, { name: "Discrétion", mod: dexMod, base: '(Dex)' },
+                { name: "Dressage", mod: wisMod, base: '(Sag)' }, { name: "Escamotage", mod: dexMod, base: '(Dex)' },
+                { name: "Histoire", mod: intMod, base: '(Int)' }, { name: "Intimidation", mod: chaMod, base: '(Cha)' },
+                { name: "Intuition", mod: wisMod, base: '(Sag)' }, { name: "Investigation", mod: intMod, base: '(Int)' },
+                { name: "Médecine", mod: wisMod, base: '(Sag)' }, { name: "Nature", mod: intMod, base: '(Int)' },
+                { name: "Perception", mod: wisMod, base: '(Sag)' }, { name: "Persuasion", mod: chaMod, base: '(Cha)' },
+                { name: "Religion", mod: intMod, base: '(Int)' }, { name: "Représentation", mod: chaMod, base: '(Cha)' },
+                { name: "Survie", mod: wisMod, base: '(Sag)' }, { name: "Tromperie", mod: chaMod, base: '(Cha)' }
+            ];
+    
+            const skillsHtml = skills.map(skill => `
+                <li class="skill-item">
+                    <span class="skill-mod">${skill.mod >= 0 ? '+' : ''}${skill.mod}</span>
+                    <span class="skill-name">${skill.name} <span class="skill-base">${skill.base}</span></span>
+                </li>
+            `).join('');
 
-        const skills = [
-            { name: "Acrobaties", mod: dexMod, base: '(Dex)' }, { name: "Arcanes", mod: intMod, base: '(Int)' },
-            { name: "Athlétisme", mod: strMod, base: '(For)' }, { name: "Discrétion", mod: dexMod, base: '(Dex)' },
-            { name: "Dressage", mod: wisMod, base: '(Sag)' }, { name: "Escamotage", mod: dexMod, base: '(Dex)' },
-            { name: "Histoire", mod: intMod, base: '(Int)' }, { name: "Intimidation", mod: chaMod, base: '(Cha)' },
-            { name: "Intuition", mod: wisMod, base: '(Sag)' }, { name: "Investigation", mod: intMod, base: '(Int)' },
-            { name: "Médecine", mod: wisMod, base: '(Sag)' }, { name: "Nature", mod: intMod, base: '(Int)' },
-            { name: "Perception", mod: wisMod, base: '(Sag)' }, { name: "Persuasion", mod: chaMod, base: '(Cha)' },
-            { name: "Religion", mod: intMod, base: '(Int)' }, { name: "Représentation", mod: chaMod, base: '(Cha)' },
-            { name: "Survie", mod: wisMod, base: '(Sag)' }, { name: "Tromperie", mod: chaMod, base: '(Cha)' }
-        ];
+            skillsSectionHtml = `
+            <aside class="skills-list-container">
+                <h4>Compétences</h4>
+                <ul>${skillsHtml}</ul>
+            </aside>`;
+        }
 
-        const skillsHtml = skills.map(skill => `
-            <li class="skill-item">
-                <span class="skill-mod">${skill.mod >= 0 ? '+' : ''}${skill.mod}</span>
-                <span class="skill-name">${skill.name} <span class="skill-base">${skill.base}</span></span>
-            </li>
-        `).join('');
 
         const spouse = getSpouse(person, populationScope);
         const children = getChildren(person, populationScope);
@@ -537,30 +644,28 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="stat-box"><span class="label">Charisme</span><span class="score">${cha}</span><span class="modifier">${chaMod >= 0 ? '+' : ''}${chaMod}</span></div>
                 </aside>
 
-                <section class="char-sheet-info">
-                    <div class="combat-stats-container">
-                        <div class="combat-box">
-                            <div class="combat-value">${caValue}</div>
-                            <div class="combat-label">CA</div>
+                <div class="char-sheet-main-content">
+                    <section class="char-sheet-info">
+                        <div class="combat-stats-container">
+                            <div class="combat-box">
+                                <div class="combat-value">${caValue}</div>
+                                <div class="combat-label">CA</div>
+                            </div>
+                            <div class="combat-box">
+                                <div class="combat-value">${formattedIniValue}</div>
+                                <div class="combat-label">INITIATIVE</div>
+                            </div>
                         </div>
-                        <div class="combat-box">
-                            <div class="combat-value">${formattedIniValue}</div>
-                            <div class="combat-label">INITIATIVE</div>
+                        <div class="info-block">
+                            <h4>État Civil & Statut</h4>
+                            <p><strong>Âge :</strong> ${ageLine}</p>
+                            <p><strong>Statut :</strong> ${status}</p>
+                            <p><strong>Prestige :</strong> ${person.prestige ? person.prestige.toFixed(0) : '0'}</p>
+                            <p><strong>Occupation :</strong> ${jobTitle}</p>
                         </div>
-                    </div>
-                    <div class="info-block">
-                        <h4>État Civil & Statut</h4>
-                        <p><strong>Âge :</strong> ${ageLine}</p>
-                        <p><strong>Statut :</strong> ${status}</p>
-                        <p><strong>Prestige :</strong> ${person.prestige ? person.prestige.toFixed(0) : '0'}</p>
-                        <p><strong>Occupation :</strong> ${jobTitle}</p>
-                    </div>
-                </section>
-
-                <aside class="skills-list-container">
-                    <h4>Compétences</h4>
-                    <ul>${skillsHtml}</ul>
-                </aside>
+                    </section>
+                    ${skillsSectionHtml}
+                </div>
             </div>
 
             <div class="char-sheet-details">
@@ -625,6 +730,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const lastRegionId = localStorage.getItem(LAST_REGION_KEY);
         currentRegion = regions.find(r => r.id == lastRegionId) || regions[0];
 
+        // NOUVEAU : Appel initial pour la mise à jour de la navigation
+        updateAllNavLinksState(currentRegion);
+
         if (!currentRegion?.places?.length) {
             contentArea.innerHTML = '<h1>Région non valide ou vide.</h1><p>Retournez aux étapes précédentes.</p>';
             return;
@@ -651,13 +759,28 @@ document.addEventListener('DOMContentLoaded', () => {
             characterSelect.value = "";
             if (buildingName) renderBuildingView(buildingName, selectedLocation);
             else renderLocationView(selectedLocation);
-});
+        });
 
         characterSelect.addEventListener('change', (e) => {
             const personId = e.target.value;
             buildingSelect.value = "";
             if (personId) renderCharacterView(personId, selectedLocation);
             else renderLocationView(selectedLocation);
+        });
+
+        systemSelect.addEventListener('change', (e) => {
+            currentGameSystem = e.target.value;
+            // Re-render the current view to reflect the change
+            const selectedBuilding = buildingSelect.value;
+            const selectedCharacter = characterSelect.value;
+
+            if (selectedCharacter) {
+                renderCharacterView(selectedCharacter, selectedLocation);
+            } else if (selectedBuilding) {
+                renderBuildingView(selectedBuilding, selectedLocation);
+            } else {
+                renderLocationView(selectedLocation);
+            }
         });
 
         globalSearchInput.addEventListener('input', (e) => {
@@ -715,7 +838,31 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         printBtn.addEventListener('click', () => window.print());
-        navStep5.classList.remove('nav-disabled');
+
+        // NOUVEAU : Écouteur de clics pour les liens de navigation désactivés
+        const floatingMenu = document.querySelector('.floating-menu');
+        if (floatingMenu) {
+            floatingMenu.addEventListener('click', (e) => {
+                const link = e.target.closest('a');
+                if (link && link.classList.contains('nav-disabled')) {
+                    e.preventDefault();
+                    let message = "Cette étape est verrouillée.";
+                    switch(link.id) {
+                        case 'nav-step2':
+                            message = "Veuillez d'abord créer une région et y ajouter au moins un lieu (Étape 1).";
+                            break;
+                        case 'nav-step3':
+                            message = "Veuillez configurer et valider la structure économique de tous les lieux (Étape 2).";
+                            break;
+                        case 'nav-step4':
+                        case 'nav-step5':
+                            message = "Veuillez d'abord générer la population initiale (Étape 3).";
+                            break;
+                    }
+                    alert(message);
+                }
+            });
+        }
     }
 
     init();

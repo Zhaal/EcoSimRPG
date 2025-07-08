@@ -76,7 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     const DEFAULT_ROAD_TYPE = 'marchand';
     const HEX_TERRAIN = { img: null, file: 'terrain_hex.jpg' };
-const RANDOM_NAMES = [
+    const RANDOM_NAMES = [
     "Aethelgard", "Baeldor", "Crystalgate", "Dunharrow", "Eldoria", "Faelivrin",
     "Glimmerwood", "Highgarden", "Ironcliff", "Silvercreek", "Valoria", "Windhaven",
     "Dragon's Rest", "Starfall",
@@ -156,9 +156,6 @@ const RANDOM_NAMES = [
     const cancelRoadBtn = document.getElementById('cancel-road-btn');
     const deleteRoadBtn = document.getElementById('delete-road-btn');
     const roadInfo = document.getElementById('road-info');
-    const navStep2 = document.getElementById('nav-step2');
-    const navStep3 = document.getElementById('nav-step3');
-    const floatingMenu = document.querySelector('.floating-menu');
     const scaleInput = document.getElementById('scale-input');
     const showRoadsToggle = document.getElementById('show-roads-toggle');
     const clearRoadFilterBtn = document.getElementById('clear-road-filter-btn');
@@ -291,7 +288,7 @@ const RANDOM_NAMES = [
     // --- GESTION DES DONNEES ---
     function saveData() {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(regions));
-        updateNavLinksState();
+        updateAllNavLinksState(currentRegion);
     }
 
     function updateRegionSelect() {
@@ -758,10 +755,10 @@ const RANDOM_NAMES = [
     function handleDeleteRegion() {
         if (currentRegion && confirm(`Êtes-vous sûr de vouloir supprimer la région "${currentRegion.name}" ? Cette action est irréversible.`)) {
             regions = regions.filter(r => r.id !== currentRegion.id);
-            saveData();
             currentRegion = null;
             if(regionSelect) regionSelect.value = '';
             handleRegionChange();
+            saveData();
         }
     }
     
@@ -775,6 +772,7 @@ const RANDOM_NAMES = [
         
         localStorage.setItem(LAST_REGION_KEY, currentRegion ? currentRegion.id : '');
         updateUIForRegion();
+        updateAllNavLinksState(currentRegion);
     }
 
     function updateUIForRegion() {
@@ -793,7 +791,6 @@ const RANDOM_NAMES = [
             if(scaleInput) scaleInput.value = 10;
         }
         updatePlacesList();
-        updateNavLinksState(); 
         drawMap();
     }
 
@@ -1273,28 +1270,39 @@ const RANDOM_NAMES = [
         if(document.body) document.body.style.cursor = 'default';
     }
     
-    function checkAllPlacesValidated(region) {
-        if (!region || !region.places || region.places.length === 0) {
-            return false;
-        }
-        return region.places.every(place => place.config && place.config.isValidated === true);
-    }
+    /**
+     * Met à jour l'état (activé/désactivé) de tous les liens de navigation principaux.
+     * @param {object | null} region - L'objet de la région actuelle.
+     */
+    function updateAllNavLinksState(region) {
+        const navStep2 = document.getElementById('nav-step2');
+        const navStep3 = document.getElementById('nav-step3');
+        const navStep4 = document.getElementById('nav-step4');
+        const navStep5 = document.getElementById('nav-step5');
 
-    function updateNavLinksState() {
-        if (!navStep2 || !navStep3) return;
-        const isStep2Ready = currentRegion && currentRegion.places.length > 0;
-        const isStep3Ready = checkAllPlacesValidated(currentRegion);
-
-        if (isStep2Ready) {
-            navStep2.classList.remove('nav-disabled');
-        } else {
-            navStep2.classList.add('nav-disabled');
+        // Étape 2: Doit avoir une région avec au moins un lieu.
+        const isStep2Ready = region && region.places && region.places.length > 0;
+        if (navStep2) {
+            if (isStep2Ready) navStep2.classList.remove('nav-disabled');
+            else navStep2.classList.add('nav-disabled');
         }
-        
-        if (isStep3Ready) {
-            navStep3.classList.remove('nav-disabled');
-        } else {
-            navStep3.classList.add('nav-disabled');
+
+        // Étape 3: Tous les lieux de l'étape 2 doivent être marqués comme valides.
+        const isStep3Ready = isStep2Ready && region.places.every(place => place.config && place.config.isValidated === true);
+        if (navStep3) {
+            if (isStep3Ready) navStep3.classList.remove('nav-disabled');
+            else navStep3.classList.add('nav-disabled');
+        }
+
+        // Étape 4 & 5: Au moins un lieu doit avoir une population générée (depuis l'étape 3).
+        const isStep4Ready = isStep3Ready && region.places.some(place => place.demographics && place.demographics.population.length > 0);
+        if (navStep4) {
+            if (isStep4Ready) navStep4.classList.remove('nav-disabled');
+            else navStep4.classList.add('nav-disabled');
+        }
+        if (navStep5) {
+            if (isStep4Ready) navStep5.classList.remove('nav-disabled'); // L'étape 5 est débloquée avec la 4.
+            else navStep5.classList.add('nav-disabled');
         }
     }
 
@@ -1382,16 +1390,26 @@ const RANDOM_NAMES = [
             }
         });
         
+        const floatingMenu = document.querySelector('.floating-menu');
         if (floatingMenu) {
             floatingMenu.addEventListener('click', (e) => {
                 const link = e.target.closest('a');
                 if (link && link.classList.contains('nav-disabled')) {
                     e.preventDefault();
-                    if (link.id === 'nav-step3') {
-                         alert("Veuillez d'abord configurer et valider TOUS les lieux dans l'Étape 2 pour accéder à la simulation.");
-                    } else {
-                         alert("Veuillez d'abord créer une région et y ajouter au moins un lieu pour accéder à cette étape.");
+                    let message = "Cette étape est verrouillée.";
+                    switch(link.id) {
+                        case 'nav-step2':
+                            message = "Veuillez d'abord créer une région et y ajouter au moins un lieu (Étape 1).";
+                            break;
+                        case 'nav-step3':
+                            message = "Veuillez configurer et valider la structure économique de tous les lieux (Étape 2).";
+                            break;
+                        case 'nav-step4':
+                        case 'nav-step5':
+                            message = "Veuillez d'abord générer la population initiale (Étape 3).";
+                            break;
                     }
+                    alert(message);
                 }
             });
         }
@@ -1630,7 +1648,7 @@ const RANDOM_NAMES = [
         }
         view.zoom = 0.15;
         drawMap();
-        updateNavLinksState(); 
+        updateAllNavLinksState(currentRegion); 
     }
 
 function createRegionWithName(name) {

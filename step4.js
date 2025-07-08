@@ -1,16 +1,11 @@
 /**
  * EcoSimRPG - step4.js
  * Moteur principal de la simulation.
- * VERSION 13.0 - Logique de promotion et modale personnage améliorées.
- * - La promotion se fait désormais uniquement au sein du même bâtiment.
- * - La modale personnage affiche l'espérance de vie, la cause du décès et le désir d'enfants.
- * - Ajout de la cause du décès sur l'objet 'person' lors de sa mort.
- * MODIFIED: Intégration des lois de succession pour les titres de Tiers 0.
- * MODIFIED: Correction du statut pour les conjoints de la noblesse et suppression de la mort par "difficultés".
- * MODIFIED: Ajout de la logique des titres Matriarche/Patriarche pour les parents du dirigeant Tier 0.
- * MODIFIED (par l'assistant) : Correction de la logique d'application des titres nobiliaires et de la succession.
- * MODIFIED (par l'assistant) : Ajout d'un gain passif de statistiques pour les personnages sans emploi.
- * MODIFIED (par l'assistant) : Amélioration de la gestion des retraités (conservation de l'ancien métier).
+ * VERSION 15.0 - Amélioration des journaux d'événements
+ * - Les naissances sont désormais enregistrées dans l'historique des parents.
+ * - L'attribution d'un titre dynastique est enregistrée comme un événement.
+ * - La perte d'un ami (par décès) est ajoutée à l'historique du personnage survivant.
+ * - Le passage à l'âge adulte (âge de travailler) est enregistré comme une étape de vie.
  */
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -54,6 +49,44 @@ document.addEventListener('DOMContentLoaded', () => {
     let startPanX, startPanY, scrollLeftStart, scrollTopStart;
     let treeZoomLevel = 1.0;
     let initialSimulationData = null;
+
+    // --- NOUVEAU : GESTION DE LA NAVIGATION ---
+    /**
+     * Met à jour l'état (activé/désactivé) de tous les liens de navigation principaux.
+     * @param {object | null} region - L'objet de la région actuelle.
+     */
+    function updateAllNavLinksState(region) {
+        const navStep2 = document.getElementById('nav-step2');
+        const navStep3 = document.getElementById('nav-step3');
+        const navStep4 = document.getElementById('nav-step4');
+        const navStep5 = document.getElementById('nav-step5');
+
+        // Étape 2: Doit avoir une région avec au moins un lieu.
+        const isStep2Ready = region && region.places && region.places.length > 0;
+        if (navStep2) {
+            if (isStep2Ready) navStep2.classList.remove('nav-disabled');
+            else navStep2.classList.add('nav-disabled');
+        }
+
+        // Étape 3: Tous les lieux de l'étape 2 doivent être marqués comme valides.
+        const isStep3Ready = isStep2Ready && region.places.every(place => place.config && place.config.isValidated === true);
+        if (navStep3) {
+            if (isStep3Ready) navStep3.classList.remove('nav-disabled');
+            else navStep3.classList.add('nav-disabled');
+        }
+
+        // Étape 4 & 5: Au moins un lieu doit avoir une population générée (depuis l'étape 3).
+        const isStep4Ready = isStep3Ready && region.places.some(place => place.demographics && place.demographics.population.length > 0);
+        if (navStep4) {
+            if (isStep4Ready) navStep4.classList.remove('nav-disabled');
+            else navStep4.classList.add('nav-disabled');
+        }
+        if (navStep5) {
+            if (isStep4Ready) navStep5.classList.remove('nav-disabled'); // L'étape 5 est débloquée avec la 4.
+            else navStep5.classList.add('nav-disabled');
+        }
+    }
+
 
     // --- FONCTIONS DE LOG ---
     function logEvent(message, type = 'system', details = {}) {
@@ -143,7 +176,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const placeSatisfaction = place.state.satisfaction;
 
             if (simulationState.currentMonth === 1) {
-                population.forEach(p => { if(p.isAlive) p.age++; });
+                population.forEach(p => { 
+                    if(p.isAlive) {
+                        p.age++; 
+                        const raceData = RACES_DATA.races[p.race];
+                        if (raceData && p.age === raceData.ageTravail) {
+                            logEvent(`💼 ${p.firstName} ${p.lastName} a atteint l'âge de travailler.`, 'system', { familyId: p.familyId, personId: p.id });
+                        }
+                    }
+                });
             }
             
             population.forEach(person => {
@@ -161,7 +202,7 @@ document.addEventListener('DOMContentLoaded', () => {
             handleSocialInteractions(population, place);
             handleRetirement(population, place);
             handleDeaths(population, place, placeSatisfaction);
-            handleMarriages(population, place, placeSatisfaction, dynastyMemberIds);
+            handleMarriages(population, place, dynastyMemberIds);
             handlePregnancyAndBirths(population, place, placeSatisfaction);
             
             handleStatAndPrestigeGrowth(allPopulation, rulingFamilies, dynastyMemberIds);
@@ -370,111 +411,73 @@ function handleRetirement(population, place) {
         return weights[randomIndex];
     }
     
-    // REMPLACEZ VOTRE ANCIENNE FONCTION applyDynasticTitles PAR CELLE-CI
-
-// REMPLACEZ VOTRE FONCTION applyDynasticTitles EXISTANTE PAR CELLE-CI
-
 function applyDynasticTitles(ruler, population) {
     const allPopulation = population;
 
-    // Mettre à jour le dirigeant lui-même
     delete ruler.royalTitle;
 
-    // 1. Mettre à jour le Conjoint
+    const assignTitle = (person, title) => {
+        if (person && person.isAlive && person.royalTitle !== title) {
+            const oldTitle = person.royalTitle || (person.job ? person.job.jobTitle : 'sans statut');
+            person.royalTitle = title;
+            person.job = null;
+            logEvent(`👑 ${person.firstName} ${person.lastName} a reçu le titre de "${title}", quittant son ancien statut de "${oldTitle}".`, 'social', { familyId: person.familyId, personId: person.id });
+        }
+    };
+    
+    // 1. Conjoint
     const spouse = getPersonById(ruler.spouseId, allPopulation);
-    if (spouse && spouse.isAlive) {
-        spouse.job = null;
-        spouse.royalTitle = 'Famille Gouvernante';
-    }
+    if (spouse) assignTitle(spouse, 'Famille Gouvernante');
 
-    // 2. Mettre à jour les Parents (Matriarche/Patriarche)
+    // 2. Parents
     const parents = getParents(ruler, allPopulation);
     parents.forEach(parent => {
-        if (parent && parent.isAlive) {
-            if (!getJobData(parent.job?.buildingName, parent.job?.jobTitle)?.tier === 0) {
-                 parent.job = null;
-                 parent.royalTitle = parent.gender === 'Homme' ? 'Patriarche' : 'Matriarche';
-                 
-                 const parentSpouse = getPersonById(parent.spouseId, allPopulation);
-                 if(parentSpouse && parentSpouse.isAlive && !parents.some(p => p.id === parentSpouse.id)) {
-                    parentSpouse.job = null;
-                    parentSpouse.royalTitle = 'Famille Gouvernante';
-                 }
+        if (parent && parent.isAlive && getJobData(parent.job?.buildingName, parent.job?.jobTitle)?.tier !== 0) {
+            assignTitle(parent, parent.gender === 'Homme' ? 'Patriarche' : 'Matriarche');
+            const parentSpouse = getPersonById(parent.spouseId, allPopulation);
+            if (parentSpouse && !parents.some(p => p.id === parentSpouse.id)) {
+                assignTitle(parentSpouse, 'Famille Gouvernante');
             }
         }
     });
 
-    // 3. Mettre à jour les Enfants (Héritiers) et Petits-Enfants
-    const children = getChildren(ruler, allPopulation);
-    children.forEach(child => {
+    // 3. Enfants et Petits-Enfants
+    getChildren(ruler, allPopulation).forEach(child => {
         if (child && child.isAlive) {
-            child.job = null; 
-            child.royalTitle = child.gender === 'Homme' ? 'Héritier' : 'Héritière';
-
+            assignTitle(child, child.gender === 'Homme' ? 'Héritier' : 'Héritière');
             const childSpouse = getPersonById(child.spouseId, allPopulation);
-            if (childSpouse && childSpouse.isAlive) {
-                childSpouse.job = null;
-                childSpouse.royalTitle = 'Famille Gouvernante';
-            }
+            if(childSpouse) assignTitle(childSpouse, 'Famille Gouvernante');
             
-            // Gestion des Petits-Enfants
-            const grandChildren = getChildren(child, allPopulation);
-            grandChildren.forEach(grandChild => {
+            getChildren(child, allPopulation).forEach(grandChild => {
                 if (grandChild && grandChild.isAlive) {
-                    grandChild.job = null;
-                    grandChild.royalTitle = 'Noble de la Cour';
-
+                    assignTitle(grandChild, 'Noble de la Cour');
                     const grandChildSpouse = getPersonById(grandChild.spouseId, allPopulation);
-                    if (grandChildSpouse && grandChildSpouse.isAlive) {
-                        grandChildSpouse.job = null;
-                        grandChildSpouse.royalTitle = 'Famille Gouvernante';
-                    }
+                    if(grandChildSpouse) assignTitle(grandChildSpouse, 'Famille Gouvernante');
                 }
             });
         }
     });
 
-    // 4. Mettre à jour les Frères/Sœurs, Neveux/Nièces et Petits-Neveux/Nièces
-    const siblings = getSiblings(ruler, allPopulation);
-    siblings.forEach(sibling => {
+    // 4. Frères/Sœurs et leurs descendants
+    getSiblings(ruler, allPopulation).forEach(sibling => {
         if (sibling && sibling.isAlive) {
-            sibling.job = null;
-            sibling.royalTitle = sibling.gender === 'Homme' ? 'Frère du pouvoir' : 'Sœur du pouvoir';
-
+            assignTitle(sibling, sibling.gender === 'Homme' ? 'Frère du pouvoir' : 'Sœur du pouvoir');
             const siblingSpouse = getPersonById(sibling.spouseId, allPopulation);
-            if (siblingSpouse && siblingSpouse.isAlive) {
-                siblingSpouse.job = null;
-                siblingSpouse.royalTitle = 'Famille Gouvernante';
-            }
-
-            // Gestion des Neveux/Nièces
-            const nephewsAndNieces = getChildren(sibling, allPopulation);
-            nephewsAndNieces.forEach(nephew => {
+            if(siblingSpouse) assignTitle(siblingSpouse, 'Famille Gouvernante');
+            
+            getChildren(sibling, allPopulation).forEach(nephew => {
                 if (nephew && nephew.isAlive) {
-                    nephew.job = null;
-                    nephew.royalTitle = 'Noble de la Cour';
-
+                    assignTitle(nephew, 'Noble de la Cour');
                     const nephewSpouse = getPersonById(nephew.spouseId, allPopulation);
-                    if (nephewSpouse && nephewSpouse.isAlive) {
-                        nephewSpouse.job = null;
-                        nephewSpouse.royalTitle = 'Famille Gouvernante';
-                    }
-
-                    // NOUVEAU : GESTION DES PETITS-NEVEUX/NIÈCES
-                    const grandNephewsAndNieces = getChildren(nephew, allPopulation);
-                    grandNephewsAndNieces.forEach(grandNephew => {
-                        if (grandNephew && grandNephew.isAlive) {
-                            grandNephew.job = null;
-                            grandNephew.royalTitle = 'Noble de la Cour';
-
+                    if(nephewSpouse) assignTitle(nephewSpouse, 'Famille Gouvernante');
+                    
+                    getChildren(nephew, allPopulation).forEach(grandNephew => {
+                         if (grandNephew && grandNephew.isAlive) {
+                            assignTitle(grandNephew, 'Noble de la Cour');
                             const grandNephewSpouse = getPersonById(grandNephew.spouseId, allPopulation);
-                            if (grandNephewSpouse && grandNephewSpouse.isAlive) {
-                                grandNephewSpouse.job = null;
-                                grandNephewSpouse.royalTitle = 'Famille Gouvernante';
-                            }
-                        }
+                            if(grandNephewSpouse) assignTitle(grandNephewSpouse, 'Famille Gouvernante');
+                         }
                     });
-                    // FIN DE L'AJOUT
                 }
             });
         }
@@ -682,7 +685,6 @@ function applyDynasticTitles(ruler, population) {
                 person.deathMonth = simulationState.currentMonth;
                 person.causeOfDeath = causeOfDeath;
                 
-                // --- MODIFIED LOGIC for jobBeforeDeath ---
                 const jobData = person.job ? getJobData(person.job.buildingName, person.job.jobTitle) : null;
                 let finalJobTitle = 'Sans emploi';
                 if (jobData) {
@@ -693,8 +695,6 @@ function applyDynasticTitles(ruler, population) {
                     finalJobTitle = person.royalTitle;
                 }
                 person.jobBeforeDeath = finalJobTitle;
-                // --- END MODIFICATION ---
-
                 person.isAlive = false;
                 
                 if (jobData && jobData.tier === 0) {
@@ -703,12 +703,20 @@ function applyDynasticTitles(ruler, population) {
                 
                 if (person.job) { person.job = null; }
 
+                // Log pour la personne décédée
+                logEvent(message, 'death', { familyId: person.familyId, personId: person.id });
+
+                // Log pour les amis survivants
                 if (person.friendIds) {
                     person.friendIds.forEach(friendId => {
                         const friend = population.find(f => f.id === friendId);
-                        if (friend && friend.friendIds) {
-                            const index = friend.friendIds.indexOf(person.id);
-                            if (index > -1) friend.friendIds.splice(index, 1);
+                        if (friend && friend.isAlive) {
+                            const friendMessage = `😢 Vous avez appris le décès de votre ami(e) ${person.firstName} ${person.lastName}.`;
+                            logEvent(friendMessage, 'social', { familyId: friend.familyId, personId: friend.id });
+                            if (friend.friendIds) {
+                                const index = friend.friendIds.indexOf(person.id);
+                                if (index > -1) friend.friendIds.splice(index, 1);
+                            }
                         }
                     });
                 }
@@ -721,8 +729,6 @@ function applyDynasticTitles(ruler, population) {
                         }
                     });
                 }
-
-                logEvent(message, 'death', { familyId: person.familyId, personId: person.id });
             }
         });
     }
@@ -870,13 +876,17 @@ function applyDynasticTitles(ruler, population) {
                         if (manIsDynasty && !wifeIsDynasty) {
                             const oldJobTitle = wife.job ? wife.job.jobTitle : 'aucun';
                             wife.job = null;
-                            wife.royalTitle = 'Famille Gouvernante';
-                            logEvent(`💍 En épousant ${man.firstName}, ${wife.firstName} a quitté son poste (${oldJobTitle}) pour rejoindre la "Famille Gouvernante".`, 'social', { familyId: man.familyId, personId: wife.id });
+                            if (wife.royalTitle !== 'Famille Gouvernante') {
+                                wife.royalTitle = 'Famille Gouvernante';
+                                logEvent(`💍 En épousant ${man.firstName}, ${wife.firstName} a quitté son poste (${oldJobTitle}) pour rejoindre la "Famille Gouvernante".`, 'social', { familyId: man.familyId, personId: wife.id });
+                            }
                         } else if (wifeIsDynasty && !manIsDynasty) {
                             const oldJobTitle = man.job ? man.job.jobTitle : 'aucun';
                             man.job = null;
-                            man.royalTitle = 'Famille Gouvernante';
-                            logEvent(`💍 En épousant ${wife.firstName}, ${man.firstName} a quitté son poste (${oldJobTitle}) pour rejoindre la "Famille Gouvernante".`, 'social', { familyId: wife.familyId, personId: man.id });
+                            if (man.royalTitle !== 'Famille Gouvernante') {
+                                man.royalTitle = 'Famille Gouvernante';
+                                logEvent(`💍 En épousant ${wife.firstName}, ${man.firstName} a quitté son poste (${oldJobTitle}) pour rejoindre la "Famille Gouvernante".`, 'social', { familyId: wife.familyId, personId: man.id });
+                            }
                         }
 
                         const message = `💍 ${man.firstName} ${man.lastName} et ${wife.firstName} ${wife.lastName} (née ${wife.maidenName}) se sont mariés à ${place.name}.`;
@@ -990,7 +1000,15 @@ function applyDynasticTitles(ruler, population) {
                     const family = currentRegion.places.flatMap(p => p.demographics.families).find(f => f.id === father.familyId);
                     if (family && !family.memberIds.includes(newChild.id)) { family.memberIds.push(newChild.id); }
 
-                    logEvent(`👶 Un enfant nommé ${newChild.firstName} ${newChild.lastName} est né de ${father.firstName} et ${mother.firstName} à ${place.name}.`, 'birth', { familyId: father.familyId, personId: newChild.id });
+                    // Log pour l'enfant, la famille, et les parents
+                    const birthMessage = `👶 Un enfant nommé ${newChild.firstName} ${newChild.lastName} est né de ${father.firstName} et ${mother.firstName} à ${place.name}.`;
+                    logEvent(birthMessage, 'birth', { familyId: father.familyId, personId: newChild.id });
+                    
+                    const motherMessage = `👶 Vous avez donné naissance à ${newChild.firstName}.`;
+                    logEvent(motherMessage, 'birth', { familyId: mother.familyId, personId: mother.id });
+                    
+                    const fatherMessage = `👶 Vous êtes devenu le père de ${newChild.firstName}.`;
+                    logEvent(fatherMessage, 'birth', { familyId: father.familyId, personId: father.id });
                     
                     if (mother.job) {
                         const jobData = getJobData(mother.job.buildingName, mother.job.jobTitle);
@@ -1282,7 +1300,7 @@ function applyDynasticTitles(ruler, population) {
                     acquaintance.friendIds.push(person.id);
                     acquaintance.acquaintanceIds = acquaintance.acquaintanceIds.filter(id => id !== person.id);
     
-                    const message = `❤️ ${person.firstName} ${person.lastName} et ${acquaintance.firstName} ${acquaintance.lastName} sont maintenant amis.`;
+                    const message = `✨ ${person.firstName} ${person.lastName} et ${acquaintance.firstName} ${acquaintance.lastName} sont maintenant amis.`;
                     logEvent(message, 'social', { familyId: person.familyId, personId: person.id });
                     logEvent(message, 'social', { familyId: acquaintance.familyId, personId: acquaintance.id });
                  }
@@ -1355,7 +1373,12 @@ function applyDynasticTitles(ruler, population) {
     }
     
     function loadData() { const data = localStorage.getItem(STORAGE_KEY); regions = data ? JSON.parse(data) : []; const lastRegionId = localStorage.getItem(LAST_REGION_KEY); if (lastRegionId) { currentRegion = regions.find(r => r.id == lastRegionId) || null; } }
-    function saveData() { localStorage.setItem(STORAGE_KEY, JSON.stringify(regions)); }
+    
+    // MODIFICATION : Appel à updateAllNavLinksState dans saveData
+    function saveData() { 
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(regions)); 
+        updateAllNavLinksState(currentRegion);
+    }
     function updateDateUI() { currentDateDisplay.textContent = `Mois ${simulationState.currentMonth}, Année ${simulationState.currentYear}`; }
 
     function updateGlobalStats() {
@@ -1669,6 +1692,7 @@ function applyDynasticTitles(ruler, population) {
                     if (!visited.has(childId)) {
                         visited.add(childId);
                         queue.push({ personId: childId, generation: generation + 1 });
+                        descendantMap.set(childId, generation + 1);
                     }
                 });
             }
@@ -1983,7 +2007,12 @@ function applyDynasticTitles(ruler, population) {
     function init() {
         loadData();
         if(regions) initialSimulationData = JSON.parse(JSON.stringify(regions));
+        
+        // NOUVEAU : Appel initial pour la mise à jour de la navigation
+        updateAllNavLinksState(currentRegion);
+        
         if (!setupInitialState()) return;
+
         logEvent('Simulation prête à démarrer...', 'system');
         updateEventLogUI();
         startSimBtn.addEventListener('click', startSimulation);
@@ -2120,6 +2149,31 @@ function applyDynasticTitles(ruler, population) {
                 jobsByTierModal.showModal();
             });
             jobsByTierModal.querySelector('.modal-close-btn').addEventListener('click', () => { jobsByTierModal.close(); });
+        }
+        
+        // NOUVEAU : Écouteur de clics pour les liens de navigation désactivés
+        const floatingMenu = document.querySelector('.floating-menu');
+        if (floatingMenu) {
+            floatingMenu.addEventListener('click', (e) => {
+                const link = e.target.closest('a');
+                if (link && link.classList.contains('nav-disabled')) {
+                    e.preventDefault();
+                    let message = "Cette étape est verrouillée.";
+                    switch(link.id) {
+                        case 'nav-step2':
+                            message = "Veuillez d'abord créer une région et y ajouter au moins un lieu (Étape 1).";
+                            break;
+                        case 'nav-step3':
+                            message = "Veuillez configurer et valider la structure économique de tous les lieux (Étape 2).";
+                            break;
+                        case 'nav-step4':
+                        case 'nav-step5':
+                            message = "Veuillez d'abord générer la population initiale (Étape 3).";
+                            break;
+                    }
+                    alert(message);
+                }
+            });
         }
     }
 

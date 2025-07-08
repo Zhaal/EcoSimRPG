@@ -93,7 +93,7 @@
     }
 
     /* AJOUTÉ : Forcer le fond blanc pour le conteneur des compétences */
-    .skills-list-container {
+    .skills-list-container, .pathfinder-skills-container {
         background: #fff !important;
         border-color: #aaa !important;
     }
@@ -119,5 +119,36 @@
 
     .route-steps, .time-steps {
         font-size: 0.8em !important;
+    }
+
+    /* --- RÈGLE POUR CORRIGER LA HAUTEUR DE LA FICHE D&D --- */
+    /* Force la liste de compétences D&D sur 2 colonnes pour l'impression */
+    .skills-list-container ul {
+        column-count: 2;
+        column-gap: 20px;
+    }
+    .skill-item {
+        break-inside: avoid;
+    }
+
+    /* --- NOUVEAU: AJUSTEMENTS DE TAILLE POUR PATHFINDER ET LISIBILITÉ GÉNÉRALE --- */
+    
+    /* 1. Réduit légèrement la police de toute la fiche pour gagner de la place */
+    .character-sheet {
+        font-size: 9.2pt !important;
+    }
+    
+    /* 2. Réduit l'espace vertical entre chaque compétence (D&D et Pathfinder) */
+    .skill-item, .pf-skill-item {
+        padding: 1.5px 0 !important; 
+    }
+    
+    /* 3. Compacte la grille des relations sociales */
+    .social-grid {
+        gap: 4px 15px !important;
+    }
+    .social-grid ul {
+        margin-top: 2px !important;
+        padding-left: 12px !important;
     }
 }

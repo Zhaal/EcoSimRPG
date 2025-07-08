@@ -53,7 +53,7 @@ body {
     gap: 8px;
 }
 
-#location-select, #building-select, #character-select {
+#location-select, #building-select, #character-select, #system-select {
     font-size: 1em;
     padding: 8px;
     min-width: 200px;
@@ -209,7 +209,6 @@ body {
 /* ------- STYLES DE FICHE PERSONNAGE (D&D) ------- */
 #character-sheets-container {
     display: grid;
-    /* MODIFICATION : Passage de auto-fit à 2 colonnes fixes pour plus d'espace */
     grid-template-columns: repeat(2, 1fr); 
     gap: 25px;
 }
@@ -246,13 +245,14 @@ body {
 }
 
 .char-sheet-main-grid {
-    display: flex;
+    display: grid;
+    grid-template-columns: 100px 1fr; /* Grille stable à 2 colonnes : Stats | Contenu principal */
     padding: 15px;
     gap: 20px;
+    align-items: start;
 }
 
 .char-sheet-stats {
-    flex: 0 0 100px;
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -448,23 +448,13 @@ body {
 
 /* --- NOUVEAUX STYLES : CA, INITIATIVE & COMPÉTENCES --- */
 
-.char-sheet-secondary-grid {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    gap: 20px;
-    padding: 15px;
-    align-items: start;
-    border-top: 1px solid #d6cbbc;
-    margin-top: 10px;
-}
-
 .combat-stats-container {
     display: flex;
-    flex-direction: row; /* MODIFIÉ : 'column' devient 'row' pour mettre côte à côte */
+    flex-direction: row;
     gap: 15px;
-    justify-content: center; /* AJOUTÉ : Pour centrer les boîtes */
+    justify-content: center;
     align-items: center;
-    margin-bottom: 15px; /* AJOUTÉ : Pour espacer avec le bloc d'en dessous */
+    margin-bottom: 15px;
 }
 
 .combat-box {
@@ -502,15 +492,16 @@ body {
     margin-top: 2px;
 }
 
-.skills-list-container {
+.skills-list-container, .pathfinder-skills-container {
     border: 1px solid #a89e87;
     padding: 10px 15px;
     border-radius: 5px;
     background: #fdfaf2;
     height: 100%;
+    margin-top: 20px; /* Ajoute de l'espace au dessus de la boite de compétences */
 }
 
-.skills-list-container h4 {
+.skills-list-container h4, .pathfinder-skills-container h4 {
     font-family: 'Cinzel', serif;
     text-align: center;
     margin: 0 0 10px 0;
@@ -556,4 +547,37 @@ body {
     color: #777;
     font-style: normal;
     font-size: 0.9em;
+}
+
+/* Nouveaux styles pour la liste de compétences Pathfinder (v8.2+) */
+.pathfinder-skills-list {
+    list-style: none; /* Supprime les puces de la liste */
+    padding: 0;
+    margin: 0;
+    column-count: 2; /* Divise la liste en deux colonnes */
+    column-gap: 25px; /* Définit l'espace entre les colonnes */
+}
+
+.pf-skill-item {
+    display: flex; /* Active Flexbox pour l'alignement */
+    justify-content: space-between; /* Aligne les éléments aux deux extrémités */
+    align-items: center; /* Centre verticalement les éléments */
+    padding: 3px 0; /* Ajoute un peu d'espace vertical */
+    font-size: 0.9em; /* Harmonise la taille de la police */
+    border-bottom: 1px solid #f0e8d6; /* Ajoute un séparateur léger */
+    break-inside: avoid; /* Empêche un item d'être coupé entre deux colonnes */
+}
+
+.pf-skill-item:last-child {
+    border-bottom: none; /* Supprime le séparateur du dernier élément */
+}
+
+.pf-skill-name {
+    /* Le nom de la compétence prendra l'espace nécessaire */
+}
+
+.pf-skill-total {
+    font-weight: bold; /* Met le bonus en gras */
+    flex-shrink: 0; /* Empêche le bonus de se réduire si le nom est long */
+    padding-left: 10px; /* Ajoute un espace entre le nom et le bonus */
 }
