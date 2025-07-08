@@ -23,7 +23,7 @@
 
 #top-bar-step2 {
     padding: 15px 25px;
-    background: rgba(0,0,0,0.1);
+    background-color: #e8e0c9; /* MODIFIÉ: Utilisation de la couleur standard */
     border-bottom: 2px solid var(--color-border);
     display: flex;
     justify-content: space-between;

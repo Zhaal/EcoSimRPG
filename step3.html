@@ -54,6 +54,7 @@
 </dialog>
 
 <div class="page-container-step3" style="visibility: hidden;">
+    <div id="notification-banner" class="notification-banner" aria-live="polite"></div>
 
     <header id="top-dashboard-banner">
         <div class="dashboard-section">
@@ -71,8 +72,10 @@
             </div>
         </div>
 
-        <div class="dashboard-section bottom-actions">
-            <button id="finalize-simulation-btn" class="btn btn-primary" disabled>Finaliser et Démarrer la Simulation</button>
+        <div class="dashboard-section">
+            <h4>Actions Globales</h4>
+            <button id="randomize-races-all-btn" class="btn btn-secondary" style="width:100%;">🎲 Randomiser pour TOUS les lieux</button>
+    <button id="pre-generate-all-btn" class="btn btn-primary" style="width:100%; margin-top: 10px;">🚀 Lancer le Pré-Génération pour TOUS les lieux</button>
         </div>
     </header>
 
@@ -98,8 +101,7 @@
                 <section class="config-section">
                     <h2>1. Distribution des Races Originelles</h2>
                     <div style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
-                        <button id="randomize-races-current-btn" class="btn btn-secondary">Distribuer automatiquement et aléatoirement les races originelles pour le lieu selectionné</button>
-                        <button id="randomize-races-all-btn" class="btn btn-secondary">Distribuer automatiquement et aléatoirement les races originelles pour TOUT les lieux</button>
+                         <button id="randomize-races-current-btn" class="btn btn-secondary">Distribuer automatiquement et aléatoirement les races originelles pour le lieu selectionné</button>
                     </div>
                     <div id="race-distribution-container">
                     </div>
@@ -159,6 +161,10 @@
 
             </div>
         </main>
+    </div>
+
+    <div id="action-footer">
+        <button id="finalize-simulation-btn" class="btn btn-primary" disabled>Finaliser et Démarrer la Simulation</button>
     </div>
 </div>
 

@@ -7,6 +7,7 @@
     flex-direction: column;
     height: 100vh;
     width: calc(100% - 160px);
+    position: relative; /* AJOUTÉ POUR LE BANDEAU DE NOTIFICATION */
 }
 
 #top-dashboard-banner {
@@ -239,11 +240,6 @@ input[type="range"]::-moz-range-thumb {
 .dashboard-section .bottom-actions {
     margin-top: auto; /* Pousse le bouton en bas */
     padding-top: 10px;
-}
-
-#finalize-simulation-btn {
-    width: 100%;
-    padding: 12px;
 }
 
 #distance-matrix-container {
@@ -770,4 +766,80 @@ label.inline-label input[type="checkbox"] {
     border-color: #a1780f;
     transform: translateY(-1px);
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* MODIFIÉ: Ajout des styles pour le footer et le bouton de finalisation */
+#action-footer {
+    padding: 20px;
+    background: rgba(0,0,0,0.05);
+    border-top: 1px solid var(--color-border);
+    text-align: center;
+    flex-shrink: 0;
+}
+
+#finalize-simulation-btn {
+    padding: 15px 35px;
+    font-size: 1.4em;
+    font-family: var(--font-title);
+    font-weight: 700;
+    color: white;
+    background-color: #2e7d32;
+    border: none;
+    border-radius: 50px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-block;
+}
+
+#finalize-simulation-btn:hover:not(:disabled) {
+    background-color: #388e3c;
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 7px 15px rgba(0,0,0,0.3);
+}
+
+#finalize-simulation-btn:disabled {
+    background-color: #a5d6a7;
+    color: #e8f5e9;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}
+
+/* --- NOUVEAU : Bandeau de Notification --- */
+.notification-banner {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translate(-50%, -120%); /* Commence cachée au-dessus */
+    z-index: 2000;
+    padding: 12px 25px;
+    border-radius: 0 0 8px 8px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 1em;
+    color: white;
+    transition: transform 0.4s ease-in-out;
+    text-align: center;
+    max-width: 90%;
+}
+
+.notification-banner.show {
+    transform: translate(-50%, 0); /* Glisse pour apparaître */
+}
+
+.notification-banner.success {
+    background-color: var(--color-forest-green);
+    border: 1px solid #1b5e20;
+}
+
+.notification-banner.info {
+    background-color: var(--color-royal-blue);
+    border: 1px solid #1a237e;
+}
+
+.notification-banner.error {
+    background-color: var(--color-error);
+    border: 1px solid #7f1d1d;
 }

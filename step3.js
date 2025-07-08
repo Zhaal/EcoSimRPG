@@ -1,9 +1,9 @@
 /**
  * EcoSimRPG - step3.js
- * VERSION MODIFIÉE - Intégration de la navigation verrouillée
+ * VERSION MODIFIÉE - Intégration de la navigation verrouillée et finalisation
  * - Ajout d'une fonction `updateAllNavLinksState` complète pour gérer l'état de tous les liens de navigation.
  * - Ajout d'un écouteur d'événements pour fournir des alertes contextuelles sur les liens désactivés.
- * - Les appels à la fonction de mise à jour sont intégrés aux moments clés (chargement, sauvegarde).
+ * - Ajout de la logique pour activer le bouton de finalisation et rediriger vers l'étape 4.
  */
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -22,6 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- SÉLECTEURS DOM ---
     const mainContentWrapper = document.querySelector('.page-container-step3');
+    const notificationBanner = document.getElementById('notification-banner');
     const raceSourceModal = document.getElementById('race-source-modal');
     const placesListContainer = document.getElementById('places-list-step3');
     const mainPanel = document.getElementById('main-panel-step3');
@@ -50,12 +51,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const characterDetailsModal = document.getElementById('character-details-modal');
     const randomizeRacesCurrentBtn = document.getElementById('randomize-races-current-btn');
     const randomizeRacesAllBtn = document.getElementById('randomize-races-all-btn');
+    const preGenerateAllBtn = document.getElementById('pre-generate-all-btn');
     const familyModal = document.getElementById('family-modal');
     const familyForm = document.getElementById('family-form');
     const familyNameInput = document.getElementById('family-name');
     const confirmAddFamilyBtn = document.getElementById('confirm-add-family-btn');
     const cancelFamilyBtn = document.getElementById('cancel-family-btn');
-
+    const finalizeSimulationBtn = document.getElementById('finalize-simulation-btn');
 
     // --- ÉTAT DE L'APPLICATION ---
     let regions = [];
@@ -63,6 +65,25 @@ document.addEventListener('DOMContentLoaded', () => {
     let selectedPlace = null;
     let currentCustomFamily = { head: null, spouse: null, children: [] };
     let customRacesData = null;
+    let notificationTimeout;
+
+    // --- FONCTIONS DE NOTIFICATION ---
+    function showNotification(message, type = 'info', duration = 4000) {
+        if (!notificationBanner) return;
+        if (notificationTimeout) {
+            clearTimeout(notificationTimeout);
+        }
+        notificationBanner.textContent = message;
+        notificationBanner.className = `notification-banner ${type}`;
+        
+        notificationBanner.classList.remove('show');
+        void notificationBanner.offsetWidth; 
+        notificationBanner.classList.add('show');
+
+        notificationTimeout = setTimeout(() => {
+            notificationBanner.classList.remove('show');
+        }, duration);
+    }
 
     // --- NOUVELLE FONCTION DE MISE À JOUR DE LA NAVIGATION ---
     /**
@@ -100,6 +121,24 @@ document.addEventListener('DOMContentLoaded', () => {
             else navStep5.classList.add('nav-disabled');
         }
     }
+    
+    /**
+     * Vérifie si tous les lieux sont configurés pour activer le bouton de finalisation.
+     */
+    function checkFinalizationStatus() {
+        if (!finalizeSimulationBtn || !currentRegion || !currentRegion.places) {
+            if (finalizeSimulationBtn) finalizeSimulationBtn.disabled = true;
+            return;
+        }
+
+        // Vérifie si chaque lieu a une population générée.
+        const allPlacesConfigured = currentRegion.places.every(
+            place => place.demographics && place.demographics.population.length > 0
+        );
+
+        finalizeSimulationBtn.disabled = !allPlacesConfigured;
+    }
+
 
     // --- NOUVEAU : Fonctions de chargement et sélection des données de races ---
     function loadCustomRacesData() {
@@ -124,9 +163,11 @@ document.addEventListener('DOMContentLoaded', () => {
     function initializeRaceDataSource(source) {
         if (source === 'custom' && customRacesData) {
             RACES_DATA = customRacesData;
+            RACES_DATA.source = 'custom'; // Keep track of the source
             console.log("Using CUSTOM race data for this session.");
         } else {
             RACES_DATA = window.EcoSimData.racesData;
+            RACES_DATA.source = 'default'; // Keep track of the source
             console.log("Using DEFAULT race data for this session.");
         }
     }
@@ -288,7 +329,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function countTotalJobsForPlace(place) { return getAvailableJobs(place, true).length; }
     function findBestPartner(person, potentialPartners, allowInterracial, compatibleRaces) { let bestPartnerIndex = -1; let highestScore = -1; const personJobData = getJobData(person.job.buildingName, person.job.jobTitle); if (!personJobData) return -1; const personJobTier = personJobData.tier; const SAMPLE_SIZE = 60; let searchSample = [...potentialPartners]; for (let i = searchSample.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [searchSample[i], searchSample[j]] = [searchSample[j], searchSample[i]]; } if (searchSample.length > SAMPLE_SIZE) { searchSample = searchSample.slice(0, SAMPLE_SIZE); } for (const partner of searchSample) { if (Math.abs(person.age - partner.age) > 10) { continue; } let currentScore = 0; const isRaceCompatible = (partner.race === person.race) || (allowInterracial && compatibleRaces.includes(partner.race)); if (!isRaceCompatible) continue; currentScore += 100; const partnerJobData = getJobData(partner.job.buildingName, partner.job.jobTitle); if (partnerJobData) { if (person.job && partner.job && person.job.buildingName === partner.job.buildingName) currentScore += 15; const partnerJobTier = partnerJobData.tier; if (partner.job.jobTitle === person.job.jobTitle) currentScore += 20; else if (partnerJobTier === personJobTier) currentScore += 10; else if (Math.abs(partnerJobTier - personJobTier) === 1) currentScore += 5; } if (currentScore > highestScore) { highestScore = currentScore; bestPartnerIndex = potentialPartners.findIndex(p => p.id === partner.id); } } return bestPartnerIndex; }
     function getAgeForTier(tier, raceData) { const adultAge = raceData.ageAdulte || 18; const maxAge = raceData.esperanceVieMax || 100; let minAge, maxAgeRange; switch (tier) { case 0: case 1: minAge = Math.max(adultAge, Math.floor(maxAge * 0.4)); maxAgeRange = Math.floor(maxAge * 0.2); break; case 2: minAge = Math.max(adultAge, Math.floor(maxAge * 0.3)); maxAgeRange = Math.floor(maxAge * 0.2); break; case 3: minAge = Math.max(adultAge, Math.floor(maxAge * 0.2)); maxAgeRange = Math.floor(maxAge * 0.15); break; case 4: minAge = adultAge + 2; maxAgeRange = 10; break; default: minAge = adultAge; maxAgeRange = 7; break; } const calculatedMaxAge = minAge + Math.floor(Math.random() * (maxAgeRange + 1)); return Math.min(calculatedMaxAge, maxAge - 1); }
-    function generatePopulationForPlace() { if (!selectedPlace || selectedPlace.demographics.raceDistributionTotal !== 100) { alert("Veuillez d'abord définir la distribution des races à 100%."); return; } if (selectedPlace.demographics.population.some(p => !p.isCustom)) { if (!confirm("Cette action va remplacer la population auto-générée existante (les familles personnalisées seront conservées). Voulez-vous continuer ?")) { return; } } resetGen0Population(); let availableJobs = getAvailableJobs(selectedPlace); let allNewPopulation = []; let individualsToCreate = []; availableJobs.sort((a, b) => { const jobA_data = getJobData(a.buildingName, a.jobTitle); const jobB_data = getJobData(b.buildingName, b.jobTitle); return (jobA_data?.tier ?? 5) - (jobB_data?.tier ?? 5); }); const racePool = []; Object.entries(selectedPlace.demographics.raceDistribution).forEach(([raceName, percentage]) => { const count = Math.round(availableJobs.length * (percentage / 100)); for (let i = 0; i < count; i++) racePool.push(raceName); }); availableJobs.forEach(job => { if (racePool.length === 0) return; const raceIndex = Math.floor(Math.random() * racePool.length); const selectedRace = racePool.splice(raceIndex, 1)[0]; const raceData = RACES_DATA.races[selectedRace]; const jobData = getJobData(job.buildingName, job.jobTitle); const gender = Math.random() < 0.5 ? 'Homme' : 'Femme'; const names = gender === 'Homme' ? raceData.prenomsM : raceData.prenomsF; const firstName = names[Math.floor(Math.random() * names.length)]; const age = getAgeForTier(jobData.tier, raceData); const person = { id: `auto_${Date.now()}_${Math.random()}`, firstName, locationId: selectedPlace.id, race: selectedRace, gender, isAlive: true, age, job: { locationId: job.locationId, buildingName: job.buildingName, jobTitle: job.jobTitle }, spouseId: null, hasBeenMarried: false, familyId: null, isCustom: false, parents: [], childrenIds: [], friendIds: [], acquaintanceIds: [], maxFriends: Math.floor(Math.random() * 5) + 1, maxAcquaintances: Math.floor(Math.random() * 12) + 7, desiredChildren: getWeightedDesiredChildren(), status: 'Actif', totalMonthsWorked: 0 }; const experienceData = applyInitialExperience(person, jobData); Object.assign(person, { salary: calculateInitialSalary(jobData), stats: experienceData.stats, prestige: experienceData.prestige }); individualsToCreate.push(person); }); const usedFamilyNames = new Set(selectedPlace.demographics.families.map(f => f.name)); let men = individualsToCreate.filter(p => p.gender === 'Homme'); let women = individualsToCreate.filter(p => p.gender === 'Femme'); const getTier = (p) => getJobData(p.job.buildingName, p.job.jobTitle)?.tier ?? 5; men.sort((a, b) => getTier(a) - getTier(b)); women.sort((a, b) => getTier(a) - getTier(b)); const allowInterracial = selectedPlace.demographics.allowInterracialMarriage; const singleLeftovers = []; while (men.length > 0) { const man = men.shift(); const compatibleRaces = allowInterracial ? RACES_DATA.compatibilites[man.race] || [] : []; const womanIndex = findBestPartner(man, women, allowInterracial, compatibleRaces); const isRuler = getTier(man) === 0; if (womanIndex > -1 && women.length > 0) { const woman = women.splice(womanIndex, 1)[0]; let familyName; do { familyName = RACES_DATA.races[man.race].noms[Math.floor(Math.random() * RACES_DATA.races[man.race].noms.length)]; } while (usedFamilyNames.has(familyName)); usedFamilyNames.add(familyName); man.lastName = familyName; woman.maidenName = woman.lastName; woman.lastName = familyName; man.spouseId = woman.id; woman.spouseId = man.id; man.hasBeenMarried = true; woman.hasBeenMarried = true; const family = { id: `fam_auto_${Date.now()}_${Math.random()}`, name: familyName, locationId: selectedPlace.id, memberIds: [man.id, woman.id], isCustom: false }; man.familyId = family.id; woman.familyId = family.id; allNewPopulation.push(man, woman); if (isRuler) woman.job = null; const desiredChildCount = Math.min(man.desiredChildren, woman.desiredChildren); const youngestParent = man.age < woman.age ? man : woman; let maxPossibleAgeForNextChild = youngestParent.age - (RACES_DATA.races[youngestParent.race].ageAdulte || 18); for (let i = 0; i < desiredChildCount; i++) { const childSpacingInYears = (RACES_DATA.races[woman.race].dureeGestationMois || 9) / 12 + 1.5; if (maxPossibleAgeForNextChild <= childSpacingInYears) break; const finalChildAge = Math.max(0, Math.random() * (maxPossibleAgeForNextChild - childSpacingInYears)); const child = createChild(man, woman); if (child) { child.age = Math.floor(finalChildAge); family.memberIds.push(child.id); man.childrenIds.push(child.id); woman.childrenIds.push(child.id); allNewPopulation.push(child); maxPossibleAgeForNextChild = finalChildAge; } else break; } selectedPlace.demographics.families.push(family); } else { singleLeftovers.push(man); } } singleLeftovers.push(...men, ...women); singleLeftovers.forEach(person => { let newFamilyName; const personRaceData = RACES_DATA.races[person.race]; do { newFamilyName = personRaceData.noms[Math.floor(Math.random() * personRaceData.noms.length)]; } while (usedFamilyNames.has(newFamilyName)); usedFamilyNames.add(newFamilyName); person.lastName = newFamilyName; const family = { id: `fam_auto_${Date.now()}_${Math.random()}`, name: person.lastName, locationId: selectedPlace.id, memberIds: [person.id], isCustom: false }; person.familyId = family.id; selectedPlace.demographics.families.push(family); allNewPopulation.push(person); }); const allFamilies = selectedPlace.demographics.families; allFamilies.forEach(family => { const ruler = allNewPopulation.find(p => p.familyId === family.id && p.job && getJobData(p.job.buildingName, p.job.jobTitle)?.tier === 0); if (ruler) { applyDynasticTitles(ruler, allNewPopulation); } }); selectedPlace.demographics.population.push(...allNewPopulation); saveData(); updatePlaceStats(); updatePopulationUI(); updateDashboard(); document.getElementById(`status-icon-${selectedPlace.id}`).textContent = '🟢'; }
+    function generatePopulationForPlace() { if (!selectedPlace || selectedPlace.demographics.raceDistributionTotal !== 100) { alert("Veuillez d'abord définir la distribution des races à 100%."); return; } if (selectedPlace.demographics.population.some(p => !p.isCustom)) { if (!confirm("Cette action va remplacer la population auto-générée existante (les familles personnalisées seront conservées). Voulez-vous continuer ?")) { return; } } resetGen0Population(); let availableJobs = getAvailableJobs(selectedPlace); let allNewPopulation = []; let individualsToCreate = []; availableJobs.sort((a, b) => { const jobA_data = getJobData(a.buildingName, a.jobTitle); const jobB_data = getJobData(b.buildingName, b.jobTitle); return (jobA_data?.tier ?? 5) - (jobB_data?.tier ?? 5); }); const racePool = []; Object.entries(selectedPlace.demographics.raceDistribution).forEach(([raceName, percentage]) => { const count = Math.round(availableJobs.length * (percentage / 100)); for (let i = 0; i < count; i++) racePool.push(raceName); }); availableJobs.forEach(job => { if (racePool.length === 0) return; const raceIndex = Math.floor(Math.random() * racePool.length); const selectedRace = racePool.splice(raceIndex, 1)[0]; const raceData = RACES_DATA.races[selectedRace]; const jobData = getJobData(job.buildingName, job.jobTitle); const gender = Math.random() < 0.5 ? 'Homme' : 'Femme'; const names = gender === 'Homme' ? raceData.prenomsM : raceData.prenomsF; const firstName = names[Math.floor(Math.random() * names.length)]; const age = getAgeForTier(jobData.tier, raceData); const person = { id: `auto_${Date.now()}_${Math.random()}`, firstName, locationId: selectedPlace.id, race: selectedRace, gender, isAlive: true, age, job: { locationId: job.locationId, buildingName: job.buildingName, jobTitle: job.jobTitle }, spouseId: null, hasBeenMarried: false, familyId: null, isCustom: false, parents: [], childrenIds: [], friendIds: [], acquaintanceIds: [], maxFriends: Math.floor(Math.random() * 5) + 1, maxAcquaintances: Math.floor(Math.random() * 12) + 7, desiredChildren: getWeightedDesiredChildren(), status: 'Actif', totalMonthsWorked: 0 }; const experienceData = applyInitialExperience(person, jobData); Object.assign(person, { salary: calculateInitialSalary(jobData), stats: experienceData.stats, prestige: experienceData.prestige }); individualsToCreate.push(person); }); const usedFamilyNames = new Set(selectedPlace.demographics.families.map(f => f.name)); let men = individualsToCreate.filter(p => p.gender === 'Homme'); let women = individualsToCreate.filter(p => p.gender === 'Femme'); const getTier = (p) => getJobData(p.job.buildingName, p.job.jobTitle)?.tier ?? 5; men.sort((a, b) => getTier(a) - getTier(b)); women.sort((a, b) => getTier(a) - getTier(b)); const allowInterracial = selectedPlace.demographics.allowInterracialMarriage; const singleLeftovers = []; while (men.length > 0) { const man = men.shift(); const compatibleRaces = allowInterracial ? RACES_DATA.compatibilites[man.race] || [] : []; const womanIndex = findBestPartner(man, women, allowInterracial, compatibleRaces); const isRuler = getTier(man) === 0; if (womanIndex > -1 && women.length > 0) { const woman = women.splice(womanIndex, 1)[0]; let familyName; do { familyName = RACES_DATA.races[man.race].noms[Math.floor(Math.random() * RACES_DATA.races[man.race].noms.length)]; } while (usedFamilyNames.has(familyName)); usedFamilyNames.add(familyName); man.lastName = familyName; woman.maidenName = woman.lastName; woman.lastName = familyName; man.spouseId = woman.id; woman.spouseId = man.id; man.hasBeenMarried = true; woman.hasBeenMarried = true; const family = { id: `fam_auto_${Date.now()}_${Math.random()}`, name: familyName, locationId: selectedPlace.id, memberIds: [man.id, woman.id], isCustom: false }; man.familyId = family.id; woman.familyId = family.id; allNewPopulation.push(man, woman); if (isRuler) woman.job = null; const desiredChildCount = Math.min(man.desiredChildren, woman.desiredChildren); const youngestParent = man.age < woman.age ? man : woman; let maxPossibleAgeForNextChild = youngestParent.age - (RACES_DATA.races[youngestParent.race].ageAdulte || 18); for (let i = 0; i < desiredChildCount; i++) { const childSpacingInYears = (RACES_DATA.races[woman.race].dureeGestationMois || 9) / 12 + 1.5; if (maxPossibleAgeForNextChild <= childSpacingInYears) break; const finalChildAge = Math.max(0, Math.random() * (maxPossibleAgeForNextChild - childSpacingInYears)); const child = createChild(man, woman); if (child) { child.age = Math.floor(finalChildAge); family.memberIds.push(child.id); man.childrenIds.push(child.id); woman.childrenIds.push(child.id); allNewPopulation.push(child); maxPossibleAgeForNextChild = finalChildAge; } else break; } selectedPlace.demographics.families.push(family); } else { singleLeftovers.push(man); } } singleLeftovers.push(...men, ...women); singleLeftovers.forEach(person => { let newFamilyName; const personRaceData = RACES_DATA.races[person.race]; do { newFamilyName = personRaceData.noms[Math.floor(Math.random() * personRaceData.noms.length)]; } while (usedFamilyNames.has(newFamilyName)); usedFamilyNames.add(newFamilyName); person.lastName = newFamilyName; const family = { id: `fam_auto_${Date.now()}_${Math.random()}`, name: person.lastName, locationId: selectedPlace.id, memberIds: [person.id], isCustom: false }; person.familyId = family.id; selectedPlace.demographics.families.push(family); allNewPopulation.push(person); }); const allFamilies = selectedPlace.demographics.families; allFamilies.forEach(family => { const ruler = allNewPopulation.find(p => p.familyId === family.id && p.job && getJobData(p.job.buildingName, p.job.jobTitle)?.tier === 0); if (ruler) { applyDynasticTitles(ruler, allNewPopulation); } }); selectedPlace.demographics.population.push(...allNewPopulation); saveData(); updatePlaceStats(); updatePopulationUI(); updateDashboard(); document.getElementById(`status-icon-${selectedPlace.id}`).textContent = '🟢'; checkFinalizationStatus(); }
     function createChild(father, mother) { const childGender = Math.random() > 0.5 ? 'Homme' : 'Femme'; const mixedRaceKey = [father.race, mother.race].sort().join('-'); const childRace = RACES_DATA.racesMixtes[mixedRaceKey] || father.race; const raceData = RACES_DATA.races[childRace]; const names = childGender === 'Homme' ? raceData.prenomsM : raceData.prenomsF; const firstName = names[Math.floor(Math.random() * names.length)]; return { id: `auto_child_${Date.now()}_${Math.random()}`, locationId: mother.locationId, firstName, lastName: father.lastName, race: childRace, gender: childGender, age: 0, isAlive: true, job: null, salary: 0, prestige: 0, stats: { intelligence: 5, force: 5, constitution: 5, dexterite: 5, sagesse: 5, charisme: 5 }, spouseId: null, hasBeenMarried: false, familyId: father.familyId, parents: [father.id, mother.id].filter(Boolean), childrenIds: [], spouseId: null, desiredChildren: getWeightedDesiredChildren(), status: 'Actif', friendIds: [], acquaintanceIds: [], maxFriends: Math.floor(Math.random() * 5) + 1, maxAcquaintances: Math.floor(Math.random() * 12) + 7, isCustom: false, totalMonthsWorked: 0 }; }
     function calculateInitialSalary(jobData) { return Math.round(jobData.salaire.totalEnCuivre * (1 + (Math.random() * 0.3 - 0.15))); }
     
@@ -329,9 +370,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateChildrenUI() { const container = document.getElementById('children-list'); if (currentCustomFamily.children.length === 0) { container.innerHTML = '<p>Aucun enfant ajouté.</p>'; return; } container.innerHTML = currentCustomFamily.children.map((child, index) => { return `<div class="child-item"><span>${child.firstName} (${child.race}, ${child.age} ans)</span><button type="button" class="btn btn-delete-child" data-index="${index}">&times;</button></div>`; }).join(''); }
     function saveChild() { const firstName = document.getElementById('child-firstname').value.trim(); const ageInput = document.getElementById('child-age').value; if (!firstName || ageInput === '') { alert("Le prénom et l'âge de l'enfant sont requis."); return; } const age = parseInt(ageInput, 10); const childData = { firstName: firstName, race: document.getElementById('child-race').value, age: age, gender: document.getElementById('child-gender').value }; currentCustomFamily.children.push(childData); updateChildrenUI(); document.getElementById('child-firstname').value = ''; document.getElementById('child-age').value = ''; document.getElementById('child-firstname').focus(); }
     function updateFamilyModalButtons() { const familyName = document.getElementById('family-name').value.trim(); const headFirstName = document.getElementById('head-firstname').value.trim(); const headAge = document.getElementById('head-age').value; const canSubmit = familyName !== '' && headFirstName !== '' && headAge !== ''; document.getElementById('confirm-add-family-btn').disabled = !canSubmit; }
-    function addFamilyToPlace(e) { e.preventDefault(); const familyName = familyNameInput.value.trim(); if (selectedPlace.demographics.families.some(f => f.name.toLowerCase() === familyName.toLowerCase())) { alert(`Une famille nommée "${familyName}" existe déjà à ${selectedPlace.name}.`); return; } const hasSpouse = document.getElementById('add-spouse-toggle').checked; const headFirstName = document.getElementById('head-firstname').value.trim(); const spouseFirstName = document.getElementById('spouse-firstname').value.trim(); if(hasSpouse && !spouseFirstName){ alert("Veuillez renseigner le prénom du conjoint."); return; } const editingTemplateId = document.getElementById('editing-family-template-id').value; const familyTemplate = { id: editingTemplateId ? editingTemplateId : `tpl_${Date.now()}`, name: familyName, head: { firstName: headFirstName, race: document.getElementById('head-race').value, age: parseInt(document.getElementById('head-age').value), gender: document.getElementById('head-gender').value, }, spouse: null, children: [...currentCustomFamily.children] }; const getJobFromForm = (prefix) => { const locationId = document.getElementById(`${prefix}-work-location`).value; const buildingName = document.getElementById(`${prefix}-work-building`).value; const jobTitle = document.getElementById(`${prefix}-work-job`).value; if (locationId && buildingName && jobTitle) { return { locationId: parseInt(locationId), buildingName, jobTitle }; } return null; }; const headJob = getJobFromForm('head'); const spouseJob = hasSpouse ? getJobFromForm('spouse') : null; const headJobData = headJob ? getJobData(headJob.buildingName, headJob.jobTitle) : null; const spouseJobData = spouseJob ? getJobData(spouseJob.buildingName, spouseJob.jobTitle) : null; if ((headJobData && headJobData.tier === 0) && spouseJob) { alert("Si le chef de famille est un dirigeant (Tier 0), le conjoint ne peut pas avoir d'emploi assigné."); return; } if ((spouseJobData && spouseJobData.tier === 0) && headJob) { alert("Si le conjoint est un dirigeant (Tier 0), le chef de famille ne peut pas avoir d'emploi assigné."); return; } const familyId = `fam_custom_${Date.now()}`; const allMembers = []; const memberIds = []; const head = { id: `custom_${Date.now()}_${Math.random()}`, firstName: headFirstName, lastName: familyName, race: document.getElementById('head-race').value, age: parseInt(document.getElementById('head-age').value), gender: document.getElementById('head-gender').value, job: headJob, familyId: familyId, locationId: selectedPlace.id, isCustom: true, isAlive: true, parents: [], childrenIds: [], spouseId: null, desiredChildren: getWeightedDesiredChildren(), status: 'Actif', friendIds: [], acquaintanceIds: [], maxFriends: Math.floor(Math.random() * 5) + 1, maxAcquaintances: Math.floor(Math.random() * 12) + 7, totalMonthsWorked: 0 }; allMembers.push(head); memberIds.push(head.id); let spouse = null; if (hasSpouse) { spouse = { id: `custom_${Date.now()}_${Math.random()}`, firstName: spouseFirstName, lastName: familyName, race: document.getElementById('spouse-race').value, age: parseInt(document.getElementById('spouse-age').value), gender: document.getElementById('spouse-gender').value, job: spouseJob, familyId: familyId, locationId: selectedPlace.id, isCustom: true, isAlive: true, parents: [], childrenIds: [], spouseId: null, desiredChildren: getWeightedDesiredChildren(), status: 'Actif', friendIds: [], acquaintanceIds: [], maxFriends: Math.floor(Math.random() * 5) + 1, maxAcquaintances: Math.floor(Math.random() * 12) + 7, totalMonthsWorked: 0 }; head.spouseId = spouse.id; spouse.spouseId = head.id; allMembers.push(spouse); memberIds.push(spouse.id); familyTemplate.spouse = { firstName: spouse.firstName, race: spouse.race, age: spouse.age, gender: spouse.gender }; } currentCustomFamily.children.forEach(childData => { const child = { id: `custom_${Date.now()}_${Math.random()}`, firstName: childData.firstName, lastName: familyName, race: childData.race, age: childData.age, gender: childData.gender, job: null, familyId: familyId, locationId: selectedPlace.id, isCustom: true, isAlive: true, parents: [head.id, spouse ? spouse.id : null].filter(Boolean), childrenIds: [], spouseId: null, desiredChildren: getWeightedDesiredChildren(), status: 'Actif', friendIds: [], acquaintanceIds: [], maxFriends: Math.floor(Math.random() * 5) + 1, maxAcquaintances: Math.floor(Math.random() * 12) + 7, totalMonthsWorked: 0 }; allMembers.push(child); memberIds.push(child.id); head.childrenIds.push(child.id); if (spouse) spouse.childrenIds.push(child.id); }); const newFamily = { id: familyId, name: familyName, locationId: selectedPlace.id, memberIds, isCustom: true }; allMembers.forEach(member => { if (member.job) { const jobData = getJobData(member.job.buildingName, member.job.jobTitle); if(jobData){ const expData = applyInitialExperience(member, jobData); Object.assign(member, { salary: calculateInitialSalary(jobData), stats: expData.stats, prestige: expData.prestige }); } } else { Object.assign(member, { salary: 0, stats: { intelligence: 10, force: 10, constitution: 10, dexterite: 10, sagesse: 10, charisme: 10 }, prestige: 0 }); } }); selectedPlace.demographics.families.push(newFamily); selectedPlace.demographics.population.push(...allMembers); const rulerCandidate = allMembers.find(p => p.job && getJobData(p.job.buildingName, p.job.jobTitle)?.tier === 0); if (rulerCandidate) { applyDynasticTitles(rulerCandidate, selectedPlace.demographics.population); } addOrUpdateFamilyTemplate(familyTemplate); document.getElementById('editing-family-template-id').value = ''; familyModal.close(); saveData(); selectPlace(selectedPlace.id); updateDashboard(); document.getElementById(`status-icon-${selectedPlace.id}`).textContent = '🟢'; alert(`La famille ${familyName} a été ${editingTemplateId ? 'mise à jour et' : ''} ajoutée à ${selectedPlace.name} et sauvegardée dans votre bibliothèque de modèles.`); }
-    function resetAllPopulation() { if (!selectedPlace) return; if (!confirm(`Êtes-vous sûr de vouloir supprimer TOUTE la population et toutes les familles de "${selectedPlace.name}" ? Cette action est irréversible.`)) { return; } selectedPlace.demographics.population = []; selectedPlace.demographics.families = []; document.getElementById(`status-icon-${selectedPlace.id}`).textContent = '🟡'; saveData(); updatePlaceStats(); updatePopulationUI(); updateDashboard(); }
-    function resetGen0Population() { if (!selectedPlace) return; const customFamilies = selectedPlace.demographics.families.filter(f => f.isCustom); const customMemberIds = new Set(customFamilies.flatMap(f => f.memberIds)); const customPopulation = selectedPlace.demographics.population.filter(p => customMemberIds.has(p.id)); selectedPlace.demographics.families = customFamilies; selectedPlace.demographics.population = customPopulation; const rulerCandidate = customPopulation.find(p => p.job && getJobData(p.job.buildingName, p.job.jobTitle)?.tier === 0); if (rulerCandidate) { applyDynasticTitles(rulerCandidate, customPopulation); } const isConfigured = selectedPlace.demographics.population.length > 0; document.getElementById(`status-icon-${selectedPlace.id}`).textContent = isConfigured ? '🟢' : '🟡'; saveData(); updatePlaceStats(); updatePopulationUI(); updateDashboard(); }
+    function addFamilyToPlace(e) { e.preventDefault(); const familyName = familyNameInput.value.trim(); if (selectedPlace.demographics.families.some(f => f.name.toLowerCase() === familyName.toLowerCase())) { alert(`Une famille nommée "${familyName}" existe déjà à ${selectedPlace.name}.`); return; } const hasSpouse = document.getElementById('add-spouse-toggle').checked; const headFirstName = document.getElementById('head-firstname').value.trim(); const spouseFirstName = document.getElementById('spouse-firstname').value.trim(); if(hasSpouse && !spouseFirstName){ alert("Veuillez renseigner le prénom du conjoint."); return; } const editingTemplateId = document.getElementById('editing-family-template-id').value; const familyTemplate = { id: editingTemplateId ? editingTemplateId : `tpl_${Date.now()}`, name: familyName, head: { firstName: headFirstName, race: document.getElementById('head-race').value, age: parseInt(document.getElementById('head-age').value), gender: document.getElementById('head-gender').value, }, spouse: null, children: [...currentCustomFamily.children] }; const getJobFromForm = (prefix) => { const locationId = document.getElementById(`${prefix}-work-location`).value; const buildingName = document.getElementById(`${prefix}-work-building`).value; const jobTitle = document.getElementById(`${prefix}-work-job`).value; if (locationId && buildingName && jobTitle) { return { locationId: parseInt(locationId), buildingName, jobTitle }; } return null; }; const headJob = getJobFromForm('head'); const spouseJob = hasSpouse ? getJobFromForm('spouse') : null; const headJobData = headJob ? getJobData(headJob.buildingName, headJob.jobTitle) : null; const spouseJobData = spouseJob ? getJobData(spouseJob.buildingName, spouseJob.jobTitle) : null; if ((headJobData && headJobData.tier === 0) && spouseJob) { alert("Si le chef de famille est un dirigeant (Tier 0), le conjoint ne peut pas avoir d'emploi assigné."); return; } if ((spouseJobData && spouseJobData.tier === 0) && headJob) { alert("Si le conjoint est un dirigeant (Tier 0), le chef de famille ne peut pas avoir d'emploi assigné."); return; } const familyId = `fam_custom_${Date.now()}`; const allMembers = []; const memberIds = []; const head = { id: `custom_${Date.now()}_${Math.random()}`, firstName: headFirstName, lastName: familyName, race: document.getElementById('head-race').value, age: parseInt(document.getElementById('head-age').value), gender: document.getElementById('head-gender').value, job: headJob, familyId: familyId, locationId: selectedPlace.id, isCustom: true, isAlive: true, parents: [], childrenIds: [], spouseId: null, desiredChildren: getWeightedDesiredChildren(), status: 'Actif', friendIds: [], acquaintanceIds: [], maxFriends: Math.floor(Math.random() * 5) + 1, maxAcquaintances: Math.floor(Math.random() * 12) + 7, totalMonthsWorked: 0 }; allMembers.push(head); memberIds.push(head.id); let spouse = null; if (hasSpouse) { spouse = { id: `custom_${Date.now()}_${Math.random()}`, firstName: spouseFirstName, lastName: familyName, race: document.getElementById('spouse-race').value, age: parseInt(document.getElementById('spouse-age').value), gender: document.getElementById('spouse-gender').value, job: spouseJob, familyId: familyId, locationId: selectedPlace.id, isCustom: true, isAlive: true, parents: [], childrenIds: [], spouseId: null, desiredChildren: getWeightedDesiredChildren(), status: 'Actif', friendIds: [], acquaintanceIds: [], maxFriends: Math.floor(Math.random() * 5) + 1, maxAcquaintances: Math.floor(Math.random() * 12) + 7, totalMonthsWorked: 0 }; head.spouseId = spouse.id; spouse.spouseId = head.id; allMembers.push(spouse); memberIds.push(spouse.id); familyTemplate.spouse = { firstName: spouse.firstName, race: spouse.race, age: spouse.age, gender: spouse.gender }; } currentCustomFamily.children.forEach(childData => { const child = { id: `custom_${Date.now()}_${Math.random()}`, firstName: childData.firstName, lastName: familyName, race: childData.race, age: childData.age, gender: childData.gender, job: null, familyId: familyId, locationId: selectedPlace.id, isCustom: true, isAlive: true, parents: [head.id, spouse ? spouse.id : null].filter(Boolean), childrenIds: [], spouseId: null, desiredChildren: getWeightedDesiredChildren(), status: 'Actif', friendIds: [], acquaintanceIds: [], maxFriends: Math.floor(Math.random() * 5) + 1, maxAcquaintances: Math.floor(Math.random() * 12) + 7, totalMonthsWorked: 0 }; allMembers.push(child); memberIds.push(child.id); head.childrenIds.push(child.id); if (spouse) spouse.childrenIds.push(child.id); }); const newFamily = { id: familyId, name: familyName, locationId: selectedPlace.id, memberIds, isCustom: true }; allMembers.forEach(member => { if (member.job) { const jobData = getJobData(member.job.buildingName, member.job.jobTitle); if(jobData){ const expData = applyInitialExperience(member, jobData); Object.assign(member, { salary: calculateInitialSalary(jobData), stats: expData.stats, prestige: expData.prestige }); } } else { Object.assign(member, { salary: 0, stats: { intelligence: 10, force: 10, constitution: 10, dexterite: 10, sagesse: 10, charisme: 10 }, prestige: 0 }); } }); selectedPlace.demographics.families.push(newFamily); selectedPlace.demographics.population.push(...allMembers); const rulerCandidate = allMembers.find(p => p.job && getJobData(p.job.buildingName, p.job.jobTitle)?.tier === 0); if (rulerCandidate) { applyDynasticTitles(rulerCandidate, selectedPlace.demographics.population); } addOrUpdateFamilyTemplate(familyTemplate); document.getElementById('editing-family-template-id').value = ''; familyModal.close(); saveData(); selectPlace(selectedPlace.id); updateDashboard(); document.getElementById(`status-icon-${selectedPlace.id}`).textContent = '🟢'; checkFinalizationStatus(); alert(`La famille ${familyName} a été ${editingTemplateId ? 'mise à jour et' : ''} ajoutée à ${selectedPlace.name} et sauvegardée dans votre bibliothèque de modèles.`); }
+    function resetAllPopulation() { if (!selectedPlace) return; if (!confirm(`Êtes-vous sûr de vouloir supprimer TOUTE la population et toutes les familles de "${selectedPlace.name}" ? Cette action est irréversible.`)) { return; } selectedPlace.demographics.population = []; selectedPlace.demographics.families = []; document.getElementById(`status-icon-${selectedPlace.id}`).textContent = '🟡'; saveData(); updatePlaceStats(); updatePopulationUI(); updateDashboard(); checkFinalizationStatus(); }
+    function resetGen0Population() { if (!selectedPlace) return; const customFamilies = selectedPlace.demographics.families.filter(f => f.isCustom); const customMemberIds = new Set(customFamilies.flatMap(f => f.memberIds)); const customPopulation = selectedPlace.demographics.population.filter(p => customMemberIds.has(p.id)); selectedPlace.demographics.families = customFamilies; selectedPlace.demographics.population = customPopulation; const rulerCandidate = customPopulation.find(p => p.job && getJobData(p.job.buildingName, p.job.jobTitle)?.tier === 0); if (rulerCandidate) { applyDynasticTitles(rulerCandidate, customPopulation); } const isConfigured = selectedPlace.demographics.population.length > 0; document.getElementById(`status-icon-${selectedPlace.id}`).textContent = isConfigured ? '🟢' : '🟡'; saveData(); updatePlaceStats(); updatePopulationUI(); updateDashboard(); checkFinalizationStatus(); }
     
     function openCharacterModal(personId) {
         const allPopulation = currentRegion.places.flatMap(p => (p.demographics ? p.demographics.population : []));
@@ -407,6 +448,7 @@ document.addEventListener('DOMContentLoaded', () => {
         displayPlacesList();
         updateDashboard();
         updateAllNavLinksState(currentRegion); // Mise à jour initiale de la nav
+        checkFinalizationStatus(); // Vérification initiale pour le bouton final
 
         // Écouteur de clics pour les liens de navigation
         const floatingMenu = document.querySelector('.floating-menu');
@@ -466,7 +508,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         randomizeRacesCurrentBtn.addEventListener('click', () => {
             if (!selectedPlace) {
-                alert("Veuillez d'abord sélectionner un lieu.");
+                showNotification("Veuillez d'abord sélectionner un lieu.", 'error');
                 return;
             }
             randomizeRacesForPlace(selectedPlace);
@@ -484,9 +526,68 @@ document.addEventListener('DOMContentLoaded', () => {
                     renderRaceDistribution();
                 }
                 saveData();
-                alert("La distribution des races a été randomisée pour tous les lieux.");
+                showNotification("La distribution des races a été randomisée pour tous les lieux.", 'success');
             }
         });
+        
+        if (preGenerateAllBtn) {
+            preGenerateAllBtn.addEventListener('click', async () => {
+                if (!currentRegion || !currentRegion.places || currentRegion.places.length === 0) {
+                    showNotification("Aucun lieu à traiter dans la région actuelle.", 'error');
+                    return;
+                }
+
+                if (confirm(`Vous êtes sur le point de lancer la pré-génération de la population pour TOUS les lieux de la région.
+\n- Pour chaque lieu, une distribution des races sera d'abord déterminée aléatoirement.
+- Ensuite, la population (Gen 0) sera créée, écrasant toute population auto-générée existante.
+\nLes familles personnalisées seront conservées. Voulez-vous continuer ?`)) {
+                    const loadingDiv = document.createElement('div');
+                    try {
+                        // Afficher un indicateur de chargement
+                        welcomePanel.classList.add('hidden');
+                        configPanel.classList.add('hidden');
+                        loadingDiv.innerHTML = '<h2>Pré-génération en cours...</h2><p>Veuillez patienter, cette opération peut prendre un moment.</p>';
+                        loadingDiv.style.textAlign = 'center';
+                        loadingDiv.style.padding = '50px 20px';
+                        mainPanel.appendChild(loadingDiv);
+
+                        await window.EcoSimStep3.run(RACES_DATA.source);
+
+                        loadData();
+                        displayPlacesList();
+                        updateDashboard();
+                        
+                        // Réafficher le panneau de configuration du lieu sélectionné (s'il y en avait un)
+                        if (selectedPlace) {
+                            selectPlace(selectedPlace.id);
+                        } else {
+                            welcomePanel.classList.remove('hidden');
+                            configPanel.classList.add('hidden');
+                        }
+                        
+                        checkFinalizationStatus();
+                        showNotification("La pré-génération globale est terminée avec succès.", 'success');
+                    } catch (error) {
+                        console.error("Erreur lors de la pré-génération globale :", error);
+                        showNotification("Erreur lors de la pré-génération. Consultez la console.", 'error');
+                         if (selectedPlace) selectPlace(selectedPlace.id);
+                    } finally {
+                        if (mainPanel.contains(loadingDiv)) {
+                            mainPanel.removeChild(loadingDiv);
+                        }
+                    }
+                }
+            });
+        }
+        
+        if (finalizeSimulationBtn) {
+            finalizeSimulationBtn.addEventListener('click', () => {
+                if (!finalizeSimulationBtn.disabled) {
+                    saveData(); // Sauvegarde finale avant de changer de page
+                    window.location.href = 'step4.html';
+                }
+            });
+        }
     }
 
     // --- INITIALISATION (Refondue pour la modale) ---
@@ -530,22 +631,56 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function runAllPlacesGeneration() {
         if (!currentRegion) throw new Error("Aucune région chargée pour l'étape 3.");
+        
+        const originalSelectedPlace = selectedPlace; // Sauvegarder la sélection originale
+    
         for (const place of currentRegion.places) {
-            selectedPlace = place;
+            selectedPlace = place; // Travailler sur le lieu actuel
+    
             if (!selectedPlace.demographics) {
                 selectedPlace.demographics = { raceDistribution: {}, raceDistributionTotal: 0, allowInterracialMarriage: true, population: [], families: [], inheritanceLaw: 'primogeniture_male' };
             }
-            randomizeRacesForPlace(selectedPlace);
-            generatePopulationForPlace(); 
+            if (!selectedPlace.demographics.raceDistribution || Object.keys(selectedPlace.demographics.raceDistribution).length === 0 || selectedPlace.demographics.raceDistributionTotal !== 100) {
+                 randomizeRacesForPlace(selectedPlace);
+            }
+            
+            // Logique de génération pour un seul lieu (sans la confirmation)
+            resetGen0Population();
+            let availableJobs = getAvailableJobs(selectedPlace);
+            let allNewPopulation = [];
+            let individualsToCreate = [];
+            availableJobs.sort((a, b) => { const jobA_data = getJobData(a.buildingName, a.jobTitle); const jobB_data = getJobData(b.buildingName, b.jobTitle); return (jobA_data?.tier ?? 5) - (jobB_data?.tier ?? 5); });
+            const racePool = [];
+            Object.entries(selectedPlace.demographics.raceDistribution).forEach(([raceName, percentage]) => { const count = Math.round(availableJobs.length * (percentage / 100)); for (let i = 0; i < count; i++) racePool.push(raceName); });
+            availableJobs.forEach(job => { if (racePool.length === 0) return; const raceIndex = Math.floor(Math.random() * racePool.length); const selectedRace = racePool.splice(raceIndex, 1)[0]; const raceData = RACES_DATA.races[selectedRace]; const jobData = getJobData(job.buildingName, job.jobTitle); const gender = Math.random() < 0.5 ? 'Homme' : 'Femme'; const names = gender === 'Homme' ? raceData.prenomsM : raceData.prenomsF; const firstName = names[Math.floor(Math.random() * names.length)]; const age = getAgeForTier(jobData.tier, raceData); const person = { id: `auto_${Date.now()}_${Math.random()}`, firstName, locationId: selectedPlace.id, race: selectedRace, gender, isAlive: true, age, job: { locationId: job.locationId, buildingName: job.buildingName, jobTitle: job.jobTitle }, spouseId: null, hasBeenMarried: false, familyId: null, isCustom: false, parents: [], childrenIds: [], friendIds: [], acquaintanceIds: [], maxFriends: Math.floor(Math.random() * 5) + 1, maxAcquaintances: Math.floor(Math.random() * 12) + 7, desiredChildren: getWeightedDesiredChildren(), status: 'Actif', totalMonthsWorked: 0 }; const experienceData = applyInitialExperience(person, jobData); Object.assign(person, { salary: calculateInitialSalary(jobData), stats: experienceData.stats, prestige: experienceData.prestige }); individualsToCreate.push(person); });
+            const usedFamilyNames = new Set(selectedPlace.demographics.families.map(f => f.name));
+            let men = individualsToCreate.filter(p => p.gender === 'Homme');
+            let women = individualsToCreate.filter(p => p.gender === 'Femme');
+            const getTier = (p) => getJobData(p.job.buildingName, p.job.jobTitle)?.tier ?? 5;
+            men.sort((a, b) => getTier(a) - getTier(b));
+            women.sort((a, b) => getTier(a) - getTier(b));
+            const allowInterracial = selectedPlace.demographics.allowInterracialMarriage;
+            const singleLeftovers = [];
+            while (men.length > 0) { const man = men.shift(); const compatibleRaces = allowInterracial ? RACES_DATA.compatibilites[man.race] || [] : []; const womanIndex = findBestPartner(man, women, allowInterracial, compatibleRaces); const isRuler = getTier(man) === 0; if (womanIndex > -1 && women.length > 0) { const woman = women.splice(womanIndex, 1)[0]; let familyName; do { familyName = RACES_DATA.races[man.race].noms[Math.floor(Math.random() * RACES_DATA.races[man.race].noms.length)]; } while (usedFamilyNames.has(familyName)); usedFamilyNames.add(familyName); man.lastName = familyName; woman.maidenName = woman.lastName; woman.lastName = familyName; man.spouseId = woman.id; woman.spouseId = man.id; man.hasBeenMarried = true; woman.hasBeenMarried = true; const family = { id: `fam_auto_${Date.now()}_${Math.random()}`, name: familyName, locationId: selectedPlace.id, memberIds: [man.id, woman.id], isCustom: false }; man.familyId = family.id; woman.familyId = family.id; allNewPopulation.push(man, woman); if (isRuler) woman.job = null; const desiredChildCount = Math.min(man.desiredChildren, woman.desiredChildren); const youngestParent = man.age < woman.age ? man : woman; let maxPossibleAgeForNextChild = youngestParent.age - (RACES_DATA.races[youngestParent.race].ageAdulte || 18); for (let i = 0; i < desiredChildCount; i++) { const childSpacingInYears = (RACES_DATA.races[woman.race].dureeGestationMois || 9) / 12 + 1.5; if (maxPossibleAgeForNextChild <= childSpacingInYears) break; const finalChildAge = Math.max(0, Math.random() * (maxPossibleAgeForNextChild - childSpacingInYears)); const child = createChild(man, woman); if (child) { child.age = Math.floor(finalChildAge); family.memberIds.push(child.id); man.childrenIds.push(child.id); woman.childrenIds.push(child.id); allNewPopulation.push(child); maxPossibleAgeForNextChild = finalChildAge; } else break; } selectedPlace.demographics.families.push(family); } else { singleLeftovers.push(man); } }
+            singleLeftovers.push(...men, ...women);
+            singleLeftovers.forEach(person => { let newFamilyName; const personRaceData = RACES_DATA.races[person.race]; do { newFamilyName = personRaceData.noms[Math.floor(Math.random() * personRaceData.noms.length)]; } while (usedFamilyNames.has(newFamilyName)); usedFamilyNames.add(newFamilyName); person.lastName = newFamilyName; const family = { id: `fam_auto_${Date.now()}_${Math.random()}`, name: person.lastName, locationId: selectedPlace.id, memberIds: [person.id], isCustom: false }; person.familyId = family.id; selectedPlace.demographics.families.push(family); allNewPopulation.push(person); });
+            const allFamilies = selectedPlace.demographics.families;
+            allFamilies.forEach(family => { const ruler = allNewPopulation.find(p => p.familyId === family.id && p.job && getJobData(p.job.buildingName, p.job.jobTitle)?.tier === 0); if (ruler) { applyDynasticTitles(ruler, allNewPopulation); } });
+            selectedPlace.demographics.population.push(...allNewPopulation);
+    
+            const statusIcon = document.getElementById(`status-icon-${selectedPlace.id}`);
+            if (statusIcon) statusIcon.textContent = '🟢';
         }
+    
+        selectedPlace = originalSelectedPlace; // Restaurer la sélection originale après la boucle
         saveData();
     }
 
     window.EcoSimStep3 = {
-        run: (source) => {
+        run: async (source) => {
             initializeRaceDataSource(source);
             loadData(); 
-            return runAllPlacesGeneration();
+            await runAllPlacesGeneration();
         }
     };
 
