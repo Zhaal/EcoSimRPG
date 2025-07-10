@@ -113,7 +113,14 @@
 #event-log .event-job { color: #0277bd; }
 #event-log .event-migration { color: #d84315; }
 #event-log .event-system { color: #546e7a; font-style: italic; }
-#event-log .event-social { color: #d84315; } /* Orange for social events */
+#event-log .event-social { color: #d84315; }
+
+/* NOUVEAU : Style pour les événements de départ */
+#event-log .event-departure { 
+    color: #8c6a3e; /* Une couleur terreuse/marron */
+    background-color: #f7f3e9;
+    border-left: 3px solid #8c6a3e;
+}
 
 
 #place-overview-container {
@@ -234,13 +241,13 @@
 
 #family-tree-display-area-wrapper {
     flex-grow: 1;
-    overflow: auto; /* Important for panning */
+    overflow: auto; 
     cursor: grab;
-    user-select: none; /* Prevent text selection while dragging */
+    user-select: none;
     background: #faf8f2;
     border: 1px solid #ddd;
     border-radius: 5px;
-    padding: 20px; /* Ajout d'un padding interne */
+    padding: 20px;
 }
 
 #family-tree-display-area-wrapper:active {
@@ -248,8 +255,8 @@
 }
 
 #family-tree-display-area {
-    width: max-content; /* Allow the tree to be as wide as needed */
-    min-width: 100%; /* Take full width if tree is small */
+    width: max-content;
+    min-width: 100%;
     padding-bottom: 20px;
 }
 
@@ -381,7 +388,7 @@
 .person-node .gender-female { color: #c2185b; }
 
 
-/* Character Modal NEW STYLES */
+/* Character Modal */
 #character-details-modal {
     max-width: 850px;
     width: 90%;
@@ -415,7 +422,6 @@
     color: #5f523c;
     transition: background-color 0.2s, color 0.2s;
     position: relative;
-    /* bottom: -2px; */ /* Align with bottom border - Removed for new tab style */
 }
 
 .char-modal-tab:hover {
@@ -426,13 +432,13 @@
     background-color: var(--color-parchment);
     border-color: #e8e0c9;
     color: var(--color-royal-blue);
-    border-bottom-color: var(--color-parchment); /* Hide bottom border part that overlaps */
+    border-bottom-color: var(--color-parchment);
 }
 
 #char-modal-content {
     background: var(--color-parchment);
     padding: 20px;
-    max-height: calc(90vh - 150px); /* Adjust based on header heights */
+    max-height: calc(90vh - 150px);
     overflow-y: auto;
 }
 
@@ -516,8 +522,6 @@
 }
 .character-link:hover { color: var(--color-gold); }
 
-/* --- NOUVEAU : Fin --- */
-
 .btn.btn-danger { background-color: #c62828; color: white; }
 .btn.btn-danger:hover { background-color: #a92222; }
 
@@ -549,11 +553,10 @@
     display: inline-block;
 }
 
-/* NOUVEAUX STYLES POUR LES ONGLETS DE VUE */
 #char-view-tab-controls {
     display: flex;
     padding: 0 15px;
-    background-color: #e8e0c9; /* Même couleur que l'en-tête */
+    background-color: #e8e0c9;
     border-bottom: 2px solid var(--color-border);
 }
 
@@ -566,11 +569,58 @@
     font-family: var(--font-title);
     color: #5f523c;
     border-bottom: 3px solid transparent;
-    margin-bottom: -2px; /* Pour aligner avec la bordure de la div parente */
+    margin-bottom: -2px;
 }
 
 .char-view-tab.active {
     color: var(--color-royal-blue);
     border-bottom: 3px solid var(--color-gold);
     font-weight: bold;
+}
+
+/* NOUVEAU : Style pour le conteneur des membres partis */
+.departed-members-container {
+    margin-top: 25px;
+    padding: 15px;
+    background-color: #fdfaf2;
+    border: 1px solid #e8e0c9;
+    border-radius: 5px;
+}
+
+.departed-members-container h4 {
+    font-family: var(--font-title);
+    color: var(--color-dark-text);
+    margin: 0 0 10px 0;
+    font-size: 1.1em;
+    border-bottom: 1px solid var(--color-gold);
+    padding-bottom: 8px;
+}
+
+.departed-members-container ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    font-size: 0.9em;
+}
+
+.departed-members-container li {
+    padding: 8px 5px;
+    border-bottom: 1px dashed #e8e0c9;
+    line-height: 1.5;
+}
+
+.departed-members-container li:last-child {
+    border-bottom: none;
+}
+
+.departed-member-link {
+    color: var(--color-royal-blue);
+    text-decoration: underline;
+    cursor: pointer;
+    font-weight: bold;
+    margin-left: 5px;
+}
+
+.departed-member-link:hover {
+    color: var(--color-gold);
 }

@@ -3,7 +3,8 @@
 @media print {
     @page {
         size: A4;
-        margin: 1.5cm;
+        /* MODIFIÉ: Marges réduites pour maximiser l'espace utilisable */
+        margin: 0.8cm;
     }
 
     body, html, .page-container-step5 {
@@ -14,8 +15,9 @@
         color: #000 !important;
     }
 
+    /* MODIFIÉ: Police de base légèrement réduite pour compacter le texte */
     body {
-        font-size: 10pt;
+        font-size: 9pt;
     }
 
     .floating-menu, #controls {
@@ -39,75 +41,105 @@
         border: 1px solid #ccc;
         box-shadow: none;
         page-break-inside: avoid;
-        margin-bottom: 15px;
-        padding: 15px;
+        /* MODIFIÉ: Marge inférieure réduite */
+        margin-bottom: 10px;
+        padding: 10px;
     }
-
-    .print-section h1, .print-section h2, .print-section h3 {
+    
+    /* MODIFIÉ: Titres compactés */
+    .print-section h1, .print-section h2, .print-section h3, .print-section h4 {
         color: #000 !important;
+        margin-top: 5px;
+        margin-bottom: 8px;
     }
-    .print-section h2 { font-size: 16pt; border-color: #888; }
-    .print-section h3 { font-size: 12pt; }
+    .print-section h2 { font-size: 14pt; border-color: #888; padding-bottom: 4px; }
+    .print-section h3 { font-size: 11pt; }
+    .print-section h4 { font-size: 10pt; border-bottom-color: #aaa !important; padding-bottom: 2px;}
+
 
     #location-details-grid {
         grid-template-columns: 1fr; /* Une seule colonne pour l'impression */
     }
+    
+    /* MODIFIÉ: Tableaux plus compacts */
     .distance-matrix table, .distance-matrix th, .distance-matrix td {
         border-color: #aaa !important;
     }
+    .distance-matrix th, .distance-matrix td {
+        padding: 3px 5px; /* Padding réduit */
+    }
 
-    /* ------- STYLES D'IMPRESSION FICHE PERSONNAGE (v7.0) - MODIFIÉS ------- */
+
+    /* ------- STYLES D'IMPRESSION FICHE PERSONNAGE (v7.0) - MODIFIÉS & COMPACTÉS ------- */
     #character-sheets-container {
-        /* FORCER UNE SEULE COLONNE pour les dossiers détaillés */
         grid-template-columns: 1fr !important; 
-        gap: 20px !important;
+        /* MODIFIÉ: Espace entre les fiches réduit */
+        gap: 15px !important;
     }
     
     .character-sheet {
         border: 2px solid #333 !important;
-        page-break-inside: avoid !important; /* Essaye de garder le dossier sur une seule page */
-        background: #fff !important; /* Fond blanc forcé */
+        page-break-inside: avoid !important; 
+        background: #fff !important; 
+        /* MODIFIÉ: Police de la fiche réduite */
+        font-size: 8.5pt !important;
     }
 
     .char-sheet-header {
-        background-color: #fff !important; /* MODIFIÉ : Fond blanc au lieu de gris */
+        background-color: #fff !important; 
         border-bottom-color: #888 !important;
+        /* MODIFIÉ: Padding réduit */
+        padding: 8px 12px;
     }
     
+    .char-sheet-header h3 { font-size: 1.4em !important; }
+    .char-sheet-header p { font-size: 0.85em !important; }
     .char-sheet-header h3, .char-sheet-header p {
         color: #000 !important;
     }
     
+    /* MODIFIÉ: Boîtes de stats plus petites */
+    .char-sheet-main-grid {
+        padding: 10px;
+        gap: 10px;
+    }
     .stat-box {
         border-color: #888 !important;
         background-color: #fff !important;
+        padding: 2px; /* Padding réduit */
+        gap: 0;
     }
+    .stat-box .score { font-size: 1.8em; }
+    .stat-box .modifier { font-size: 0.9em; width: 30px; }
     
     .stat-box .score, .stat-box .modifier, .stat-box .label {
         color: #000 !important;
     }
 
     .stat-box .modifier {
-        background-color: #fff !important; /* MODIFIÉ : Fond blanc au lieu de gris clair */
+        background-color: #fff !important; 
         border-color: #aaa !important;
     }
-
-    /* AJOUTÉ : Forcer le fond blanc pour le conteneur des compétences */
+    
+    /* MODIFIÉ: Conteneurs de compétences plus compacts */
     .skills-list-container, .pathfinder-skills-container {
         background: #fff !important;
         border-color: #aaa !important;
+        padding: 5px 10px; /* Padding réduit */
+        margin-top: 10px; /* Marge au-dessus réduite */
     }
     
     .char-sheet-details {
         border-top-color: #aaa !important;
+        /* MODIFIÉ: Padding et marge réduits */
+        padding: 0 12px 10px 12px;
+        margin-top: 10px;
     }
-    .details-section h4 {
-        color: #000 !important;
-        border-bottom-color: #aaa !important;
-    }
+
     .life-timeline dd {
         border-left-color: #ccc !important;
     }
+
     .social-grid, .career-history {
         color: #000 !important;
     }
@@ -121,34 +153,31 @@
         font-size: 0.8em !important;
     }
 
-    /* --- RÈGLE POUR CORRIGER LA HAUTEUR DE LA FICHE D&D --- */
-    /* Force la liste de compétences D&D sur 2 colonnes pour l'impression */
-    .skills-list-container ul {
+    /* --- RÈGLES POUR CORRIGER LA HAUTEUR DES FICHES --- */
+    /* Force les listes de compétences sur 2 colonnes pour l'impression */
+    .skills-list-container ul, .pathfinder-skills-list {
         column-count: 2;
-        column-gap: 20px;
+        column-gap: 15px; /* Espace entre colonnes réduit */
+        margin: 0;
+        padding: 0;
+        list-style: none;
     }
-    .skill-item {
+    .skill-item, .pf-skill-item {
         break-inside: avoid;
+        /* MODIFIÉ: Padding vertical réduit pour compacter la liste */
+        padding: 1px 0 !important; 
     }
 
-    /* --- NOUVEAU: AJUSTEMENTS DE TAILLE POUR PATHFINDER ET LISIBILITÉ GÉNÉRALE --- */
-    
-    /* 1. Réduit légèrement la police de toute la fiche pour gagner de la place */
-    .character-sheet {
-        font-size: 9.2pt !important;
-    }
-    
-    /* 2. Réduit l'espace vertical entre chaque compétence (D&D et Pathfinder) */
-    .skill-item, .pf-skill-item {
-        padding: 1.5px 0 !important; 
-    }
-    
-    /* 3. Compacte la grille des relations sociales */
+    /* --- AJUSTEMENTS COMPACTS POUR LA GRILLE SOCIALE --- */
     .social-grid {
-        gap: 4px 15px !important;
+        /* MODIFIÉ: Espacement de la grille réduit */
+        gap: 2px 12px !important;
     }
     .social-grid ul {
-        margin-top: 2px !important;
-        padding-left: 12px !important;
+        margin-top: 1px !important;
+        padding-left: 10px !important; /* Indentation réduite */
+    }
+    .social-grid li {
+        padding: 1px 0; /* Espace entre les items de liste réduit */
     }
 }

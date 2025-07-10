@@ -1,9 +1,10 @@
 /**
  * EcoSimRPG - step5.js
  * Page d'exploitation et d'impression des données de simulation.
- * VERSION 9.2 - Amélioration de l'affichage des distances et de l'alignement
- * - La colonne "Distance" affiche désormais le détail de chaque étape pour les trajets indirects.
- * - L'alignement des cellules du tableau de distance est amélioré pour une meilleure lisibilité.
+ * VERSION 12.1 - Ajustement des dates avec année de référence
+ * - Ajout d'une année de référence pour la narration des livrets de famille.
+ * - Toutes les dates (naissance, mariage, décès, événements) sont ajustées en fonction de cette année.
+ * - La formule utilisée est : Année Affichée = Année de Référence + Année de Simulation.
  */
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -12,7 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const LAST_REGION_KEY = 'ecoSimRPG_last_region_id';
     const BUILDING_DATA = window.EcoSimData.buildings;
     const RACES_DATA = window.EcoSimData.racesData;
-    const TRAVEL_SPEEDS = { Pied: 30, Cheval: 70, Caravane: 20 };
+    const TRAVEL_SPEEDS = { Pied: 30, Cheval: 70, Caravane: 25 };
     const ROAD_TYPES = {
         'royal':      { name: 'Route Royale',       modifier: 1.0,  users: ['Pied', 'Cheval', 'Caravane'] },
         'comtal':     { name: 'Route Comtale',      modifier: 0.90, users: ['Pied', 'Cheval', 'Caravane'] },
@@ -22,6 +23,9 @@ document.addEventListener('DOMContentLoaded', () => {
         'forestier':  { name: 'Sentier Forestier',  modifier: 0.50, users: ['Pied', 'Cheval'] },
         'montagne':   { name: 'Sentier de Montagne',modifier: 0.40, users: ['Pied', 'Cheval'] }
     };
+     // NOUVEAU : Mois pour la narration
+    const FANTASY_MONTHS = ["Givrelune", "Vents-Hurlants", "Fonteglace", "Floréal", "Verdoyant", "Mielsoleil", "Flammèche", "Moisson", "Feuillautomne", "Ombrecroc", "Frimas", "Nuit-d'Hiver"];
+
 
     // --- SÉLECTEURS DOM ---
     const locationSelect = document.getElementById('location-select');
@@ -39,6 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentRegion = null;
     let selectedLocation = null;
     let currentGameSystem = 'dnd5'; // 'dnd5' or 'pathfinder'
+    let simulationEndYear = 1; 
 
     // --- HELPER CLASS for Pathfinding ---
     class PriorityQueue {
@@ -50,38 +55,31 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- NOUVEAU : GESTION DE LA NAVIGATION ---
-    /**
-     * Met à jour l'état (activé/désactivé) de tous les liens de navigation principaux.
-     * @param {object | null} region - L'objet de la région actuelle.
-     */
     function updateAllNavLinksState(region) {
         const navStep2 = document.getElementById('nav-step2');
         const navStep3 = document.getElementById('nav-step3');
         const navStep4 = document.getElementById('nav-step4');
         const navStep5 = document.getElementById('nav-step5');
 
-        // Étape 2: Doit avoir une région avec au moins un lieu.
         const isStep2Ready = region && region.places && region.places.length > 0;
         if (navStep2) {
             if (isStep2Ready) navStep2.classList.remove('nav-disabled');
             else navStep2.classList.add('nav-disabled');
         }
 
-        // Étape 3: Tous les lieux de l'étape 2 doivent être marqués comme valides.
         const isStep3Ready = isStep2Ready && region.places.every(place => place.config && place.config.isValidated === true);
         if (navStep3) {
             if (isStep3Ready) navStep3.classList.remove('nav-disabled');
             else navStep3.classList.add('nav-disabled');
         }
 
-        // Étape 4 & 5: Au moins un lieu doit avoir une population générée (depuis l'étape 3).
         const isStep4Ready = isStep3Ready && region.places.some(place => place.demographics && place.demographics.population.length > 0);
         if (navStep4) {
             if (isStep4Ready) navStep4.classList.remove('nav-disabled');
             else navStep4.classList.add('nav-disabled');
         }
         if (navStep5) {
-            if (isStep4Ready) navStep5.classList.remove('nav-disabled'); // L'étape 5 est débloquée avec la 4.
+            if (isStep4Ready) navStep5.classList.remove('nav-disabled');
             else navStep5.classList.add('nav-disabled');
         }
     }
@@ -223,10 +221,81 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         return Array.from(allChildren).filter(p => p.id !== person.id);
     };
-    const getChildren = (person, scope) => (person.childrenIds || []).map(id => getPersonById(id, scope)).filter(Boolean);
+    const getChildren = (person, scope) => {
+        const commonChildren = new Set(person.childrenIds || []);
+        const spouse = getSpouse(person, scope);
+        if (spouse && spouse.childrenIds) {
+            spouse.childrenIds.forEach(id => commonChildren.add(id));
+        }
+        return Array.from(commonChildren).map(id => getPersonById(id, scope)).filter(Boolean);
+    };
     const getSpouse = (person, scope) => person.spouseId ? getPersonById(person.spouseId, scope) : null;
     const getUnclesAunts = (person, scope) => { const parents = getParents(person, scope); const unclesAunts = new Set(); parents.forEach(p => getSiblings(p, scope).forEach(s => unclesAunts.add(s))); return Array.from(unclesAunts); };
     const getCousins = (person, scope) => { const unclesAunts = getUnclesAunts(person, scope); const cousins = new Set(); unclesAunts.forEach(ua => getChildren(ua, scope).forEach(c => cousins.add(c))); return Array.from(cousins); };
+    
+    // NOUVEAU: Récupère le nom complet (avec nom de jeune fille)
+    function getFormattedNameHTML(person) {
+        if (!person) return '';
+        let nameHTML = `${person.firstName} ${person.lastName.toUpperCase()}`;
+        if (person.gender === 'Femme' && person.maidenName && person.maidenName !== person.lastName) {
+            nameHTML = `${person.firstName} ${person.maidenName.toUpperCase()}, épouse ${person.lastName.toUpperCase()}`;
+        }
+        const nameClass = person.gender === 'Homme' ? 'male' : 'female';
+        return `<span class="${nameClass}">${nameHTML}</span>`;
+    }
+
+    // NOUVEAU: Détermine le titre/profession d'une personne
+    function getPersonJobTitle(person) {
+        if (!person) return 'N/A';
+        const raceData = RACES_DATA.races[person.race];
+        if (person.isAlive) {
+            if (raceData && person.age < raceData.ageTravail) {
+                return person.age >= raceData.ageApprentissage ? 'Apprenti(e)' : 'Enfant';
+            }
+            return person.job?.jobTitle || person.royalTitle || (person.status === 'Retraité(e)' ? `Retraité(e) (Ancien métier: ${person.lastJobTitle || 'non spécifié'})` : 'Sans profession');
+        }
+        return `Décédé(e) (Ancien métier: ${person.jobBeforeDeath || 'non spécifié'})`;
+    }
+    
+    // NOUVEAU: Génère une date RP approximative
+    function getFantasyDate(year) {
+        const day = Math.floor(Math.random() * 28) + 1;
+        const month = FANTASY_MONTHS[Math.floor(Math.random() * FANTASY_MONTHS.length)];
+        return `${day}${day === 1 ? 'er' : 'e'} jour de ${month}, Année ${year}`;
+    }
+
+    // NOUVEAU: Récupère les événements marquants d'une personne
+    function getPersonEvents(personId, log, campaignYear) {
+        if (!log) return '<li>Aucun événement majeur consigné.</li>';
+
+        const relevantTypes = ['marriage', 'birth', 'death', 'job', 'departure', 'social'];
+        const personEvents = log
+            .filter(e => e.personId === personId && relevantTypes.includes(e.type))
+            .sort((a, b) => a.tick - b.tick);
+
+        if (personEvents.length === 0) return '<li>Aucun événement majeur consigné.</li>';
+
+        return personEvents.map(event => {
+            let narrativeMessage = event.message;
+            const refYear = campaignYear || 0;
+            const displayYear = refYear === 0 ? event.year : refYear + event.year;
+
+            if (event.type === 'job') {
+                narrativeMessage = narrativeMessage.replace(/ a été embauché comme| a été promu\(e\) au poste de|, quittant son poste de .*?\./g, ' devient');
+            } else if (event.type === 'marriage') {
+                narrativeMessage = narrativeMessage.split(' se sont mariés')[0] + ` s'est marié(e).`;
+            } else if (event.type === 'social' && narrativeMessage.includes('amis')) {
+                 narrativeMessage = narrativeMessage.replace(' sont maintenant amis', ' est devenu(e) ami(e).');
+            } else if (event.type === 'departure'){
+                return `<li><strong>${displayYear} CV :</strong> A quitté le foyer pour ${narrativeMessage.split(',')[1]}.</li>`;
+            } else {
+                if(event.type === 'social' || event.type === 'birth') return null;
+            }
+
+            return `<li><strong>${displayYear} CV :</strong> ${narrativeMessage}</li>`;
+        }).filter(Boolean).join('');
+    }
+
 
     const findShortestPath = (startNodeId, endNodeId, allPlaces, allRoads, scale, travelMode) => {
         const distances = {};
@@ -314,7 +383,6 @@ document.addEventListener('DOMContentLoaded', () => {
         let html = `<h3>Distances & Temps de trajet</h3><table>`;
         html += `<thead><tr><th>Destination</th><th>Distance</th><th>Route</th><th>Pied</th><th>Cheval</th><th>Caravane</th></tr></thead><tbody>`;
 
-        // Helper pour générer le HTML du détail de la distance
         const getDistanceBreakdownHtml = (path) => {
             if (!path) return { html: 'N/A', isList: false };
             if (path.legs.length <= 1) {
@@ -326,7 +394,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return { html: finalHtml, isList: true };
         };
     
-        // Helper pour générer le HTML du détail du temps de trajet
         const getTimeBreakdownHtml = (path) => {
             if (!path) return { html: 'N/A', isList: false };
             if (path.legs.length <= 1) {
@@ -397,7 +464,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (buildingData?.emplois) {
                     buildingData.emplois.forEach(jobDef => {
                         const occupants = population.filter(p => p.job?.buildingName === building.name && p.job?.jobTitle === jobDef.titre);
-                        html += `<li><strong>${jobDef.titre} (${occupants.length}/${jobDef.postes}):</strong> ${occupants.length > 0 ? occupants.map(o => `${o.firstName} ${o.lastName}`).join(', ') : `<i>Vacant</i>`}</li>`;
+                        const occupantsHtml = occupants.length > 0 ? occupants.map(o => getFormattedNameHTML(o)).join(', ') : `<i>Vacant</i>`;
+                        html += `<li><strong>${jobDef.titre} (${occupants.length}/${jobDef.postes}):</strong> ${occupantsHtml}</li>`;
                     });
                 }
                 html += `</ul></div>`;
@@ -406,47 +474,148 @@ document.addEventListener('DOMContentLoaded', () => {
         return `<div class="job-roster">${html}</div>`;
     }
 
-    function renderFamilies(location) {
-        let html = `<div id="families-grid">`;
-        const { families, population } = location.demographics;
-        families.sort((a,b) => (a.name || '').localeCompare(b.name || '')).forEach(family => {
-            html += `<div class="family-card"><h3>Famille ${family.name}</h3><ul>`;
-            const members = family.memberIds.map(id => population.find(p => p.id === id)).filter(Boolean);
-            members.sort((a,b) => (b.age || 0) - (a.age || 0)).forEach(member => {
-                 const ageText = member.isAlive ? `${member.age} ans` : `décédé(e) à ${member.ageAtDeath || member.age} ans`;
-                 let jobText = member.job?.jobTitle || member.royalTitle;
+    // NOUVEAU: Moteur de rendu principal pour un livret de famille
+    function renderNarrativeFamilyBooklet(family, location, allPopulationScope, log, campaignYear) {
+        let html = `<div class="family-booklet">`;
 
-                 const raceData = RACES_DATA.races[member.race];
-                 const isChild = member.isAlive && raceData && member.age < raceData.ageTravail;
-                 const isApprentice = member.isAlive && raceData && member.age >= raceData.ageApprentissage && member.age < raceData.ageTravail;
+        // En-tête du livret
+        const ruler = allPopulationScope.find(p => p.locationId === location.id && p.job && getJobData(p.job.buildingName, p.job.jobTitle)?.tier === 0);
+        const archivistName = ruler ? `${ruler.firstName} ${ruler.lastName}` : `l'Administration de ${location.name}`;
+        html += `
+            <div class="booklet-header">
+                <h2>LIVRET DE FAMILLE DU CLAN ${family.name.toUpperCase()}</h2>
+                <p>Délivré sous l'autorité de ${location.name}<br>
+                Sceau du Gardien des Archives, ${archivistName}</p>
+            </div>
+        `;
 
-                 if (isChild) {
-                    jobText = isApprentice ? 'Apprenti' : 'Enfant';
-                 } else if (member.isAlive) {
-                     jobText = jobText || 'Sans emploi';
-                 } else {
-                     jobText = jobText || 'aucun emploi connu';
-                 }
+        const members = family.memberIds.map(id => allPopulationScope.find(p => p.id === id)).filter(Boolean);
+        if (members.length === 0) return '';
 
-                 let nameClass = '';
-                 if (member.gender === 'Homme') {
-                     nameClass = 'male';
-                 } else if (member.gender === 'Femme') {
-                     nameClass = 'female';
-                 }
+        let couple = [];
+        const processedIds = new Set();
 
-                 let formattedName = `<span class="${nameClass}">${member.firstName}</span>`;
-                 if (!member.isAlive) {
-                     formattedName = `<s>${formattedName}</s>`;
-                 }
+        // Trouver le couple principal (ou le membre fondateur)
+        const oldestMember = members.sort((a,b) => b.age - a.age)[0];
+        const spouse = getSpouse(oldestMember, allPopulationScope);
+        if (spouse && members.some(m => m.id === spouse.id)) {
+            couple = [oldestMember, spouse];
+        } else {
+            couple = [oldestMember];
+        }
 
-                 html += `<li><strong>${formattedName} ${family.name}</strong> (${ageText}) - ${jobText}</li>`;
+        const man = couple.find(p => p.gender === 'Homme');
+        const woman = couple.find(p => p.gender === 'Femme');
+
+        // Section Époux/Épouse
+        if (man) { html += renderPersonSection(man, 'ÉPOUX', allPopulationScope, log, campaignYear, location); processedIds.add(man.id); }
+        if (woman) { html += renderPersonSection(woman, 'ÉPOUSE', allPopulationScope, log, campaignYear, location); processedIds.add(woman.id); }
+
+        // Section Mariage
+        if (man && woman) {
+            const marriageEvent = log?.find(e => e.type === 'marriage' && e.personId === man.id);
+            const marriageSimYear = marriageEvent?.year || (simulationEndYear - (man.age - RACES_DATA.races[man.race].ageAdulte));
+            const refYear = campaignYear || 0;
+            const displayMarriageYear = refYear === 0 ? marriageSimYear : refYear + marriageSimYear;
+            html += `
+                <div class="booklet-section marriage-section">
+                    <h3>MARIAGE</h3>
+                    <p><strong>Célébré le :</strong> ${getFantasyDate(displayMarriageYear)}</p>
+                    <p><strong>Lieu :</strong> ${location.name}</p>
+                    <p><strong>Mentions :</strong> Le couple a juré fidélité, unissant leurs destins devant la communauté.</p>
+                </div>
+            `;
+        }
+
+        // Section Enfants
+        const children = getChildren(couple[0], allPopulationScope).filter(c => members.some(m => m.id === c.id));
+        if (children.length > 0) {
+            html += `<div class="booklet-section children-section"><h3>ENFANTS</h3>`;
+            children.sort((a,b) => a.age - b.age).forEach((child, index) => {
+                html += renderPersonSection(child, `ENFANT ${index + 1}`, allPopulationScope, log, campaignYear, location);
+                processedIds.add(child.id);
             });
-            html += `</ul></div>`;
-        });
+            html += `</div>`;
+        }
+        
+        // Membres restants (parents âgés, etc.)
+        const remainingMembers = members.filter(m => !processedIds.has(m.id));
+        if(remainingMembers.length > 0) {
+            html += `<div class="booklet-section other-members-section"><h3>AUTRES MEMBRES RATTACHÉS</h3>`;
+            remainingMembers.forEach(member => {
+                 html += renderPersonSection(member, 'MEMBRE', allPopulationScope, log, campaignYear, location);
+            });
+            html += `</div>`;
+        }
+
+
+        // Section Décès
+        const areAllDead = members.every(m => !m.isAlive);
+        html += `<div class="booklet-section death-section"><h3>DÉCÈS</h3>`;
+        if (areAllDead) {
+            members.forEach(m => {
+                const simDeathYear = m.deathYear;
+                const refYear = campaignYear || 0;
+                const displayDeathYear = simDeathYear ? (refYear === 0 ? simDeathYear : refYear + simDeathYear) : 'inconnu';
+                html += `<p>${getFormattedNameHTML(m)} est décédé(e) en l'an ${displayDeathYear}, à l'âge de ${m.ageAtDeath || m.age} ans. Cause: ${m.causeOfDeath || 'inconnue'}.</p>`;
+            });
+        } else {
+            html += "<p>(En attente de mise à jour... que les dieux veillent sur cette famille.)</p>";
+        }
+        html += `</div>`;
+
+        html += `</div>`; // fin .family-booklet
+        return html;
+    }
+
+    // NOUVEAU: Moteur de rendu pour la section d'une personne dans le livret
+    function renderPersonSection(person, role, allPopulationScope, log, campaignYear, location) {
+        if (!person) return '';
+        const simBirthYear = simulationEndYear - person.age;
+        const refYear = campaignYear || 0;
+        const displayBirthYear = refYear === 0 ? simBirthYear : refYear + simBirthYear;
+        const parents = getParents(person, allPopulationScope);
+        const father = parents.find(p => p.gender === 'Homme');
+        const mother = parents.find(p => p.gender === 'Femme');
+
+        let html = `<div class="booklet-person-details"><h4>${role}</h4>`;
+        html += `
+            <dl>
+                <dt>Nom :</dt><dd>${getFormattedNameHTML(person)}</dd>
+                <dt>Né(e) le :</dt><dd>${getFantasyDate(displayBirthYear)} (${person.isAlive ? person.age + ' ans' : 'décédé(e)'})</dd>
+                <dt>Lieu de naissance :</dt><dd>${person.locationId ? allPopulationScope.find(p => p.id === person.locationId)?.locationName || location.name : location.name}</dd>
+                <dt>Race :</dt><dd>${person.race}</dd>
+                <dt>Profession exercée :</dt><dd>${getPersonJobTitle(person)}</dd>
+                <dt>Père :</dt><dd>${father ? father.firstName + ' ' + father.lastName.toUpperCase() : 'Inconnu'} ${father && !father.isAlive ? '(décédé)' : ''}</dd>
+                <dt>Mère :</dt><dd>${mother ? mother.firstName + ' ' + mother.lastName.toUpperCase() : 'Inconnue'} ${mother && !mother.isAlive ? '(décédée)' : ''}</dd>
+            </dl>
+            <h5>MENTIONS MARGINALES :</h5>
+            <ul class="mentions-marginales">
+                ${getPersonEvents(person.id, log, campaignYear)}
+            </ul>
+        `;
         html += `</div>`;
         return html;
     }
+
+    // NOUVEAU: Fonction principale remplaçant l'ancienne `renderFamilies`
+    function renderFamilies(location, campaignYear) {
+        let html = `<div id="family-booklets-container">`;
+        const { families, population } = location.demographics;
+        const allPopulationScope = currentRegion.places.flatMap(p => p.demographics.population.map(person => ({...person, locationName: p.name})));
+        const log = currentRegion.log || []; // Récupère le log depuis la région
+
+        families
+            .filter(f => f.memberIds.some(id => population.find(p => p.id === id))) // N'afficher que les familles présentes
+            .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+            .forEach(family => {
+                html += renderNarrativeFamilyBooklet(family, location, allPopulationScope, log, campaignYear);
+            });
+
+        html += `</div>`;
+        return html;
+    }
+
 
     function renderCharacterSheets(location) {
         let html = `<div id="character-sheets-container">`;
@@ -462,6 +631,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return html;
     }
 
+
     function renderBuildingView(buildingName, location) {
         const buildingData = getBuildingData(buildingName);
         const population = location.demographics.population;
@@ -472,7 +642,8 @@ document.addEventListener('DOMContentLoaded', () => {
             html += `<h3>Personnel</h3><div class="job-roster"><ul>`;
             buildingData.emplois.forEach(jobDef => {
                 const occupants = population.filter(p => p.job?.buildingName === buildingName && p.job?.jobTitle === jobDef.titre);
-                html += `<li><strong>${jobDef.titre} (${occupants.length}/${jobDef.postes}):</strong> ${occupants.length > 0 ? occupants.map(o => `${o.firstName} ${o.lastName} (${o.age} ans)`).join(', ') : `<i>Vacant</i>`}</li>`;
+                const occupantsHtml = occupants.length > 0 ? occupants.map(o => `${getFormattedNameHTML(o)} (${o.age} ans)`).join(', ') : `<i>Vacant</i>`;
+                html += `<li><strong>${jobDef.titre} (${occupants.length}/${jobDef.postes}):</strong> ${occupantsHtml}</li>`;
             });
             html += `</ul></div>`;
         }
@@ -497,43 +668,14 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderPathfinderSkills(mods) {
         const { strMod, dexMod, intMod, wisMod, chaMod } = mods;
         const skills = [
-            { name: "Acrobaties", mod: dexMod },
-            { name: "Artisanat (____________)", mod: intMod },
-            { name: "Artisanat (____________)", mod: intMod },
-            { name: "Artisanat (____________)", mod: intMod },
-            { name: "Art de la magie*", mod: chaMod },
-            { name: "Bluff", mod: chaMod },
-            { name: "Connaissances (exploration)*", mod: intMod },
-            { name: "Connaissances (folklore local)*", mod: intMod },
-            { name: "Connaissances (géographie)*", mod: intMod },
-            { name: "Connaissances (histoire)*", mod: intMod },
-            { name: "Connaissances (ingénierie)*", mod: intMod },
-            { name: "Connaissances (mystères)*", mod: intMod },
-            { name: "Connaissances (nature)*", mod: intMod },
-            { name: "Connaissances (noblesse)*", mod: intMod },
-            { name: "Connaissances (plans)*", mod: intMod },
-            { name: "Connaissances (religion)*", mod: intMod },
-            { name: "Déguisement", mod: chaMod },
-            { name: "Diplomatie", mod: chaMod },
-            { name: "Discrétion", mod: dexMod },
-            { name: "Dressage*", mod: chaMod },
-            { name: "Équitation", mod: dexMod },
-            { name: "Escalade", mod: strMod },
-            { name: "Escamotage*", mod: dexMod },
-            { name: "Estimation", mod: intMod },
-            { name: "Intimidation", mod: chaMod },
-            { name: "Linguistique*", mod: intMod },
-            { name: "Natation", mod: strMod },
-            { name: "Perception", mod: wisMod },
-            { name: "Premiers secours", mod: wisMod },
-            { name: "Profession* (____________)", mod: wisMod },
-            { name: "Profession* (____________)", mod: wisMod },
-            { name: "Représentation (____________)", mod: chaMod },
-            { name: "Représentation (____________)", mod: chaMod },
-            { name: "Sabotage*", mod: dexMod },
-            { name: "Survie", mod: wisMod },
-            { name: "Utilisation d'objets magiques*", mod: chaMod },
-            { name: "Vol", mod: dexMod }
+            { name: "Acrobaties", mod: dexMod }, { name: "Artisanat (____________)", mod: intMod }, { name: "Artisanat (____________)", mod: intMod }, { name: "Artisanat (____________)", mod: intMod },
+            { name: "Art de la magie*", mod: chaMod }, { name: "Bluff", mod: chaMod }, { name: "Connaissances (exploration)*", mod: intMod }, { name: "Connaissances (folklore local)*", mod: intMod },
+            { name: "Connaissances (géographie)*", mod: intMod }, { name: "Connaissances (histoire)*", mod: intMod }, { name: "Connaissances (ingénierie)*", mod: intMod }, { name: "Connaissances (mystères)*", mod: intMod },
+            { name: "Connaissances (nature)*", mod: intMod }, { name: "Connaissances (noblesse)*", mod: intMod }, { name: "Connaissances (plans)*", mod: intMod }, { name: "Connaissances (religion)*", mod: intMod },
+            { name: "Déguisement", mod: chaMod }, { name: "Diplomatie", mod: chaMod }, { name: "Discrétion", mod: dexMod }, { name: "Dressage*", mod: chaMod }, { name: "Équitation", mod: dexMod }, { name: "Escalade", mod: strMod },
+            { name: "Escamotage*", mod: dexMod }, { name: "Estimation", mod: intMod }, { name: "Intimidation", mod: chaMod }, { name: "Linguistique*", mod: intMod }, { name: "Natation", mod: strMod }, { name: "Perception", mod: wisMod },
+            { name: "Premiers secours", mod: wisMod }, { name: "Profession* (____________)", mod: wisMod }, { name: "Profession* (____________)", mod: wisMod }, { name: "Représentation (____________)", mod: chaMod },
+            { name: "Représentation (____________)", mod: chaMod }, { name: "Sabotage*", mod: dexMod }, { name: "Survie", mod: wisMod }, { name: "Utilisation d'objets magiques*", mod: chaMod }, { name: "Vol", mod: dexMod }
         ];
     
         const totalBonus = (mod) => mod >= 0 ? `+${mod}` : mod;
@@ -557,20 +699,12 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderSingleCharacterSheet(person, populationScope) {
         if (!person) return '';
 
+        const raceData = RACES_DATA.races[person.race];
         const finalScores = getDisplayStats(person);
-        const str = finalScores.force;
-        const dex = finalScores.dexterite;
-        const con = finalScores.constitution;
-        const int = finalScores.intelligence;
-        const wis = finalScores.sagesse;
-        const cha = finalScores.charisme;
-
-        const strMod = Math.floor((str - 10) / 2);
-        const dexMod = Math.floor((dex - 10) / 2);
-        const conMod = Math.floor((con - 10) / 2);
-        const intMod = Math.floor((int - 10) / 2);
-        const wisMod = Math.floor((wis - 10) / 2);
-        const chaMod = Math.floor((cha - 10) / 2);
+        const str = finalScores.force, dex = finalScores.dexterite, con = finalScores.constitution,
+              int = finalScores.intelligence, wis = finalScores.sagesse, cha = finalScores.charisme;
+        const strMod = Math.floor((str - 10) / 2), dexMod = Math.floor((dex - 10) / 2), conMod = Math.floor((con - 10) / 2),
+              intMod = Math.floor((int - 10) / 2), wisMod = Math.floor((wis - 10) / 2), chaMod = Math.floor((cha - 10) / 2);
 
         const caValue = 10 + conMod;
         const iniValue = dexMod;
@@ -581,57 +715,21 @@ document.addEventListener('DOMContentLoaded', () => {
             skillsSectionHtml = renderPathfinderSkills({ strMod, dexMod, intMod, wisMod, chaMod });
         } else { // D&D 5e (default)
             const skills = [
-                { name: "Acrobaties", mod: dexMod, base: '(Dex)' }, { name: "Arcanes", mod: intMod, base: '(Int)' },
-                { name: "Athlétisme", mod: strMod, base: '(For)' }, { name: "Discrétion", mod: dexMod, base: '(Dex)' },
-                { name: "Dressage", mod: wisMod, base: '(Sag)' }, { name: "Escamotage", mod: dexMod, base: '(Dex)' },
-                { name: "Histoire", mod: intMod, base: '(Int)' }, { name: "Intimidation", mod: chaMod, base: '(Cha)' },
-                { name: "Intuition", mod: wisMod, base: '(Sag)' }, { name: "Investigation", mod: intMod, base: '(Int)' },
-                { name: "Médecine", mod: wisMod, base: '(Sag)' }, { name: "Nature", mod: intMod, base: '(Int)' },
-                { name: "Perception", mod: wisMod, base: '(Sag)' }, { name: "Persuasion", mod: chaMod, base: '(Cha)' },
-                { name: "Religion", mod: intMod, base: '(Int)' }, { name: "Représentation", mod: chaMod, base: '(Cha)' },
-                { name: "Survie", mod: wisMod, base: '(Sag)' }, { name: "Tromperie", mod: chaMod, base: '(Cha)' }
+                { name: "Acrobaties", mod: dexMod, base: '(Dex)' }, { name: "Arcanes", mod: intMod, base: '(Int)' }, { name: "Athlétisme", mod: strMod, base: '(For)' },
+                { name: "Discrétion", mod: dexMod, base: '(Dex)' }, { name: "Dressage", mod: wisMod, base: '(Sag)' }, { name: "Escamotage", mod: dexMod, base: '(Dex)' }, { name: "Histoire", mod: intMod, base: '(Int)' },
+                { name: "Intimidation", mod: chaMod, base: '(Cha)' }, { name: "Intuition", mod: wisMod, base: '(Sag)' }, { name: "Investigation", mod: intMod, base: '(Int)' }, { name: "Médecine", mod: wisMod, base: '(Sag)' },
+                { name: "Nature", mod: intMod, base: '(Int)' }, { name: "Perception", mod: wisMod, base: '(Sag)' }, { name: "Persuasion", mod: chaMod, base: '(Cha)' }, { name: "Religion", mod: intMod, base: '(Int)' },
+                { name: "Représentation", mod: chaMod, base: '(Cha)' }, { name: "Survie", mod: wisMod, base: '(Sag)' }, { name: "Tromperie", mod: chaMod, base: '(Cha)' }
             ];
-    
-            const skillsHtml = skills.map(skill => `
-                <li class="skill-item">
-                    <span class="skill-mod">${skill.mod >= 0 ? '+' : ''}${skill.mod}</span>
-                    <span class="skill-name">${skill.name} <span class="skill-base">${skill.base}</span></span>
-                </li>
-            `).join('');
-
-            skillsSectionHtml = `
-            <aside class="skills-list-container">
-                <h4>Compétences</h4>
-                <ul>${skillsHtml}</ul>
-            </aside>`;
+            const skillsHtml = skills.map(skill => `<li class="skill-item"><span class="skill-mod">${skill.mod >= 0 ? '+' : ''}${skill.mod}</span><span class="skill-name">${skill.name} <span class="skill-base">${skill.base}</span></span></li>`).join('');
+            skillsSectionHtml = `<aside class="skills-list-container"><h4>Compétences</h4><ul>${skillsHtml}</ul></aside>`;
         }
 
-
-        const spouse = getSpouse(person, populationScope);
-        const children = getChildren(person, populationScope);
-        const parents = getParents(person, populationScope);
-        const siblings = getSiblings(person, populationScope);
-        const father = parents.find(p => p.gender === 'Homme');
-        const mother = parents.find(p => p.gender === 'Femme');
-        const paternalUnclesAunts = father ? getSiblings(father, populationScope) : [];
-        const maternalUnclesAunts = mother ? getSiblings(mother, populationScope) : [];
-
-        let jobTitle = 'N/A';
-        const raceData = RACES_DATA.races[person.race];
-        if (person.isAlive) {
-            if (raceData && person.age < raceData.ageTravail) {
-                jobTitle = person.age >= raceData.ageApprentissage ? 'Apprenti' : 'Enfant';
-            } else if (person.status === 'Retraité(e)') {
-                jobTitle = `Retraité(e) (anciennement ${person.lastJobTitle || 'non spécifié'})`;
-            } else {
-                jobTitle = person.job?.jobTitle || person.royalTitle || 'Sans emploi';
-            }
-        } else {
-            jobTitle = person.jobBeforeDeath || 'Décédé(e) sans emploi';
-        }
-
+        const spouse = getSpouse(person, populationScope), children = getChildren(person, populationScope), parents = getParents(person, populationScope),
+              siblings = getSiblings(person, populationScope), father = parents.find(p => p.gender === 'Homme'), mother = parents.find(p => p.gender === 'Femme'),
+              paternalUnclesAunts = father ? getSiblings(father, populationScope) : [], maternalUnclesAunts = mother ? getSiblings(mother, populationScope) : [];
+        const jobTitle = getPersonJobTitle(person);
         const personLocation = currentRegion.places.find(p => p.id === person.locationId);
-        const status = person.isAlive ? `Vivant(e)` : `Décédé(e) (à ${person.ageAtDeath} ans)`;
         const ageLine = `${person.age} ans`;
         const residence = personLocation ? personLocation.name : 'Inconnue';
         
@@ -643,28 +741,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (jobData && jobData.salaire && typeof jobData.salaire.totalEnCuivre === 'number') {
                     totalCopper = (jobData.salaire.totalEnCuivre * 12) + randomCopperBonus;
                 }
-            } else {
-                totalCopper = randomCopperBonus;
-            }
-        } else {
-            totalCopper = randomCopperBonus;
-        }
-
-        const goldPieces = Math.floor(totalCopper / 1000);
-        totalCopper %= 1000;
-        const silverPieces = Math.floor(totalCopper / 10);
-        const copperPieces = totalCopper % 10;
+            } else totalCopper = randomCopperBonus;
+        } else totalCopper = randomCopperBonus;
+        const goldPieces = Math.floor(totalCopper / 1000), silverPieces = Math.floor((totalCopper % 1000) / 10), copperPieces = totalCopper % 10;
         const formattedMoney = `${goldPieces}po ${silverPieces}pa ${copperPieces}pc`;
 
-        const formatPersonLink = p => `${p.firstName} ${p.lastName} (${p.isAlive ? p.age + ' ans' : 'décédé(e)'})`;
+        const formatPersonLink = p => `${getFormattedNameHTML(p)} (${p.isAlive ? p.age + ' ans' : 'décédé(e)'}) <i>(${getPersonJobTitle(p)})</i>`;
+        const friends = (person.friendIds || []).map(id => getPersonById(id, populationScope)).filter(Boolean);
+        const acquaintances = (person.acquaintanceIds || []).map(id => getPersonById(id, populationScope)).filter(Boolean);
+        const friendsListHtml = friends.length > 0 ? friends.map(f => `<li>${getFormattedNameHTML(f)} <i>(${getPersonJobTitle(f)})</i></li>`).join('') : '<li>Aucun</li>';
+        const acquaintancesListHtml = acquaintances.length > 0 ? acquaintances.map(a => `<li>${getFormattedNameHTML(a)} <i>(${getPersonJobTitle(a)})</i></li>`).join('') : '<li>Aucune</li>';
 
         return `
         <div class="character-sheet dossier-view">
-            <header class="char-sheet-header">
-                <h3>${person.firstName} ${person.lastName}</h3>
-                <p>${person.race} / ${person.gender} / Résidant à ${residence} / Argent: ${formattedMoney}</p>
-            </header>
-
+            <header class="char-sheet-header"><h3>${getFormattedNameHTML(person)}</h3><p>${person.race} / ${person.gender} / Résidant à ${residence} / Argent: ${formattedMoney}</p></header>
             <div class="char-sheet-main-grid">
                 <aside class="char-sheet-stats">
                     <div class="stat-box"><span class="label">Force</span><span class="score">${str}</span><span class="modifier">${strMod >= 0 ? '+' : ''}${strMod}</span></div>
@@ -673,56 +763,26 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="stat-box"><span class="label">Intelligence</span><span class="score">${int}</span><span class="modifier">${intMod >= 0 ? '+' : ''}${intMod}</span></div>
                     <div class="stat-box"><span class="label">Sagesse</span><span class="score">${wis}</span><span class="modifier">${wisMod >= 0 ? '+' : ''}${wisMod}</span></div>
                     <div class="stat-box"><span class="label">Charisme</span><span class="score">${cha}</span><span class="modifier">${chaMod >= 0 ? '+' : ''}${chaMod}</span></div>
+                    <div class="combat-stats-container"><div class="combat-box"><div class="combat-value">${caValue}</div><div class="combat-label">CA</div></div><div class="combat-box"><div class="combat-value">${formattedIniValue}</div><div class="combat-label">INITIATIVE</div></div></div>
                 </aside>
-
                 <div class="char-sheet-main-content">
-                    <section class="char-sheet-info">
-                        <div class="combat-stats-container">
-                            <div class="combat-box">
-                                <div class="combat-value">${caValue}</div>
-                                <div class="combat-label">CA</div>
-                            </div>
-                            <div class="combat-box">
-                                <div class="combat-value">${formattedIniValue}</div>
-                                <div class="combat-label">INITIATIVE</div>
-                            </div>
-                        </div>
-                        <div class="info-block">
-                            <h4>État Civil & Statut</h4>
-                            <p><strong>Âge :</strong> ${ageLine}</p>
-                            <p><strong>Statut :</strong> ${status}</p>
-                            <p><strong>Prestige :</strong> ${person.prestige ? person.prestige.toFixed(0) : '0'}</p>
-                            <p><strong>Occupation :</strong> ${jobTitle}</p>
-                        </div>
-                    </section>
+                    <section class="char-sheet-info"><div class="info-block"><h4>État Civil & Occupation</h4><div class="info-line"><span><strong>Âge :</strong> ${ageLine}</span><span><strong>Prestige :</strong> ${person.prestige ? person.prestige.toFixed(0) : '0'}</span><span><strong>Occupation :</strong> ${jobTitle}</span></div></div></section>
                     ${skillsSectionHtml}
                 </div>
             </div>
-
             <div class="char-sheet-details">
-                <div class="details-section">
-                    <h4>Cercle Social & Familial</h4>
-                    <div class="social-grid">
-                        <div><strong>Parents:</strong>
-                            <ul>${parents.length > 0 ? parents.map(p => `<li>${formatPersonLink(p)}</li>`).join('') : '<li>Inconnus</li>'}</ul>
-                        </div>
-                        <div><strong>Fratrie:</strong>
-                            <ul>${siblings.length > 0 ? siblings.map(s => `<li>${formatPersonLink(s)}</li>`).join('') : '<li>Aucune</li>'}</ul>
-                        </div>
-                        <div><strong>Oncles & Tantes (Paternel):</strong>
-                            <ul>${paternalUnclesAunts.length > 0 ? paternalUnclesAunts.map(p => `<li>${formatPersonLink(p)}</li>`).join('') : '<li>Aucun</li>'}</ul>
-                        </div>
-                        <div><strong>Oncles & Tantes (Maternel):</strong>
-                           <ul>${maternalUnclesAunts.length > 0 ? maternalUnclesAunts.map(p => `<li>${formatPersonLink(p)}</li>`).join('') : '<li>Aucun</li>'}</ul>
-                        </div>
-                        <div><strong>Conjoint(e):</strong>
-                            <p>${spouse ? formatPersonLink(spouse) : 'Célibataire'}</p>
-                        </div>
-                        <div><strong>Enfants:</strong>
-                             <ul>${children.length > 0 ? children.map(c => `<li>${formatPersonLink(c)}</li>`).join('') : '<li>Aucun</li>'}</ul>
-                        </div>
-                    </div>
-                </div>
+                <div class="details-section"><h4>Cercle Social & Familial</h4><div class="social-grid">
+                    <div><strong>Parents:</strong><ul>${parents.length > 0 ? parents.map(p => `<li>${formatPersonLink(p)}</li>`).join('') : '<li>Inconnus</li>'}</ul></div>
+                    <div><strong>Fratrie:</strong><ul>${siblings.length > 0 ? siblings.map(s => `<li>${formatPersonLink(s)}</li>`).join('') : '<li>Aucune</li>'}</ul></div>
+                    <div><strong>Oncles & Tantes (Paternel):</strong><ul>${paternalUnclesAunts.length > 0 ? paternalUnclesAunts.map(p => `<li>${formatPersonLink(p)}</li>`).join('') : '<li>Aucun</li>'}</ul></div>
+                    <div><strong>Oncles & Tantes (Maternel):</strong><ul>${maternalUnclesAunts.length > 0 ? maternalUnclesAunts.map(p => `<li>${formatPersonLink(p)}</li>`).join('') : '<li>Aucun</li>'}</ul></div>
+                    <div><strong>Conjoint(e):</strong><p>${spouse ? formatPersonLink(spouse) : 'Célibataire'}</p></div>
+                    <div><strong>Enfants:</strong><ul>${children.length > 0 ? children.map(c => `<li>${formatPersonLink(c)}</li>`).join('') : '<li>Aucun</li>'}</ul></div>
+                </div></div>
+                <div class="details-section"><h4>Relations</h4><div class="social-grid">
+                    <div><strong>Amis:</strong><ul>${friendsListHtml}</ul></div>
+                    <div><strong>Connaissances:</strong><ul>${acquaintancesListHtml}</ul></div>
+                </div></div>
             </div>
         </div>`;
     }
@@ -730,84 +790,63 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderLocationView(location) {
         const hasPopulation = location.demographics?.population.length > 0;
     
-        let tabLinks = `
-            <button class="tab-link active" data-tab="tab-distances">Distances & Temps de trajet</button>
-            <button class="tab-link" data-tab="tab-jobs">Emplois & Occupants</button>
-        `;
-        let tabContent = `
-            <div id="tab-distances" class="tab-content active">
-                ${renderDistanceMatrix(location)}
-            </div>
-            <div id="tab-jobs" class="tab-content">
-                ${renderJobRoster(location)}
-            </div>
-        `;
+        let tabLinks = '';
+        let tabContent = '';
     
         if (hasPopulation) {
-            tabLinks += `
+            tabLinks = `
+                <button class="tab-link active" data-tab="tab-characters">Fiches des Personnages</button>
+                <button class="tab-link" data-tab="tab-jobs">Emplois & Occupants</button>
                 <button class="tab-link" data-tab="tab-families">Les Familles du lieu</button>
-                <button class="tab-link" data-tab="tab-characters">Fiches des Personnages</button>
+                <button class="tab-link" data-tab="tab-distances">Distances & Temps de trajet</button>
             `;
-            tabContent += `
+            tabContent = `
+                <div id="tab-characters" class="tab-content active">${renderCharacterSheets(location)}</div>
+                 <div id="tab-jobs" class="tab-content">${renderJobRoster(location)}</div>
                 <div id="tab-families" class="tab-content">
-                    ${renderFamilies(location)}
+                    <div class="campaign-date-input-container">
+                         <label for="campaign-year">Année de référence pour la narration :</label>
+                         <input type="number" id="campaign-year" placeholder="Ex: 600" value="">
+                    </div>
+                    ${renderFamilies(location, 0)}
                 </div>
-                <div id="tab-characters" class="tab-content">
-                    ${renderCharacterSheets(location)}
-                </div>
+                <div id="tab-distances" class="tab-content">${renderDistanceMatrix(location)}</div>
             `;
+        } else {
+             tabLinks = `<button class="tab-link active" data-tab="tab-distances">Distances & Temps de trajet</button><button class="tab-link" data-tab="tab-jobs">Emplois & Occupants</button>`;
+            tabContent = `<div id="tab-distances" class="tab-content active">${renderDistanceMatrix(location)}</div><div id="tab-jobs" class="tab-content">${renderJobRoster(location)}</div>`;
         }
     
-        const finalHtml = `
-            <h2><span class="location-title">${location.name}</span></h2>
-            <div class="tabs-container">
-                <div class="tab-links">
-                    ${tabLinks}
-                </div>
-                <div class="tab-content-container">
-                    ${tabContent}
-                </div>
-            </div>`;
-    
+        const finalHtml = `<h2><span class="location-title">${location.name}</span></h2><div class="tabs-container"><div class="tab-links">${tabLinks}</div><div class="tab-content-container">${tabContent}</div></div>`;
         contentArea.innerHTML = finalHtml;
     
-        // Add event listeners for the new tabs
         contentArea.querySelector('.tab-links').addEventListener('click', (e) => {
             if (e.target.tagName === 'BUTTON') {
                 const tabId = e.target.dataset.tab;
-                
-                // Don't do anything if the clicked tab is already active
                 if (e.target.classList.contains('active')) return;
-    
-                // Update button active state
                 contentArea.querySelectorAll('.tab-link').forEach(btn => btn.classList.remove('active'));
                 e.target.classList.add('active');
-    
-                // Update content active state
-                contentArea.querySelectorAll('.tab-content').forEach(content => {
-                    content.classList.remove('active');
-                    if (content.id === tabId) {
-                        content.classList.add('active');
-                    }
-                });
+                contentArea.querySelectorAll('.tab-content').forEach(content => { content.classList.remove('active'); if (content.id === tabId) content.classList.add('active'); });
             }
         });
+
+        const campaignYearInput = contentArea.querySelector('#campaign-year');
+        if (campaignYearInput) {
+            campaignYearInput.addEventListener('input', () => {
+                const newYear = parseInt(campaignYearInput.value, 10) || 0;
+                const bookletsContainer = contentArea.querySelector('#family-booklets-container');
+                if (bookletsContainer) {
+                    const newBookletsHTML = renderFamilies(location, newYear);
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = newBookletsHTML;
+                    const newContainer = tempDiv.firstChild;
+                    if(newContainer) bookletsContainer.replaceWith(newContainer);
+                }
+            });
+        }
     }
 
-    function populateSelectors(location) {
-        buildingSelect.innerHTML = '<option value="">-- Tous les Bâtiments --</option>';
-        if (location.config?.buildings) {
-            const buildingNames = new Set(Object.values(location.config.buildings).flat().map(b => b.name));
-            [...buildingNames].sort().forEach(name => buildingSelect.innerHTML += `<option value="${name}">${name}</option>`);
-        }
-        characterSelect.innerHTML = '<option value="">-- Tous les Personnages --</option>';
-        if (location.demographics?.population) {
-            location.demographics.population
-                .filter(person => person.isAlive)
-                .sort((a,b) => (a.lastName || '').localeCompare(b.lastName || '') || (a.firstName || '').localeCompare(b.firstName || ''))
-                .forEach(person => characterSelect.innerHTML += `<option value="${person.id}">${person.firstName} ${person.lastName}</option>`);
-        }
-    }
+    function populateSelectors(location) { /* No longer used */ }
     
     function init() {
         const data = localStorage.getItem(STORAGE_KEY);
@@ -819,7 +858,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const lastRegionId = localStorage.getItem(LAST_REGION_KEY);
         currentRegion = regions.find(r => r.id == lastRegionId) || regions[0];
 
-        // NOUVEAU : Appel initial pour la mise à jour de la navigation
         updateAllNavLinksState(currentRegion);
 
         if (!currentRegion?.places?.length) {
@@ -828,6 +866,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         window.populationScope = currentRegion.places.flatMap(p => p.demographics.population);
+        
+        let maxYear = 1;
+        // NOUVEAU: Récupère la date de fin de la simulation depuis le log de la région s'il existe
+        if (currentRegion.log) {
+            maxYear = currentRegion.log.reduce((latestYear, event) => event.year > latestYear ? event.year : latestYear, 1);
+        } else {
+            // Fallback si le log n'est pas dans la région (ancienne sauvegarde)
+            window.populationScope.forEach(p => {
+                if (p.deathYear && p.deathYear > maxYear) maxYear = p.deathYear;
+            });
+        }
+        simulationEndYear = maxYear;
 
         locationSelect.innerHTML = currentRegion.places.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
         selectedLocation = currentRegion.places[0];
@@ -839,52 +889,18 @@ document.addEventListener('DOMContentLoaded', () => {
             selectedLocation = currentRegion.places.find(p => p.id == e.target.value);
             populateSelectors(selectedLocation);
             renderLocationView(selectedLocation);
-            buildingSelect.value = "";
-            characterSelect.value = "";
-        });
-
-        buildingSelect.addEventListener('change', (e) => {
-            const buildingName = e.target.value;
-            characterSelect.value = "";
-            if (buildingName) renderBuildingView(buildingName, selectedLocation);
-            else renderLocationView(selectedLocation);
-        });
-
-        characterSelect.addEventListener('change', (e) => {
-            const personId = e.target.value;
-            buildingSelect.value = "";
-            if (personId) renderCharacterView(personId, selectedLocation);
-            else renderLocationView(selectedLocation);
         });
 
         systemSelect.addEventListener('change', (e) => {
             currentGameSystem = e.target.value;
-            // Re-render the current view to reflect the change
-            const selectedBuilding = buildingSelect.value;
-            const selectedCharacter = characterSelect.value;
-
-            if (selectedCharacter) {
-                renderCharacterView(selectedCharacter, selectedLocation);
-            } else if (selectedBuilding) {
-                renderBuildingView(selectedBuilding, selectedLocation);
-            } else {
-                renderLocationView(selectedLocation);
-            }
+            renderLocationView(selectedLocation);
         });
 
         globalSearchInput.addEventListener('input', (e) => {
             const query = e.target.value.toLowerCase().trim();
             globalSearchResults.innerHTML = '';
-
-            if (query.length < 2) {
-                globalSearchResults.style.display = 'none';
-                return;
-            }
-
-            const matches = window.populationScope.filter(person =>
-                person.isAlive && `${person.firstName} ${person.lastName}`.toLowerCase().includes(query)
-            ).slice(0, 10);
-
+            if (query.length < 2) { globalSearchResults.style.display = 'none'; return; }
+            const matches = window.populationScope.filter(person => person.isAlive && `${person.firstName} ${person.lastName}`.toLowerCase().includes(query)).slice(0, 10);
             if (matches.length > 0) {
                 matches.forEach(person => {
                     const personLocation = currentRegion.places.find(p => p.id === person.locationId);
@@ -892,22 +908,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     item.classList.add('search-result-item');
                     item.textContent = `${person.firstName} ${person.lastName} (${personLocation.name})`;
                     item.dataset.personId = person.id;
-
                     item.addEventListener('click', () => {
                         const clickedPerson = window.populationScope.find(p => p.id === person.id);
                         const clickedLocation = currentRegion.places.find(l => l.id === clickedPerson.locationId);
-
                         if (clickedPerson && clickedLocation) {
                             selectedLocation = clickedLocation;
                             locationSelect.value = clickedLocation.id;
-
                             populateSelectors(clickedLocation);
-
-                            characterSelect.value = clickedPerson.id;
-                            buildingSelect.value = "";
-
                             renderCharacterView(clickedPerson.id, clickedLocation);
-
                             globalSearchInput.value = '';
                             globalSearchResults.style.display = 'none';
                         }
@@ -915,20 +923,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     globalSearchResults.appendChild(item);
                 });
                 globalSearchResults.style.display = 'block';
-            } else {
-                globalSearchResults.style.display = 'none';
-            }
+            } else { globalSearchResults.style.display = 'none'; }
         });
 
-        document.addEventListener('click', (e) => {
-            if (!globalSearchInput.contains(e.target)) {
-                globalSearchResults.style.display = 'none';
-            }
-        });
-
+        document.addEventListener('click', (e) => { if (!globalSearchInput.contains(e.target)) globalSearchResults.style.display = 'none'; });
         printBtn.addEventListener('click', () => window.print());
 
-        // NOUVEAU : Écouteur de clics pour les liens de navigation désactivés
         const floatingMenu = document.querySelector('.floating-menu');
         if (floatingMenu) {
             floatingMenu.addEventListener('click', (e) => {
@@ -937,16 +937,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     e.preventDefault();
                     let message = "Cette étape est verrouillée.";
                     switch(link.id) {
-                        case 'nav-step2':
-                            message = "Veuillez d'abord créer une région et y ajouter au moins un lieu (Étape 1).";
-                            break;
-                        case 'nav-step3':
-                            message = "Veuillez configurer et valider la structure économique de tous les lieux (Étape 2).";
-                            break;
-                        case 'nav-step4':
-                        case 'nav-step5':
-                            message = "Veuillez d'abord générer la population initiale (Étape 3).";
-                            break;
+                        case 'nav-step2': message = "Veuillez d'abord créer une région et y ajouter au moins un lieu (Étape 1)."; break;
+                        case 'nav-step3': message = "Veuillez configurer et valider la structure économique de tous les lieux (Étape 2)."; break;
+                        case 'nav-step4': case 'nav-step5': message = "Veuillez d'abord générer la population initiale (Étape 3)."; break;
                     }
                     alert(message);
                 }

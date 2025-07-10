@@ -72,7 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const TRAVEL_SPEEDS = { // en km par jour
         Pied: 30,
         Cheval: 70,
-        Caravane: 20
+        Caravane: 25
     };
     const DEFAULT_ROAD_TYPE = 'marchand';
     const HEX_TERRAIN = { img: null, file: 'terrain_hex.jpg' };

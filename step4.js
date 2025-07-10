@@ -1,11 +1,11 @@
 /**
  * EcoSimRPG - step4.js
  * Moteur principal de la simulation.
- * VERSION 15.0 - Amélioration des journaux d'événements
- * - Les naissances sont désormais enregistrées dans l'historique des parents.
- * - L'attribution d'un titre dynastique est enregistrée comme un événement.
- * - La perte d'un ami (par décès) est ajoutée à l'historique du personnage survivant.
- * - Le passage à l'âge adulte (âge de travailler) est enregistré comme une étape de vie.
+ * VERSION 17.0 - Suivi des familles parties/éteintes
+ * - Ne supprime plus les familles devenues vides.
+ * - Ajout d'un statut ('active', 'migrated', 'extinct') à chaque famille.
+ * - Le sélecteur de famille groupe maintenant les familles actives et inactives.
+ * - L'affichage de l'arbre montre un message spécifique pour les familles inactives tout en affichant l'historique des départs.
  */
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -49,8 +49,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let startPanX, startPanY, scrollLeftStart, scrollTopStart;
     let treeZoomLevel = 1.0;
     let initialSimulationData = null;
-let lastEventLogTick = -1;
-let lastEventLogViewId = null;
+    let lastEventLogTick = -1;
+    let lastEventLogViewId = null;
 
     // --- NOUVEAU : GESTION DE LA NAVIGATION ---
     /**
@@ -99,6 +99,10 @@ function logEvent(message, type = 'system', details = {}) {
         tick: simulationState.currentTick, // Ajout de cette ligne
         familyId: details.familyId || null,
         personId: details.personId || null,
+        // NOUVEAU : Ajout de données de destination pour le suivi
+        newFamilyId: details.newFamilyId || null,
+        newLocationId: details.newLocationId || null,
+        personSnapshot: details.personSnapshot || null
     };
     simulationState.log.unshift(event); 
     if (simulationState.log.length > 5000) { 
@@ -244,7 +248,8 @@ function updateEventLogUI() {
             handleSocialInteractions(population, place);
             handleRetirement(population, place);
             handleDeaths(population, place, placeSatisfaction);
-            handleMarriages(population, place, dynastyMemberIds);
+            // BUG FIX: Added placeSatisfaction argument to the function call
+            handleMarriages(population, place, placeSatisfaction, dynastyMemberIds);
             handlePregnancyAndBirths(population, place, placeSatisfaction);
             
             handleStatAndPrestigeGrowth(allPopulation, rulingFamilies, dynastyMemberIds);
@@ -255,6 +260,7 @@ function updateEventLogUI() {
 
         if (simulationState.currentTick % 5 === 0) {
             handleMigration(dynastyMemberIds);
+            handleLoveMigration(dynastyMemberIds);
         }
         
         updateGlobalStats();
@@ -376,13 +382,19 @@ function updateEventLogUI() {
             if (family) {
                 const memberIndex = family.memberIds.indexOf(person.id);
                 if (memberIndex > -1) family.memberIds.splice(memberIndex, 1);
+                
+                // MODIFICATION : Si la famille est vide, elle est marquée comme 'migrated' au lieu d'être supprimée.
                 if (family.memberIds.length === 0) {
-                    const familyIndex = sourcePlace.demographics.families.findIndex(f => f.id === family.id);
-                    if(familyIndex > -1) sourcePlace.demographics.families.splice(familyIndex, 1);
+                    family.status = 'migrated'; 
                 }
             }
             const newFamily = {
-                 id: `fam_mig_${Date.now()}_${Math.random()}`, name: person.lastName, locationId: destination.id, memberIds: [person.id], isCustom: false 
+                 id: `fam_mig_${Date.now()}_${Math.random()}`, 
+                 name: person.lastName, 
+                 locationId: destination.id, 
+                 memberIds: [person.id], 
+                 isCustom: false,
+                 status: 'active' // MODIFICATION : Statut par défaut pour les nouvelles familles.
             };
             destination.demographics.families.push(newFamily);
             
@@ -390,9 +402,102 @@ function updateEventLogUI() {
             person.familyId = newFamily.id;
             
             const message = `✈️ ${person.firstName} ${person.lastName} a migré de ${sourcePlace.name} à ${destination.name} pour un poste de ${job.jobTitle}.`;
-            logEvent(message, 'migration', { familyId: oldFamilyId });
+            
+            // MODIFICATION : Log de départ pour la famille d'origine
+            const departureMessage = `✈️ ${person.firstName} ${person.lastName} a quitté la famille, migrant de ${sourcePlace.name} vers ${destination.name}.`;
+            logEvent(departureMessage, 'departure', { 
+                familyId: oldFamilyId, 
+                personId: person.id, 
+                newFamilyId: newFamily.id, 
+                newLocationId: destination.id,
+                personSnapshot: { firstName: person.firstName, lastName: person.lastName }
+            });
             logEvent(message, 'migration', { familyId: newFamily.id, personId: person.id });
         }
+    }
+
+    function handleLoveMigration(dynastyMemberIds) {
+        const allPlaces = currentRegion.places;
+        if (allPlaces.length < 2) return;
+    
+        allPlaces.forEach(sourcePlace => {
+            const potentialMigrants = sourcePlace.demographics.population.filter(p => {
+                const raceData = RACES_DATA.races[p.race];
+                if (!raceData) return false;
+                
+                const isEligibleAge = p.age >= (raceData.ageAdulte + 3);
+    
+                return p.isAlive &&
+                    !p.spouseId &&
+                    p.status === 'Actif' &&
+                    isEligibleAge &&
+                    !dynastyMemberIds.has(p.id);
+            });
+    
+            potentialMigrants.forEach(person => {
+                const raceData = RACES_DATA.races[person.race];
+                const yearsSingle = person.age - (raceData.ageAdulte + 3);
+                
+                let migrationChance = 0.005 * (1 + (yearsSingle * 0.1));
+                migrationChance = Math.min(migrationChance, 0.1);
+    
+                if (Math.random() < migrationChance) {
+                    const possibleDestinations = allPlaces.filter(p => p.id !== sourcePlace.id);
+                    if (possibleDestinations.length > 0) {
+                        const destinationPlace = possibleDestinations[Math.floor(Math.random() * possibleDestinations.length)];
+    
+                        const sourcePop = sourcePlace.demographics.population;
+                        const personIndex = sourcePop.findIndex(p => p.id === person.id);
+                        if (personIndex > -1) {
+                            sourcePop.splice(personIndex, 1);
+                        } else {
+                            return; 
+                        }
+    
+                        person.locationId = destinationPlace.id;
+                        person.job = null;
+                        destinationPlace.demographics.population.push(person);
+    
+                        const oldFamily = sourcePlace.demographics.families.find(f => f.id === person.familyId);
+                        if (oldFamily) {
+                            const memberIndex = oldFamily.memberIds.indexOf(person.id);
+                            if (memberIndex > -1) oldFamily.memberIds.splice(memberIndex, 1);
+                            
+                            // MODIFICATION : Marquer la famille comme migrée si elle est vide.
+                            if (oldFamily.memberIds.length === 0) {
+                                oldFamily.status = 'migrated';
+                            }
+                        }
+    
+                        const newFamily = {
+                            id: `fam_lovemig_${Date.now()}_${Math.random()}`,
+                            name: person.lastName,
+                            locationId: destinationPlace.id,
+                            memberIds: [person.id],
+                            isCustom: false,
+                            status: 'active' // MODIFICATION : Statut par défaut
+                        };
+                        destinationPlace.demographics.families.push(newFamily);
+    
+                        const oldFamilyId = person.familyId;
+                        person.familyId = newFamily.id;
+                        
+                        const message = `❤️ En quête d'amour, ${person.firstName} ${person.lastName} a migré de ${sourcePlace.name} à ${destinationPlace.name}.`;
+                        
+                        // MODIFICATION : Log de départ
+                        const departureMessage = `❤️ ${person.firstName} ${person.lastName} a quitté la famille, migrant de ${sourcePlace.name} vers ${destinationPlace.name} en quête d'amour.`;
+                        logEvent(departureMessage, 'departure', { 
+                            familyId: oldFamilyId, 
+                            personId: person.id, 
+                            newFamilyId: newFamily.id, 
+                            newLocationId: destinationPlace.id,
+                            personSnapshot: { firstName: person.firstName, lastName: person.lastName }
+                        });
+                        logEvent(message, 'migration', { familyId: newFamily.id, personId: person.id });
+                    }
+                }
+            });
+        });
     }
     
 function handleRetirement(population, place) {
@@ -405,41 +510,35 @@ function handleRetirement(population, place) {
         const jobData = getJobData(person.job.buildingName, person.job.jobTitle);
         if (!jobData || jobData.tier === undefined) return;
 
-        // --- NOUVELLE LOGIQUE DE RETRAITE ---
         const jobTier = jobData.tier;
         const lifespan = raceData.esperanceVieMax;
 
         let retirementAge = -1;
 
-        // Les dirigeants de Tiers 0 ne prennent pas leur retraite de cette manière.
         if (jobTier === 0) return;
 
-        // On définit l'âge de la retraite en fonction de la pénibilité (Tiers)
-        // Vous pouvez ajuster ces pourcentages comme vous le souhaitez.
         switch (jobTier) {
-            case 1: // Emplois de prestige (Nobles, etc.)
-                retirementAge = Math.floor(lifespan * 0.85); // Retraite à 85% de l'espérance de vie
+            case 1: 
+                retirementAge = Math.floor(lifespan * 0.85);
                 break;
-            case 2: // Emplois intellectuels/de gestion (Marchands, Clercs...)
-                retirementAge = Math.floor(lifespan * 0.80); // Retraite à 80%
+            case 2: 
+                retirementAge = Math.floor(lifespan * 0.80);
                 break;
-            case 3: // Artisans qualifiés
-                retirementAge = Math.floor(lifespan * 0.75); // Retraite à 75%
+            case 3: 
+                retirementAge = Math.floor(lifespan * 0.75);
                 break;
-            case 4: // Travailleurs manuels, basse qualification
-            case 5: // Emplois les plus basiques
-                retirementAge = Math.floor(lifespan * 0.70); // Retraite à 70%
+            case 4:
+            case 5:
+                retirementAge = Math.floor(lifespan * 0.70);
                 break;
-            default: // Si un Tiers n'est pas reconnu, on garde une valeur par défaut
+            default:
                 retirementAge = Math.floor(lifespan * 0.99);
                 break;
         }
-        // --- FIN DE LA NOUVELLE LOGIQUE ---
-
 
         if (retirementAge > 0 && person.age >= retirementAge) {
             const oldJobTitle = person.job.jobTitle;
-            person.lastJobTitle = oldJobTitle; // Sauvegarde du dernier métier
+            person.lastJobTitle = oldJobTitle;
             person.job = null;
             person.status = 'Retraité(e)';
             logEvent(`🧘 ${person.firstName} ${person.lastName} a pris sa retraite de son poste de ${oldJobTitle} à ${person.age} ans.`, 'system', { familyId: person.familyId, personId: person.id });
@@ -467,11 +566,9 @@ function applyDynasticTitles(ruler, population) {
         }
     };
     
-    // 1. Conjoint
     const spouse = getPersonById(ruler.spouseId, allPopulation);
     if (spouse) assignTitle(spouse, 'Famille Gouvernante');
 
-    // 2. Parents
     const parents = getParents(ruler, allPopulation);
     parents.forEach(parent => {
         if (parent && parent.isAlive && getJobData(parent.job?.buildingName, parent.job?.jobTitle)?.tier !== 0) {
@@ -483,7 +580,6 @@ function applyDynasticTitles(ruler, population) {
         }
     });
 
-    // 3. Enfants et Petits-Enfants
     getChildren(ruler, allPopulation).forEach(child => {
         if (child && child.isAlive) {
             assignTitle(child, child.gender === 'Homme' ? 'Héritier' : 'Héritière');
@@ -500,7 +596,6 @@ function applyDynasticTitles(ruler, population) {
         }
     });
 
-    // 4. Frères/Sœurs et leurs descendants
     getSiblings(ruler, allPopulation).forEach(sibling => {
         if (sibling && sibling.isAlive) {
             assignTitle(sibling, sibling.gender === 'Homme' ? 'Frère du pouvoir' : 'Sœur du pouvoir');
@@ -745,16 +840,13 @@ function applyDynasticTitles(ruler, population) {
                 
                 if (person.job) { person.job = null; }
 
-                // Log pour la personne décédée
                 logEvent(message, 'death', { familyId: person.familyId, personId: person.id });
 
-                // Log pour les amis survivants
                 if (person.friendIds) {
                     person.friendIds.forEach(friendId => {
                         const friend = population.find(f => f.id === friendId);
                         if (friend && friend.isAlive) {
-// Nouvelle ligne
-const friendMessage = `😢 ${friend.firstName} ${friend.lastName} a appris le décès de son ami(e) ${person.firstName} ${person.lastName}.`;
+                            const friendMessage = `😢 ${friend.firstName} ${friend.lastName} a appris le décès de son ami(e) ${person.firstName} ${person.lastName}.`;
                             logEvent(friendMessage, 'social', { familyId: friend.familyId, personId: friend.id });
                             if (friend.friendIds) {
                                 const index = friend.friendIds.indexOf(person.id);
@@ -771,6 +863,21 @@ const friendMessage = `😢 ${friend.firstName} ${friend.lastName} a appris le d
                             if (index > -1) acquaintance.acquaintanceIds.splice(index, 1);
                         }
                     });
+                }
+                
+                // MODIFICATION : Vérifier si la famille est éteinte.
+                const family = place.demographics.families.find(f => f.id === person.familyId);
+                if (family) {
+                    const allPopulationOfPlace = place.demographics.population;
+                    const hasLivingMembers = family.memberIds.some(memberId => {
+                        const member = allPopulationOfPlace.find(p => p.id === memberId);
+                        return member && member.isAlive;
+                    });
+
+                    if (!hasLivingMembers) {
+                        family.status = 'extinct';
+                        logEvent(`📜 La famille ${family.name} s'est éteinte avec le décès de son dernier membre.`, 'system', { familyId: family.id });
+                    }
                 }
             }
         });
@@ -889,6 +996,8 @@ const friendMessage = `😢 ${friend.firstName} ${friend.lastName} a appris le d
                         wife.hasBeenMarried = true;
 
                         wife.maidenName = wife.lastName;
+                        const wifeOldLastName = wife.lastName;
+                        const wifeOldFirstName = wife.firstName;
                         wife.lastName = man.lastName;
                         
                         const oldWifeFamilyId = wife.familyId;
@@ -898,11 +1007,20 @@ const friendMessage = `😢 ${friend.firstName} ${friend.lastName} a appris le d
                             const indexInOldFamily = oldFamily.memberIds.indexOf(wife.id);
                             if (indexInOldFamily > -1) {
                                 oldFamily.memberIds.splice(indexInOldFamily, 1);
+
+                                // MODIFICATION : Log de départ pour la famille d'origine de la femme
+                                const departureMessage = `💍 ${wifeOldFirstName} ${wifeOldLastName} a quitté la famille pour épouser ${man.firstName} ${man.lastName}.`;
+                                logEvent(departureMessage, 'departure', {
+                                    familyId: oldWifeFamilyId,
+                                    personId: wife.id,
+                                    newFamilyId: man.familyId,
+                                    newLocationId: man.locationId,
+                                    personSnapshot: { firstName: wifeOldFirstName, lastName: wifeOldLastName }
+                                });
+
+                                // MODIFICATION : Marquer la famille comme migrée si elle devient vide
                                 if (oldFamily.memberIds.length === 0) {
-                                    const placeOfOldFamily = currentRegion.places.find(p => p.id === oldFamily.locationId);
-                                    if (placeOfOldFamily) {
-                                        placeOfOldFamily.demographics.families = placeOfOldFamily.demographics.families.filter(f => f.id !== oldFamily.id);
-                                    }
+                                    oldFamily.status = 'migrated'; 
                                 }
                             }
                         }
@@ -934,7 +1052,7 @@ const friendMessage = `😢 ${friend.firstName} ${friend.lastName} a appris le d
 
                         const message = `💍 ${man.firstName} ${man.lastName} et ${wife.firstName} ${wife.lastName} (née ${wife.maidenName}) se sont mariés à ${place.name}.`;
                         logEvent(message, 'marriage', { familyId: man.familyId, personId: man.id });
-                        logEvent(message, 'marriage', { familyId: oldWifeFamilyId, personId: wife.id });
+                        logEvent(message, 'marriage', { familyId: man.familyId, personId: wife.id });
                     }
                 }
             }
@@ -1016,7 +1134,7 @@ const friendMessage = `😢 ${friend.firstName} ${friend.lastName} a appris le d
                         status: 'Actif',
                         friendIds: [], acquaintanceIds: [],
                         maxFriends: Math.floor(Math.random() * 5) + 1,
-                        maxAcquaintances: Math.floor(Math.random() * 12) + 7,
+                        maxAcquaintances: Math.floor(Math.random() * 12) + 0,
                         desiredChildren: getWeightedDesiredChildren(),
                         totalMonthsWorked: 0
                     };
@@ -1043,16 +1161,14 @@ const friendMessage = `😢 ${friend.firstName} ${friend.lastName} a appris le d
                     const family = currentRegion.places.flatMap(p => p.demographics.families).find(f => f.id === father.familyId);
                     if (family && !family.memberIds.includes(newChild.id)) { family.memberIds.push(newChild.id); }
 
-                    // Log pour l'enfant, la famille, et les parents
                     const birthMessage = `👶 Naissance de ${newChild.firstName} ${newChild.lastName} est né de ${father.firstName} et ${mother.firstName} à ${place.name}.`;
                     logEvent(birthMessage, 'birth', { familyId: father.familyId, personId: newChild.id });
                     
-// Nouveau code
-const motherMessage = `👶 ${mother.firstName} ${mother.lastName} a donné naissance à ${newChild.firstName}.`;
-logEvent(motherMessage, 'birth', { familyId: mother.familyId, personId: mother.id });
+                    const motherMessage = `👶 ${mother.firstName} ${mother.lastName} a donné naissance à ${newChild.firstName}.`;
+                    logEvent(motherMessage, 'birth', { familyId: mother.familyId, personId: mother.id });
 
-const fatherMessage = `👶 ${father.firstName} ${father.lastName} est devenu le père de ${newChild.firstName}.`;
-logEvent(fatherMessage, 'birth', { familyId: father.familyId, personId: father.id });
+                    const fatherMessage = `👶 ${father.firstName} ${father.lastName} est devenu le père de ${newChild.firstName}.`;
+                    logEvent(fatherMessage, 'birth', { familyId: father.familyId, personId: father.id });
                     
                     if (mother.job) {
                         const jobData = getJobData(mother.job.buildingName, mother.job.jobTitle);
@@ -1163,9 +1279,8 @@ logEvent(fatherMessage, 'birth', { familyId: father.familyId, personId: father.i
                 const combinedGains = { prestige: parentPrestigeGain, stats: parentStatGains };
                 applyGainsToPerson(person, combinedGains, 1.0);
             }
-            // MODIFICATION : Ajout du gain passif pour les chômeurs
             else if (!person.job && !person.royalTitle && person.isAlive && person.age >= raceData.ageTravail) {
-                const passiveGain = Math.random() * 0.2; // Gain aléatoire entre 0.1 et 0.3
+                const passiveGain = Math.random() * 0.2;
                 const gains = {
                     prestige: passiveGain,
                     stats: {
@@ -1418,7 +1533,6 @@ logEvent(fatherMessage, 'birth', { familyId: father.familyId, personId: father.i
     
     function loadData() { const data = localStorage.getItem(STORAGE_KEY); regions = data ? JSON.parse(data) : []; const lastRegionId = localStorage.getItem(LAST_REGION_KEY); if (lastRegionId) { currentRegion = regions.find(r => r.id == lastRegionId) || null; } }
     
-    // MODIFICATION : Appel à updateAllNavLinksState dans saveData
     function saveData() { 
         localStorage.setItem(STORAGE_KEY, JSON.stringify(regions)); 
         updateAllNavLinksState(currentRegion);
@@ -1488,35 +1602,74 @@ logEvent(fatherMessage, 'birth', { familyId: father.familyId, personId: father.i
         });
     }
 
+    // MODIFICATION : Réécriture complète pour grouper les familles actives et inactives.
     function updateFamilySelector() {
         if (!selectedLocationId) {
             familySelector.innerHTML = '<option value="">-- Choisissez un lieu --</option>';
             return;
         }
-        
+    
         const place = currentRegion.places.find(p => p.id === selectedLocationId);
-        if (!place) return;
-
+        if (!place || !place.demographics.families) return;
+    
         const allLivingPopulationIds = new Set(currentRegion.places.flatMap(p => p.demographics.population).filter(p => p.isAlive).map(p => p.id));
-
-        const sortedFamilies = place.demographics.families
-            .filter(f => f.memberIds.some(id => allLivingPopulationIds.has(id)))
-            .sort((a, b) => a.name.localeCompare(b.name));
-
-        familySelector.innerHTML = '<option value="">-- Aucune --</option>';
-        sortedFamilies.forEach(family => {
-            const option = document.createElement('option');
-            option.value = family.id;
-            option.textContent = `${family.name}`;
-            familySelector.appendChild(option);
+    
+        const activeFamilies = [];
+        const inactiveFamilies = [];
+    
+        place.demographics.families.forEach(family => {
+            const hasLivingMembers = family.memberIds.some(id => allLivingPopulationIds.has(id));
+    
+            if (family.status === 'extinct' || family.status === 'migrated' || !hasLivingMembers) {
+                 if(family.status === 'extinct' || family.status === 'migrated') {
+                    inactiveFamilies.push(family);
+                 }
+            } else {
+                activeFamilies.push(family);
+            }
         });
-
+    
+        activeFamilies.sort((a, b) => a.name.localeCompare(b.name));
+        inactiveFamilies.sort((a, b) => a.name.localeCompare(b.name));
+    
+        familySelector.innerHTML = '<option value="">-- Aucune --</option>';
+    
+        if (activeFamilies.length > 0) {
+            const activeGroup = document.createElement('optgroup');
+            activeGroup.label = 'Familles Actives';
+            activeFamilies.forEach(family => {
+                const option = document.createElement('option');
+                option.value = family.id;
+                option.textContent = family.name;
+                activeGroup.appendChild(option);
+            });
+            familySelector.appendChild(activeGroup);
+        }
+    
+        if (inactiveFamilies.length > 0) {
+            const inactiveGroup = document.createElement('optgroup');
+            inactiveGroup.label = 'Familles Parties / Éteintes';
+            inactiveFamilies.forEach(family => {
+                const option = document.createElement('option');
+                option.value = family.id;
+                const statusText = family.status === 'migrated' ? 'Partie' : 'Éteinte';
+                option.textContent = `${family.name} (${statusText})`;
+                option.style.fontStyle = 'italic';
+                option.style.color = '#555';
+                inactiveGroup.appendChild(option);
+            });
+            familySelector.appendChild(inactiveGroup);
+        }
+    
         familySelector.value = selectedFamilyId || "";
     }
 
+
+    // MODIFICATION : Gère l'affichage pour les familles inactives et montre l'historique des départs.
     function displaySelectedFamilyTree() {
+        const treeContainer = document.getElementById('family-tree-display-area-wrapper');
         if (!selectedFamilyId) {
-            familyTreeDisplayArea.innerHTML = '<p>Sélectionnez une famille pour afficher son arbre généalogique.</p>';
+            treeContainer.innerHTML = `<div id="family-tree-display-area" class="tree"><p>Sélectionnez une famille pour afficher son arbre généalogique.</p></div>`;
             familyInfluenceValue.textContent = 'N/A';
             return;
         }
@@ -1525,46 +1678,76 @@ logEvent(fatherMessage, 'birth', { familyId: father.familyId, personId: father.i
         const family = currentRegion.places.flatMap(p => p.demographics.families).find(f => f.id === selectedFamilyId);
     
         if (!family) {
-            familyTreeDisplayArea.innerHTML = `<p>Erreur : Famille introuvable.</p>`;
+            treeContainer.innerHTML = `<div id="family-tree-display-area" class="tree"><p>Erreur : Famille introuvable.</p></div>`;
             familyInfluenceValue.textContent = 'Erreur';
             return;
         }
     
-        const familyMemberMap = new Map();
-        family.memberIds.forEach(id => {
-            const person = allPopulation.find(p => p.id === id);
-            if (person) familyMemberMap.set(id, person);
-        });
-
-        const allFamilyMembers = Array.from(familyMemberMap.values());
+        const allFamilyMembers = family.memberIds.map(id => allPopulation.find(p => p.id === id)).filter(Boolean);
         const totalInfluence = allFamilyMembers.reduce((sum, member) => sum + (member.prestige || 0), 0);
         familyInfluenceValue.textContent = totalInfluence.toFixed(2);
+        
+        let finalHTML = '';
     
-        if (allFamilyMembers.length === 0) {
-            familyTreeDisplayArea.innerHTML = '<p>Aucun membre trouvé pour cette famille.</p>';
-            return;
-        }
+        const livingFamilyMembers = allFamilyMembers.filter(p => p.isAlive);
     
-        const mainTreeRoots = allFamilyMembers.filter(p => {
-            if (!p.parents || p.parents.length === 0) return true;
-            return !p.parents.some(parentId => allFamilyMembers.find(m => m.id === parentId));
-        }).sort((a, b) => (b.age || 0) - (a.age || 0));
-
-        if (mainTreeRoots.length === 0 && allFamilyMembers.length > 0) {
-            familyTreeDisplayArea.innerHTML = renderTreeHTML(buildGenealogyTree(allFamilyMembers[0].id, allPopulation, new Set()), allPopulation);
+        // Gère l'affichage principal de l'arbre (ou un message si la famille est inactive)
+        if (family.status === 'migrated' || family.status === 'extinct') {
+            const message = family.status === 'migrated' 
+                ? 'Tous les membres de cette famille ont quitté ce lieu.' 
+                : `Cette famille s'est éteinte.`;
+            finalHTML = `<div id="family-tree-display-area" class="tree"><p><strong>${message}</strong><br>Consultez l'historique ci-dessous pour suivre leurs parcours.</p></div>`;
+        } else if (livingFamilyMembers.length === 0) {
+            finalHTML = '<div id="family-tree-display-area" class="tree"><p>Aucun membre vivant actuellement dans cette famille.</p></div>';
         } else {
+            const mainTreeRoots = livingFamilyMembers.filter(p => {
+                if (!p.parents || p.parents.length === 0) return true;
+                return !p.parents.some(parentId => livingFamilyMembers.find(m => m.id === parentId));
+            }).sort((a, b) => (b.age || 0) - (a.age || 0));
+
             let treeHTML = '<ul>';
-            const processedMainTree = new Set();
-            mainTreeRoots.forEach(rootPerson => {
-                if (processedMainTree.has(rootPerson.id)) return;
-                const treeData = buildGenealogyTree(rootPerson.id, allPopulation, processedMainTree);
-                if (treeData) {
-                    treeHTML += renderTreeHTML(treeData, allPopulation);
-                }
-            });
+            if (mainTreeRoots.length === 0 && livingFamilyMembers.length > 0) {
+                 treeHTML += renderTreeHTML(buildGenealogyTree(livingFamilyMembers[0].id, allPopulation, new Set()), allPopulation);
+            } else {
+                const processedMainTree = new Set();
+                mainTreeRoots.forEach(rootPerson => {
+                    if (processedMainTree.has(rootPerson.id)) return;
+                    const treeData = buildGenealogyTree(rootPerson.id, allPopulation, processedMainTree);
+                    if (treeData) {
+                        treeHTML += renderTreeHTML(treeData, allPopulation);
+                    }
+                });
+            }
             treeHTML += '</ul>';
-            familyTreeDisplayArea.innerHTML = treeHTML;
+            finalHTML += `<div id="family-tree-display-area" class="tree">${treeHTML}</div>`;
         }
+        
+        // Affiche la liste des membres partis pour TOUTES les familles sélectionnées
+        const departedEvents = simulationState.log.filter(e => e.familyId === selectedFamilyId && e.type === 'departure');
+        const uniqueDepartedEvents = Array.from(new Map(departedEvents.map(e => [e.personId, e])).values());
+
+        if (uniqueDepartedEvents.length > 0) {
+            let departedHTML = '<div class="departed-members-container"><h4>Membres Partis</h4><ul>';
+            uniqueDepartedEvents.forEach(event => {
+                const personName = event.personSnapshot ? `${event.personSnapshot.firstName} ${event.personSnapshot.lastName}` : 'Un membre';
+                const newLocation = currentRegion.places.find(p => p.id === event.newLocationId);
+                const newLocationName = newLocation ? newLocation.name : 'un lieu inconnu';
+                
+                departedHTML += `<li>
+                    ${event.message} 
+                    <a class="departed-member-link" 
+                       data-person-id="${event.personId}" 
+                       data-new-family-id="${event.newFamilyId}" 
+                       data-new-location-id="${event.newLocationId}">
+                       (Voir la nouvelle famille à ${newLocationName})
+                    </a>
+                </li>`;
+            });
+            departedHTML += '</ul></div>';
+            finalHTML += departedHTML;
+        }
+        
+        treeContainer.innerHTML = finalHTML;
     }
 
     function buildGenealogyTree(personId, populationScope, processedNodes) {
@@ -2032,7 +2215,9 @@ logEvent(fatherMessage, 'birth', { familyId: father.familyId, personId: father.i
         }
         currentRegion.places.forEach(place => { place.state = { satisfaction: 100, production: {}, consumption: {}, shortages: [], surpluses: [] }; });
         treeZoomLevel = 1.0;
-        if(familyTreeDisplayArea) familyTreeDisplayArea.style.transform = `scale(${treeZoomLevel})`;
+        const familyTreeArea = document.getElementById('family-tree-display-area');
+        if (familyTreeArea) familyTreeArea.style.transform = `scale(${treeZoomLevel})`;
+
         simulationState = { isRunning: false, currentTick: 0, currentMonth: 1, currentYear: 1, tickSpeed: TICK_SPEEDS[speedControl.value] || 1000, intervalId: null, log: [] };
         updateGlobalStats();
         updateLocationPopulationSummary();
@@ -2052,7 +2237,6 @@ logEvent(fatherMessage, 'birth', { familyId: father.familyId, personId: father.i
         loadData();
         if(regions) initialSimulationData = JSON.parse(JSON.stringify(regions));
         
-        // NOUVEAU : Appel initial pour la mise à jour de la navigation
         updateAllNavLinksState(currentRegion);
         
         if (!setupInitialState()) return;
@@ -2069,8 +2253,12 @@ logEvent(fatherMessage, 'birth', { familyId: father.familyId, personId: father.i
             displaySelectedFamilyTree();
             updateEventLogUI();
         });
+
+        // MODIFICATION : Gère les clics sur les personnages ET les liens de membres partis.
         familyTreeDisplayAreaWrapper.addEventListener('click', e => {
             const personNode = e.target.closest('.person-node');
+            const departedLink = e.target.closest('.departed-member-link');
+
             if (personNode) {
                 const personInfoClicked = e.target.closest('.person-info');
                 const allPersonInfos = personNode.querySelectorAll('.person-info');
@@ -2080,8 +2268,21 @@ logEvent(fatherMessage, 'birth', { familyId: father.familyId, personId: father.i
                     [clickedPersonId, otherPersonId] = [otherPersonId, clickedPersonId];
                 }
                 if (clickedPersonId) openCharacterModal(clickedPersonId, otherPersonId);
+            } else if (departedLink) {
+                e.preventDefault();
+                const { newFamilyId, newLocationId } = departedLink.dataset;
+                
+                selectedLocationId = newLocationId;
+                selectedFamilyId = newFamilyId;
+
+                characterSearchInput.value = '';
+                updateLocationTabs();
+                updateFamilySelector();
+                displaySelectedFamilyTree();
+                updateEventLogUI();
             }
         });
+
         characterSearchInput.addEventListener('input', (e) => {
             const query = e.target.value.toLowerCase().trim();
             searchResultsContainer.innerHTML = '';
@@ -2129,8 +2330,11 @@ logEvent(fatherMessage, 'birth', { familyId: father.familyId, personId: father.i
                 e.preventDefault();
                 treeZoomLevel += e.deltaY < 0 ? 0.1 : -0.1;
                 treeZoomLevel = Math.max(0.3, Math.min(treeZoomLevel, 2.5));
-                familyTreeDisplayArea.style.transformOrigin = 'top center';
-                familyTreeDisplayArea.style.transform = `scale(${treeZoomLevel})`;
+                const treeArea = document.getElementById('family-tree-display-area');
+                if (treeArea) {
+                    treeArea.style.transformOrigin = 'top center';
+                    treeArea.style.transform = `scale(${treeZoomLevel})`;
+                }
             }
         });
         if(characterDetailsModal) {
@@ -2195,7 +2399,6 @@ logEvent(fatherMessage, 'birth', { familyId: father.familyId, personId: father.i
             jobsByTierModal.querySelector('.modal-close-btn').addEventListener('click', () => { jobsByTierModal.close(); });
         }
         
-        // NOUVEAU : Écouteur de clics pour les liens de navigation désactivés
         const floatingMenu = document.querySelector('.floating-menu');
         if (floatingMenu) {
             floatingMenu.addEventListener('click', (e) => {

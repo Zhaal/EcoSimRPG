@@ -105,7 +105,6 @@ body {
     text-align: center;
     vertical-align: top;
 }
-/* NOUVEAU: Aligne à gauche les cellules contenant une liste pour une meilleure lisibilité */
 .distance-matrix td.cell-has-list {
     text-align: left;
 }
@@ -114,7 +113,6 @@ body {
     background-color: var(--section-bg);
 }
 
-/* MODIFIÉ: Ajout de .distance-steps pour un style cohérent */
 .route-steps.numbered, .time-steps.numbered, .distance-steps.numbered {
     list-style: none;
     padding: 0;
@@ -142,7 +140,6 @@ body {
     font-size: 0.9em;
 }
 
-/* MODIFIÉ: Ajout de .distance-steps pour un style cohérent */
 .time-steps.numbered .total, .distance-steps.numbered .total {
     display: block;
     border-top: 1px solid #ccc;
@@ -182,37 +179,6 @@ body {
 .job-roster li {
     padding: 3px 0;
 }
-
-/* Families Info */
-#families-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 15px;
-}
-.family-card {
-    background-color: var(--section-bg);
-    border: 1px solid var(--sheet-border);
-    padding: 15px;
-    border-radius: 5px;
-}
-.family-card h3 {
-    margin-top: 0;
-    font-family: var(--font-title);
-    font-size: 1.2em;
-}
-.family-card ul {
-    list-style: none;
-    padding: 0;
-    font-size: 0.9em;
-}
-/* NOUVEAUX STYLES: Couleur par genre dans la liste des familles */
-.family-card .male {
-    color: blue;
-}
-.family-card .female {
-    color: pink;
-}
-
 
 /* ------- STYLES DE FICHE PERSONNAGE (D&D) ------- */
 #character-sheets-container {
@@ -254,7 +220,7 @@ body {
 
 .char-sheet-main-grid {
     display: grid;
-    grid-template-columns: 100px 1fr; /* Grille stable à 2 colonnes : Stats | Contenu principal */
+    grid-template-columns: 100px 1fr;
     padding: 15px;
     gap: 20px;
     align-items: start;
@@ -328,17 +294,16 @@ body {
     margin: 0 auto;
 }
 
-/* ------- STYLES ÉTENDUS POUR LE DOSSIER PERSONNAGE (v7.0) ------- */
+/* ------- STYLES ÉTENDUS POUR LE DOSSIER PERSONNAGE ------- */
 
 .character-sheet.dossier-view {
-    display: flex; /* Utiliser flex pour une meilleure organisation verticale */
+    display: flex;
     flex-direction: column;
 }
 
-/* Conteneur pour toutes les sections de détails supplémentaires */
 .char-sheet-details {
-    padding: 0 15px 15px 15px; /* Padding en bas et sur les côtés */
-    border-top: 1px solid #d6cbbc; /* Ligne de séparation */
+    padding: 0 15px 15px 15px;
+    border-top: 1px solid #d6cbbc;
     margin-top: 15px;
 }
 
@@ -355,7 +320,6 @@ body {
     color: #5c4e3a;
 }
 
-/* Style pour la chronologie de vie */
 .life-timeline {
     padding-left: 0;
     list-style-type: none;
@@ -365,22 +329,19 @@ body {
     font-weight: bold;
     color: #3a2e1d;
     float: left;
-    width: 70px; /* Largeur fixe pour l'âge */
+    width: 70px;
     clear: left;
 }
 .life-timeline dd {
-    margin-left: 80px; /* Aligne la description */
+    margin-left: 80px;
     padding-bottom: 8px;
     border-left: 2px solid #e6e0d3;
     padding-left: 10px;
 }
-/* Empêcher le dernier élément d'avoir un padding en bas */
 .life-timeline dd:last-child {
     padding-bottom: 0;
 }
 
-
-/* Style pour le parcours professionnel */
 .career-history {
     list-style: none;
     padding: 0;
@@ -395,8 +356,6 @@ body {
     font-style: italic;
 }
 
-
-/* Style pour la grille des relations sociales */
 .social-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -420,7 +379,7 @@ body {
 /* --- STYLES POUR LA RECHERCHE GLOBALE --- */
 
 .control-group.search-control-group {
-    position: relative; /* Contexte de positionnement pour les résultats */
+    position: relative;
 }
 
 #global-character-search {
@@ -430,9 +389,9 @@ body {
 }
 
 #global-search-results {
-    display: none; /* Caché par défaut */
+    display: none;
     position: absolute;
-    top: 100%; /* S'affiche juste en dessous de l'input */
+    top: 100%;
     left: 0;
     right: 0;
     background-color: #fff;
@@ -454,7 +413,7 @@ body {
     background-color: #f0f0f0;
 }
 
-/* --- NOUVEAUX STYLES : CA, INITIATIVE & COMPÉTENCES --- */
+/* --- STYLES : CA, INITIATIVE & COMPÉTENCES --- */
 
 .combat-stats-container {
     display: flex;
@@ -479,7 +438,7 @@ body {
 }
 
 .combat-box:first-child { /* CA */
-    border-radius: 25px 25px 8px 8px / 20px 20px 8px 8px; /* Forme de bouclier simple */
+    border-radius: 25px 25px 8px 8px / 20px 20px 8px 8px;
 }
 
 .combat-box:last-child { /* Initiative */
@@ -506,7 +465,7 @@ body {
     border-radius: 5px;
     background: #fdfaf2;
     height: 100%;
-    margin-top: 20px; /* Ajoute de l'espace au dessus de la boite de compétences */
+    margin-top: 20px;
 }
 
 .skills-list-container h4, .pathfinder-skills-container h4 {
@@ -557,37 +516,34 @@ body {
     font-size: 0.9em;
 }
 
-/* Nouveaux styles pour la liste de compétences Pathfinder (v8.2+) */
 .pathfinder-skills-list {
-    list-style: none; /* Supprime les puces de la liste */
+    list-style: none;
     padding: 0;
     margin: 0;
-    column-count: 2; /* Divise la liste en deux colonnes */
-    column-gap: 25px; /* Définit l'espace entre les colonnes */
+    column-count: 2;
+    column-gap: 25px;
 }
 
 .pf-skill-item {
-    display: flex; /* Active Flexbox pour l'alignement */
-    justify-content: space-between; /* Aligne les éléments aux deux extrémités */
-    align-items: center; /* Centre verticalement les éléments */
-    padding: 3px 0; /* Ajoute un peu d'espace vertical */
-    font-size: 0.9em; /* Harmonise la taille de la police */
-    border-bottom: 1px solid #f0e8d6; /* Ajoute un séparateur léger */
-    break-inside: avoid; /* Empêche un item d'être coupé entre deux colonnes */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 3px 0;
+    font-size: 0.9em;
+    border-bottom: 1px solid #f0e8d6;
+    break-inside: avoid;
 }
 
 .pf-skill-item:last-child {
-    border-bottom: none; /* Supprime le séparateur du dernier élément */
+    border-bottom: none;
 }
 
-.pf-skill-name {
-    /* Le nom de la compétence prendra l'espace nécessaire */
-}
+.pf-skill-name { }
 
 .pf-skill-total {
-    font-weight: bold; /* Met le bonus en gras */
-    flex-shrink: 0; /* Empêche le bonus de se réduire si le nom est long */
-    padding-left: 10px; /* Ajoute un espace entre le nom et le bonus */
+    font-weight: bold;
+    flex-shrink: 0;
+    padding-left: 10px;
 }
 
 
@@ -600,7 +556,7 @@ body {
 .tab-links {
     display: flex;
     flex-wrap: wrap;
-    border-bottom: 2px solid #c8bca5; /* Ligne de fond pour les onglets */
+    border-bottom: 2px solid #c8bca5;
     margin-bottom: 20px;
 }
 
@@ -613,12 +569,12 @@ body {
     font-family: var(--font-title);
     font-size: 1.1em;
     color: var(--title-color);
-    margin-bottom: -2px; /* Aligne la bordure de l'onglet actif avec la bordure du conteneur */
+    margin-bottom: -2px;
     transition: all 0.2s ease-in-out;
 }
 
 .tab-link:hover {
-    background-color: #f5f0e1; /* Léger fond au survol */
+    background-color: #f5f0e1;
 }
 
 .tab-link.active {
@@ -628,8 +584,8 @@ body {
 }
 
 .tab-content {
-    display: none; /* Cache les onglets inactifs */
-    animation: fadeIn 0.5s; /* Animation d'apparition */
+    display: none;
+    animation: fadeIn 0.5s;
     background-color: var(--sheet-bg);
     border: 1px solid var(--sheet-border);
     border-radius: 8px;
@@ -638,10 +594,160 @@ body {
 }
 
 .tab-content.active {
-    display: block; /* Affiche l'onglet actif */
+    display: block;
 }
 
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
+}
+
+/* =============================================== */
+/* NOUVEAUX STYLES POUR LE LIVRET DE FAMILLE       */
+/* =============================================== */
+
+#family-booklets-container {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 30px;
+}
+
+.family-booklet {
+    background-color: #fdfaf2;
+    border: 2px solid #a89e87;
+    padding: 20px 25px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    font-family: 'Lora', serif;
+}
+
+.booklet-header {
+    text-align: center;
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #c8bca5;
+}
+
+.booklet-header h2 {
+    font-family: 'Cinzel', serif;
+    font-size: 1.5em;
+    color: var(--title-color);
+    margin: 0;
+    text-transform: uppercase;
+}
+
+.booklet-header p {
+    font-style: italic;
+    color: #666;
+    margin: 5px 0 0 0;
+    line-height: 1.4;
+}
+
+.booklet-section {
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px dashed #d1c7b0;
+}
+.family-booklet > .booklet-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.booklet-section > h3 {
+    font-family: 'Cinzel', serif;
+    font-size: 1.2em;
+    color: #5c4e3a;
+    border-bottom: 1px solid #d1c7b0;
+    padding-bottom: 5px;
+    margin: 0 0 15px 0;
+}
+
+.booklet-person-details {
+    margin-bottom: 15px;
+}
+
+.booklet-person-details h4 {
+    font-family: 'Cinzel', serif;
+    font-weight: 700;
+    font-size: 1.1em;
+    margin: 0 0 10px 0;
+    color: var(--color-royal-blue);
+}
+
+.booklet-person-details dl {
+    margin: 0;
+    display: grid;
+    grid-template-columns: 150px 1fr;
+    gap: 5px 10px;
+}
+
+.booklet-person-details dt {
+    font-weight: bold;
+    color: #3a2e1d;
+}
+
+.booklet-person-details dd {
+    margin: 0;
+}
+
+.booklet-person-details h5 {
+    font-family: 'Cinzel', serif;
+    margin: 15px 0 5px 0;
+    font-size: 0.9em;
+    font-weight: bold;
+    text-transform: uppercase;
+    color: #666;
+}
+
+.mentions-marginales {
+    list-style-type: none;
+    padding-left: 15px;
+    margin: 0;
+    font-size: 0.9em;
+    color: #444;
+}
+
+.mentions-marginales li {
+    padding: 3px 0;
+    position: relative;
+}
+
+.mentions-marginales li::before {
+    content: '»';
+    position: absolute;
+    left: -15px;
+    color: #a89e87;
+}
+
+.male { color: #1e6a9e; font-weight: bold; }
+.female { color: #c72c7d; font-weight: bold; }
+
+
+/* Styles pour le champ de date de la campagne */
+.campaign-date-input-container {
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: var(--section-bg);
+    border: 1px solid var(--sheet-border);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    justify-content: center;
+}
+
+.campaign-date-input-container label {
+    font-family: var(--font-title);
+    font-weight: bold;
+    color: var(--title-color);
+}
+
+.campaign-date-input-container input[type="number"] {
+    padding: 8px;
+    font-size: 1em;
+    border: 1px solid var(--sheet-border);
+    border-radius: 4px;
+    width: 150px;
+    text-align: center;
 }
