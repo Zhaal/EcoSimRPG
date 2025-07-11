@@ -16,10 +16,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     let RACES_DATA = window.EcoSimData.racesData;
 
-    const TRAVEL_SPEEDS = { Pied: 30, Cheval: 70, Caravane: 20 };
-    const ROAD_MODIFIERS = { 'royal': 1.0, 'comtal': 0.85, 'marchand': 0.70, 'seigneurial': 0.60, 'traverse': 0.50, 'forestier': 0.40, 'montagne': 0.25 };
-    const ROAD_TYPES = { 'royal': { users: ['Caravane', 'Cheval', 'Pied'] }, 'comtal': { users: ['Caravane', 'Cheval', 'Pied'] }, 'marchand': { users: ['Caravane', 'Cheval', 'Pied'] }, 'seigneurial': { users: ['Caravane', 'Cheval', 'Pied'] }, 'traverse': { users: ['Cheval', 'Pied'] }, 'forestier': { users: ['Cheval', 'Pied'] }, 'montagne': { users: ['Cheval', 'Pied'] } };
-
     // --- SÉLECTEURS DOM ---
     const mainContentWrapper = document.querySelector('.page-container-step3');
     const notificationBanner = document.getElementById('notification-banner');
@@ -40,9 +36,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const statFamilyCount = document.getElementById('stat-family-count');
     const statTotalJobs = document.getElementById('stat-total-jobs');
     const statFilledJobs = document.getElementById('stat-filled-jobs');
-    const globalTotalPopulation = document.getElementById('global-total-population');
-    const globalFamilyCount = document.getElementById('global-family-count');
-    const distanceMatrixContainer = document.getElementById('distance-matrix-container');
     const resetAllBtn = document.getElementById('reset-all-btn');
     const resetGen0Btn = document.getElementById('reset-gen0-btn');
     const familyLibraryModal = document.getElementById('family-library-modal');
@@ -180,9 +173,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function convertToDnD(rawValue) { const RAW_MIN = 10; const RAW_MAX = 700; const DND_MIN = 8; const DND_MAX = 18; const DND_ABSOLUTE_MIN = 3; let dndScore; if (rawValue >= RAW_MAX) { dndScore = DND_MAX; } else if (rawValue <= RAW_MIN) { const ratio = rawValue / RAW_MIN; dndScore = Math.round(DND_ABSOLUTE_MIN + ratio * (DND_MIN - DND_ABSOLUTE_MIN)); } else { const rawRange = RAW_MAX - RAW_MIN; const dndRange = DND_MAX - DND_MIN; const scaledValue = (rawValue - RAW_MIN) / rawRange; dndScore = Math.round(DND_MIN + (scaledValue * dndRange)); } dndScore = Math.max(1, dndScore); const modifier = Math.floor((dndScore - 10) / 2); const sign = modifier >= 0 ? '+' : ''; return `${dndScore} (${sign}${modifier})`; }
     function getBuildingData(buildingName) { if (!buildingName) return null; for (const type in BUILDING_DATA) { for (const category in BUILDING_DATA[type]) { if (BUILDING_DATA[type][category][buildingName]) { return { ...BUILDING_DATA[type][category][buildingName], category, originalType: type }; } } } return null; }
     function getJobData(buildingName, jobTitle) { const building = getBuildingData(buildingName); if (!building || !building.emplois) return null; return building.emplois.find(j => j.titre === jobTitle) || null; }
-    function axialDistance(a, b) { if (!a || !b) return Infinity; const dq = a.q - b.q; const dr = a.r - b.r; return (Math.abs(dq) + Math.abs(dr) + Math.abs(-dq - dr)) / 2; }
-    function getRoadKey(id1, id2) { return [id1, id2].sort((a, b) => a - b).join('-'); }
-    function formatTravelTime(timeInDays) { if (isNaN(timeInDays) || timeInDays < 0 || timeInDays === Infinity) return "N/A"; const days = Math.floor(timeInDays); const hours = Math.floor((timeInDays - days) * 24); let parts = []; if (days > 0) parts.push(`${days}j`); if (hours > 0) parts.push(`${hours}h`); return parts.length > 0 ? parts.join(' ') : "< 1h"; }
     function getPersonById(id, scope) { return scope.find(p => p.id === id); }
     function getWeightedDesiredChildren() { const weights = [ 1, 2, 2 ]; return weights[Math.floor(Math.random() * weights.length)]; }
     function getParents(person, scope) { if (!person.parents || person.parents.length === 0) return []; return person.parents.map(id => getPersonById(id, scope)).filter(Boolean); }
@@ -408,8 +398,53 @@ document.addEventListener('DOMContentLoaded', () => {
         characterDetailsModal.showModal();
     }
     
-    function updateDashboard() { let totalPop = 0, totalFam = 0; if(currentRegion) { currentRegion.places.forEach(p => { if (p.demographics) { totalPop += p.demographics.population.length; totalFam += p.demographics.families.length; } }); } globalTotalPopulation.textContent = totalPop; globalFamilyCount.textContent = totalFam; calculateAndDisplayDistanceMatrix(); }
-    function calculateAndDisplayDistanceMatrix() { if (!currentRegion || !currentRegion.roads || currentRegion.places.length < 2) { distanceMatrixContainer.innerHTML = '<p>Pas assez de lieux ou de routes pour calculer une matrice.</p>'; return; } const places = currentRegion.places; const roadsData = currentRegion.roads; const travelModesToDisplay = { "Pied": "Pied", "Rapide": "Cheval", "Convoi": "Caravane" }; const headerRow = '<th>Lieu</th><th>Mode</th>' + places.map(p => `<th title="${p.name}">${p.name.substring(0, 5)}...</th>`).join(''); let tableHTML = `<table class="distance-matrix-table"><thead><tr>${headerRow}</tr></thead><tbody>`; places.forEach(p1 => { Object.entries(travelModesToDisplay).forEach(([displayName, modeKey], index) => { let rowHTML = '<tr>'; if (index === 0) rowHTML += `<td rowspan="3" style="vertical-align: middle; text-align: left; font-weight: bold;">${p1.name}</td>`; rowHTML += `<td style="text-align: left;">${displayName}</td>`; places.forEach(p2 => { if (p1.id === p2.id) { rowHTML += '<td style="background-color: #ccc;">-</td>'; } else { const roadKey = getRoadKey(p1.id, p2.id); const roadInfo = roadsData[roadKey]; let travelTime = Infinity; if (roadInfo && ROAD_TYPES[roadInfo.type].users.includes(modeKey)) { const distanceKm = axialDistance(p1.coords, p2.coords) * (currentRegion.scale || 10); const baseSpeed = TRAVEL_SPEEDS[modeKey]; const modifier = ROAD_MODIFIERS[roadInfo.type]; travelTime = distanceKm / (baseSpeed * modifier); } rowHTML += `<td>${formatTravelTime(travelTime)}</td>`; } }); rowHTML += '</tr>'; tableHTML += rowHTML; }); }); tableHTML += '</tbody></table>'; distanceMatrixContainer.innerHTML = tableHTML; }
+    function updateDashboard() {
+        let totalPop = 0;
+        let totalJobs = 0;
+        const raceCounts = {};
+
+        if (currentRegion && currentRegion.places) {
+            currentRegion.places.forEach(place => {
+                if (place.demographics && place.demographics.population) {
+                    totalPop += place.demographics.population.length;
+                    place.demographics.population.forEach(person => {
+                        raceCounts[person.race] = (raceCounts[person.race] || 0) + 1;
+                    });
+                }
+                totalJobs += countTotalJobsForPlace(place);
+            });
+        }
+
+        const summaryContainer = document.getElementById('global-summary-container');
+        if (!summaryContainer) return;
+
+        let raceHTML = '<div class="summary-subsection"><h5>Répartition des Races</h5><div class="race-summary-grid">';
+        const sortedRaces = Object.keys(raceCounts).sort();
+
+        if (sortedRaces.length > 0) {
+             sortedRaces.forEach(race => {
+                raceHTML += `<div><strong>${race}:</strong> ${raceCounts[race]}</div>`;
+            });
+        } else {
+            raceHTML += '<p style="grid-column: 1 / -1; text-align: center; font-style: italic;">Aucune population générée.</p>';
+        }
+        raceHTML += '</div></div>';
+
+
+        summaryContainer.innerHTML = `
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <span>${totalPop}</span>
+                    <label>Habitants</label>
+                </div>
+                <div class="summary-item">
+                     <span>${totalJobs}</span>
+                     <label>Postes de travail</label>
+                </div>
+            </div>
+            ${raceHTML}
+        `;
+    }
     
     function randomizeRacesForPlace(place) {
         if (!place) return;

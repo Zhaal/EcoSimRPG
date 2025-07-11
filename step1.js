@@ -161,6 +161,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const clearRoadFilterBtn = document.getElementById('clear-road-filter-btn');
     const roadLegend = document.getElementById('road-legend');
     const notificationBanner = document.getElementById('notification-banner');
+    const saveJsonBtn = document.getElementById('save-json-btn');
+    const loadJsonBtn = document.getElementById('load-json-btn');
+    const jsonFileInput = document.getElementById('json-file-input');
 
     // --- ETAT DE L'APPLICATION ---
     let hexSize = { w: 100, h: 114 }; 
@@ -780,6 +783,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if(deleteRegionBtn) deleteRegionBtn.disabled = !hasRegion;
         if(generateMapBtn) generateMapBtn.disabled = !hasRegion;
         if(scaleInput) scaleInput.disabled = !hasRegion;
+        if(saveJsonBtn) saveJsonBtn.disabled = !hasRegion;
 
         if (hasRegion) {
             const rightPanelH3 = document.querySelector('#right-panel h3');
@@ -1389,6 +1393,77 @@ document.addEventListener('DOMContentLoaded', () => {
                                       <strong>Description&nbsp;:</strong> ${selectedType.desc}`;
             }
         });
+        
+        // --- Logique de Sauvegarde et Chargement JSON ---
+        if(saveJsonBtn) {
+            saveJsonBtn.addEventListener('click', () => {
+                if (!currentRegion) {
+                    alert("Aucune région n'est chargée pour la sauvegarde.");
+                    return;
+                }
+                // On utilise une copie pour éviter les références circulaires lors de la sérialisation
+                const regionToSave = JSON.parse(JSON.stringify(currentRegion));
+                const jsonData = JSON.stringify(regionToSave, null, 2);
+                const blob = new Blob([jsonData], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `EcoSimRPG_Region_${currentRegion.name.replace(/\s+/g, '_')}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            });
+        }
+
+        if(loadJsonBtn && jsonFileInput) {
+            loadJsonBtn.addEventListener('click', () => {
+                jsonFileInput.click();
+            });
+
+            jsonFileInput.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const importedRegion = JSON.parse(e.target.result);
+                        
+                        if (!importedRegion.id || !importedRegion.name || !importedRegion.places) {
+                            throw new Error("Le fichier JSON ne semble pas être une région valide.");
+                        }
+
+                        let existingRegions = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+                        const regionIndex = existingRegions.findIndex(r => r.id === importedRegion.id);
+
+                        if (regionIndex > -1) {
+                            if (confirm(`Une région avec le même ID existe déjà ("${existingRegions[regionIndex].name}"). Voulez-vous la remplacer par "${importedRegion.name}" ?`)) {
+                                existingRegions[regionIndex] = importedRegion;
+                            } else {
+                                return; // L'utilisateur a annulé
+                            }
+                        } else {
+                            existingRegions.push(importedRegion);
+                        }
+
+                        localStorage.setItem(STORAGE_KEY, JSON.stringify(existingRegions));
+                        localStorage.setItem(LAST_REGION_KEY, importedRegion.id);
+
+                        alert(`La région "${importedRegion.name}" a été chargée avec succès ! La page va être rechargée pour appliquer les modifications.`);
+                        location.reload();
+
+                    } catch (error) {
+                        alert('Erreur lors de la lecture ou de l\'analyse du fichier JSON :\n' + error.message);
+                    } finally {
+                        // Réinitialiser l'input pour pouvoir charger le même fichier à nouveau
+                        jsonFileInput.value = '';
+                    }
+                };
+                reader.readAsText(file);
+            });
+        }
+        // --- Fin du bloc ajouté ---
         
         const floatingMenu = document.querySelector('.floating-menu');
         if (floatingMenu) {

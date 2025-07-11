@@ -1,10 +1,11 @@
+// Contenu du fichier step5.js
 /**
  * EcoSimRPG - step5.js
  * Page d'exploitation et d'impression des données de simulation.
- * VERSION 12.1 - Ajustement des dates avec année de référence
- * - Ajout d'une année de référence pour la narration des livrets de famille.
- * - Toutes les dates (naissance, mariage, décès, événements) sont ajustées en fonction de cette année.
- * - La formule utilisée est : Année Affichée = Année de Référence + Année de Simulation.
+ * VERSION 13.5 - MODIFICATION : Amélioration de l'affichage des emplois
+ * - La vue "Emplois & Occupants" a été repensée pour afficher les bâtiments sous forme de fiches.
+ * - Chaque fiche inclut désormais la description du bâtiment, les biens qu'il produit (tags), et le salaire pour chaque poste.
+ * - Le style a été ajusté en conséquence dans step5-style.css pour une meilleure lisibilité.
  */
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -23,8 +24,24 @@ document.addEventListener('DOMContentLoaded', () => {
         'forestier':  { name: 'Sentier Forestier',  modifier: 0.50, users: ['Pied', 'Cheval'] },
         'montagne':   { name: 'Sentier de Montagne',modifier: 0.40, users: ['Pied', 'Cheval'] }
     };
-     // NOUVEAU : Mois pour la narration
-    const FANTASY_MONTHS = ["Givrelune", "Vents-Hurlants", "Fonteglace", "Floréal", "Verdoyant", "Mielsoleil", "Flammèche", "Moisson", "Feuillautomne", "Ombrecroc", "Frimas", "Nuit-d'Hiver"];
+    
+    const CALENDARS = {
+        generic: {
+            name: "Générique",
+            daysInMonth: 30,
+            months: ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"]
+        },
+        dnd5e: {
+            name: "D&D 5e (Calendrier de Harptos)",
+            daysInMonth: 30,
+            months: ["Hammer", "Alturiak", "Ches", "Tarsakh", "Mirtul", "Kythorn", "Flamerule", "Eleasis", "Eleint", "Marpenoth", "Uktar", "Nightal"]
+        },
+        pathfinder: {
+            name: "Pathfinder (Calendrier d'Absalom)",
+            daysInMonth: 28,
+            months: ["Abadius", "Calistril", "Pharast", "Gozran", "Desnus", "Sarenith", "Erastus", "Arodus", "Rova", "Lamashan", "Neth", "Kuthona"]
+        }
+    };
 
 
     // --- SÉLECTEURS DOM ---
@@ -32,18 +49,40 @@ document.addEventListener('DOMContentLoaded', () => {
     const buildingSelect = document.getElementById('building-select');
     const characterSelect = document.getElementById('character-select');
     const systemSelect = document.getElementById('system-select');
+    const calendarSelect = document.getElementById('calendar-select');
     const printBtn = document.getElementById('print-btn');
     const contentArea = document.getElementById('content-area');
     const globalSearchInput = document.getElementById('global-character-search');
     const globalSearchResults = document.getElementById('global-search-results');
+    const notificationBanner = document.getElementById('notification-banner');
 
 
     // --- ÉTAT DE L'APPLICATION ---
     let regions = [];
     let currentRegion = null;
     let selectedLocation = null;
-    let currentGameSystem = 'dnd5'; // 'dnd5' or 'pathfinder'
+    let currentGameSystem = 'dnd5';
+    let selectedCalendar = 'generic'; 
     let simulationEndYear = 1; 
+    let notificationTimeout;
+
+    // --- FONCTIONS DE NOTIFICATION ---
+    function showNotification(message, type = 'info', duration = 5000) {
+        if (!notificationBanner) return;
+        if (notificationTimeout) {
+            clearTimeout(notificationTimeout);
+        }
+        notificationBanner.textContent = message;
+        notificationBanner.className = `notification-banner ${type}`; 
+        
+        notificationBanner.classList.remove('show');
+        void notificationBanner.offsetWidth; 
+        notificationBanner.classList.add('show');
+
+        notificationTimeout = setTimeout(() => {
+            notificationBanner.classList.remove('show');
+        }, duration);
+    }
 
     // --- HELPER CLASS for Pathfinding ---
     class PriorityQueue {
@@ -54,7 +93,7 @@ document.addEventListener('DOMContentLoaded', () => {
         sort() { this.values.sort((a, b) => a.priority - b.priority); }
     }
 
-    // --- NOUVEAU : GESTION DE LA NAVIGATION ---
+    // --- GESTION DE LA NAVIGATION (MODIFIÉE) ---
     function updateAllNavLinksState(region) {
         const navStep2 = document.getElementById('nav-step2');
         const navStep3 = document.getElementById('nav-step3');
@@ -78,13 +117,32 @@ document.addEventListener('DOMContentLoaded', () => {
             if (isStep4Ready) navStep4.classList.remove('nav-disabled');
             else navStep4.classList.add('nav-disabled');
         }
+        
+        const isSimFinished = region && region.log && region.log.some(e => e.year >= 60);
+        const isStep5Ready = isStep4Ready && isSimFinished;
+
         if (navStep5) {
-            if (isStep4Ready) navStep5.classList.remove('nav-disabled');
-            else navStep5.classList.add('nav-disabled');
+            if (isStep5Ready) {
+                navStep5.classList.remove('nav-disabled');
+            } else {
+                navStep5.classList.add('nav-disabled');
+            }
         }
     }
 
     // --- FONCTIONS UTILITAIRES & GÉNÉALOGIQUES ---
+    function seededRandom(seed) {
+        let hash = 0;
+        if (seed.length === 0) return hash;
+        for (let i = 0; i < seed.length; i++) {
+            const char = seed.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash; // Convert to 32bit integer
+        }
+        const x = Math.sin(hash++) * 10000;
+        return x - Math.floor(x);
+    }
+    
     const getBuildingData = (buildingName) => {
         for (const type in BUILDING_DATA) {
             for (const category in BUILDING_DATA[type]) {
@@ -233,7 +291,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const getUnclesAunts = (person, scope) => { const parents = getParents(person, scope); const unclesAunts = new Set(); parents.forEach(p => getSiblings(p, scope).forEach(s => unclesAunts.add(s))); return Array.from(unclesAunts); };
     const getCousins = (person, scope) => { const unclesAunts = getUnclesAunts(person, scope); const cousins = new Set(); unclesAunts.forEach(ua => getChildren(ua, scope).forEach(c => cousins.add(c))); return Array.from(cousins); };
     
-    // NOUVEAU: Récupère le nom complet (avec nom de jeune fille)
     function getFormattedNameHTML(person) {
         if (!person) return '';
         let nameHTML = `${person.firstName} ${person.lastName.toUpperCase()}`;
@@ -244,7 +301,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return `<span class="${nameClass}">${nameHTML}</span>`;
     }
 
-    // NOUVEAU: Détermine le titre/profession d'une personne
     function getPersonJobTitle(person) {
         if (!person) return 'N/A';
         const raceData = RACES_DATA.races[person.race];
@@ -257,44 +313,121 @@ document.addEventListener('DOMContentLoaded', () => {
         return `Décédé(e) (Ancien métier: ${person.jobBeforeDeath || 'non spécifié'})`;
     }
     
-    // NOUVEAU: Génère une date RP approximative
-    function getFantasyDate(year) {
-        const day = Math.floor(Math.random() * 28) + 1;
-        const month = FANTASY_MONTHS[Math.floor(Math.random() * FANTASY_MONTHS.length)];
-        return `${day}${day === 1 ? 'er' : 'e'} jour de ${month}, Année ${year}`;
+    function getFantasyDate(year, seed) {
+        const calendar = CALENDARS[selectedCalendar];
+        
+        const randomMonth = seededRandom(seed + "month");
+        const randomDay = seededRandom(seed + "day");
+
+        const day = Math.floor(randomDay * calendar.daysInMonth) + 1;
+        const month = calendar.months[Math.floor(randomMonth * calendar.months.length)];
+        
+        return `${day}${day === 1 ? 'er' : ''} jour de ${month}, Année ${year}`;
     }
 
-    // NOUVEAU: Récupère les événements marquants d'une personne
-    function getPersonEvents(personId, log, campaignYear) {
-        if (!log) return '<li>Aucun événement majeur consigné.</li>';
+function getPersonEvents(personId, log, campaignYear) {
+    if (!log) return '<li>Aucune mention marginale enregistrée.</li>';
 
-        const relevantTypes = ['marriage', 'birth', 'death', 'job', 'departure', 'social'];
-        const personEvents = log
-            .filter(e => e.personId === personId && relevantTypes.includes(e.type))
-            .sort((a, b) => a.tick - b.tick);
+    const person = window.populationScope.find(p => p.id === personId);
+    if (!person) return '<li>Personnage introuvable.</li>';
+    
+    const mentions = [];
+    const refYear = campaignYear || 0;
 
-        if (personEvents.length === 0) return '<li>Aucun événement majeur consigné.</li>';
+    // --- Traitement de l'événement de Mariage (Logique de cohérence V3) ---
+    let marriageEvent = null;
+    const spouse = person.spouseId ? window.populationScope.find(p => p.id === person.spouseId) : null;
 
-        return personEvents.map(event => {
-            let narrativeMessage = event.message;
-            const refYear = campaignYear || 0;
-            const displayYear = refYear === 0 ? event.year : refYear + event.year;
+    if (person.gender === 'Homme' && person.spouseId) {
+        marriageEvent = log.find(e => e.type === 'marriage' && e.personId === person.id);
+    } else if (person.gender === 'Femme' && person.spouseId) {
+        marriageEvent = log.find(e => e.type === 'marriage' && e.personId === person.spouseId);
+    }
+    
+    if (marriageEvent && person.spouseId) {
+        const marriageYear = marriageEvent.year;
+        const displayMarriageYear = refYear === 0 ? marriageYear : refYear + marriageYear;
+        const yearsMarried = simulationEndYear - marriageYear;
+        const an_s = yearsMarried >= 2 ? 'ans' : 'an';
+        
+        if (yearsMarried >= 0) {
+            mentions.push(`S'est marié(e) en l'an ${displayMarriageYear}. Uni(e) depuis ${yearsMarried} ${an_s}.`);
+        }
 
-            if (event.type === 'job') {
-                narrativeMessage = narrativeMessage.replace(/ a été embauché comme| a été promu\(e\) au poste de|, quittant son poste de .*?\./g, ' devient');
-            } else if (event.type === 'marriage') {
-                narrativeMessage = narrativeMessage.split(' se sont mariés')[0] + ` s'est marié(e).`;
-            } else if (event.type === 'social' && narrativeMessage.includes('amis')) {
-                 narrativeMessage = narrativeMessage.replace(' sont maintenant amis', ' est devenu(e) ami(e).');
-            } else if (event.type === 'departure'){
-                return `<li><strong>${displayYear} CV :</strong> A quitté le foyer pour ${narrativeMessage.split(',')[1]}.</li>`;
-            } else {
-                if(event.type === 'social' || event.type === 'birth') return null;
+    } else if (!marriageEvent && person.spouseId && spouse) {
+        // Logique d'inférence pour la Génération 0
+        const personRaceData = RACES_DATA.races[person.race];
+        const spouseRaceData = RACES_DATA.races[spouse.race];
+
+        if (personRaceData && spouseRaceData) {
+            // **MODIFICATION**: Utiliser l'âge adulte le plus élevé des deux races pour la cohérence.
+            const effectiveAgeAdulte = Math.max(personRaceData.ageAdulte || 18, spouseRaceData.ageAdulte || 18);
+            
+            const youngestAge = Math.min(person.age, spouse.age);
+            const maxYearsMarried = youngestAge - effectiveAgeAdulte;
+            
+            if (maxYearsMarried > 1) {
+                const coupleSeed = [person.id, person.spouseId].sort().join('-');
+                const yearsMarried = Math.floor(seededRandom(coupleSeed) * (maxYearsMarried - 1)) + 1;
+                const marriageSimYear = simulationEndYear - yearsMarried;
+                const displayMarriageYear = refYear === 0 ? marriageSimYear : refYear + marriageSimYear;
+                const an_s = yearsMarried >= 2 ? 'ans' : 'an';
+                
+                mentions.push(`S'est marié(e) en l'an ${displayMarriageYear}. Uni(e) depuis ${yearsMarried} ${an_s}.`);
+            }
+        }
+    }
+
+    // --- Traitement de l'événement de Travail (Log ou Inférence) ---
+    if (person.isAlive || person.jobBeforeDeath) {
+        const lastJobEvent = log
+            .filter(e => e.type === 'job' && e.personId === personId)
+            .sort((a, b) => b.tick - a.tick)[0];
+
+        const currentJob = person.isAlive ? person.job : null;
+        const jobTitle = person.isAlive ? (currentJob?.jobTitle) : person.jobBeforeDeath;
+
+        if (lastJobEvent && jobTitle) {
+            const jobStartDate = lastJobEvent.year;
+            const personBirthYear = simulationEndYear - person.age;
+            const ageAtHiring = jobStartDate - personBirthYear;
+            const yearsInJob = (person.isAlive ? simulationEndYear : person.deathYear) - jobStartDate;
+            const an_s_job = yearsInJob >= 2 ? 'ans' : 'an';
+            
+            if (yearsInJob >= 0 && ageAtHiring >= 0) {
+                const statusText = person.isAlive ? `En poste depuis ${yearsInJob} ${an_s_job}` : `A exercé pendant ${yearsInJob} ${an_s_job}`;
+                 mentions.push(`A débuté comme ${jobTitle} à l'âge de ${ageAtHiring} ans. ${statusText}.`);
             }
 
-            return `<li><strong>${displayYear} CV :</strong> ${narrativeMessage}</li>`;
-        }).filter(Boolean).join('');
+        } else if (!lastJobEvent && jobTitle && person.isAlive) { 
+            const raceData = RACES_DATA.races[person.race];
+            if (raceData) {
+                const ageTravail = raceData.ageTravail;
+                const maxYearsInJob = person.age - ageTravail;
+
+                if (maxYearsInJob > 0) {
+                    const yearsInJob = Math.floor(seededRandom(person.id + 'jobStartDate') * (maxYearsInJob)) + 1;
+                    const ageAtHiring = person.age - yearsInJob;
+                    const an_s_job = yearsInJob >= 2 ? 'ans' : 'an';
+                    mentions.push(`A débuté comme ${jobTitle} à l'âge de ${ageAtHiring} ans. En poste depuis ${yearsInJob} ${an_s_job}.`);
+                }
+            }
+        }
     }
+
+    if (!person.isAlive) {
+        const simDeathYear = person.deathYear;
+        const displayDeathYear = simDeathYear ? (refYear === 0 ? simDeathYear : refYear + simDeathYear) : 'inconnue';
+        const deathMention = `Est décédé(e) en l'an ${displayDeathYear} à l'âge de ${person.ageAtDeath || person.age} ans. Cause: ${person.causeOfDeath || 'inconnue'}.`;
+        mentions.push(deathMention);
+    }
+
+    if (mentions.length === 0) {
+        return '<li>Aucune mention marginale enregistrée.</li>';
+    }
+
+    return mentions.map(mention => `<li>${mention}</li>`).join('');
+}
 
 
     const findShortestPath = (startNodeId, endNodeId, allPlaces, allRoads, scale, travelMode) => {
@@ -453,32 +586,62 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderJobRoster(location) {
-        let html = `<h3>Emplois & Occupants</h3>`;
+        let html = `<h3>Emplois & Occupants du lieu</h3>`;
         const population = location.demographics.population;
         const buildings = location.config.buildings;
+    
+        html += '<div class="job-roster-enhanced">';
+    
         for (const category in buildings) {
             html += `<h4>${category}</h4>`;
             buildings[category].forEach(building => {
-                html += `<div><h5>${building.name}</h5><ul>`;
                 const buildingData = getBuildingData(building.name);
-                if (buildingData?.emplois) {
+                if (!buildingData) return;
+    
+                html += `<div class="building-card">
+                            <h5>${building.name}</h5>`;
+    
+                if (buildingData.description) {
+                    html += `<p class="building-description">${buildingData.description}</p>`;
+                }
+    
+                if (buildingData.providesTags && buildingData.providesTags.length > 0) {
+                    html += `<div class="production-tags">
+                                <strong>Produit :</strong> 
+                                ${buildingData.providesTags.map(tag => `<span class="tag">${tag}</span>`).join(' ')}
+                             </div>`;
+                }
+    
+                html += '<ul class="job-list">';
+    
+                if (buildingData.emplois) {
                     buildingData.emplois.forEach(jobDef => {
-                        const occupants = population.filter(p => p.job?.buildingName === building.name && p.job?.jobTitle === jobDef.titre);
-                        const occupantsHtml = occupants.length > 0 ? occupants.map(o => getFormattedNameHTML(o)).join(', ') : `<i>Vacant</i>`;
-                        html += `<li><strong>${jobDef.titre} (${occupants.length}/${jobDef.postes}):</strong> ${occupantsHtml}</li>`;
+                        const occupants = population.filter(p => p.isAlive && p.job?.buildingName === building.name && p.job?.jobTitle === jobDef.titre);
+                        const occupantsHtml = occupants.length > 0
+                            ? occupants.map(o => getFormattedNameHTML(o)).join(', ')
+                            : `<i>Vacant</i>`;
+                        
+                        const salary = jobDef.salaire?.totalEnCuivre || 'N/A';
+    
+                        html += `<li class="job-entry">
+                                    <div class="job-title">
+                                        <strong>${jobDef.titre} (${occupants.length}/${jobDef.postes})</strong>
+                                        <span class="job-salary">Salaire: ${salary} pc</span>
+                                    </div>
+                                    <div class="occupants-list">${occupantsHtml}</div>
+                                 </li>`;
                     });
                 }
-                html += `</ul></div>`;
+                html += '</ul></div>'; // Fin de .building-card et .job-list
             });
         }
-        return `<div class="job-roster">${html}</div>`;
+        html += '</div>'; // Fin de .job-roster-enhanced
+        return html;
     }
 
-    // NOUVEAU: Moteur de rendu principal pour un livret de famille
     function renderNarrativeFamilyBooklet(family, location, allPopulationScope, log, campaignYear) {
         let html = `<div class="family-booklet">`;
 
-        // En-tête du livret
         const ruler = allPopulationScope.find(p => p.locationId === location.id && p.job && getJobData(p.job.buildingName, p.job.jobTitle)?.tier === 0);
         const archivistName = ruler ? `${ruler.firstName} ${ruler.lastName}` : `l'Administration de ${location.name}`;
         html += `
@@ -495,7 +658,6 @@ document.addEventListener('DOMContentLoaded', () => {
         let couple = [];
         const processedIds = new Set();
 
-        // Trouver le couple principal (ou le membre fondateur)
         const oldestMember = members.sort((a,b) => b.age - a.age)[0];
         const spouse = getSpouse(oldestMember, allPopulationScope);
         if (spouse && members.some(m => m.id === spouse.id)) {
@@ -507,27 +669,51 @@ document.addEventListener('DOMContentLoaded', () => {
         const man = couple.find(p => p.gender === 'Homme');
         const woman = couple.find(p => p.gender === 'Femme');
 
-        // Section Époux/Épouse
         if (man) { html += renderPersonSection(man, 'ÉPOUX', allPopulationScope, log, campaignYear, location); processedIds.add(man.id); }
         if (woman) { html += renderPersonSection(woman, 'ÉPOUSE', allPopulationScope, log, campaignYear, location); processedIds.add(woman.id); }
 
-        // Section Mariage
         if (man && woman) {
             const marriageEvent = log?.find(e => e.type === 'marriage' && e.personId === man.id);
-            const marriageSimYear = marriageEvent?.year || (simulationEndYear - (man.age - RACES_DATA.races[man.race].ageAdulte));
+            let marriageSimYear;
+
+            if (marriageEvent) {
+                marriageSimYear = marriageEvent.year;
+            } else {
+                const manRaceData = RACES_DATA.races[man.race];
+                const womanRaceData = RACES_DATA.races[woman.race];
+
+                if (manRaceData && womanRaceData) {
+                    // **MODIFICATION**: Utiliser l'âge adulte le plus élevé des deux races.
+                    const effectiveAgeAdulte = Math.max(manRaceData.ageAdulte || 18, womanRaceData.ageAdulte || 18);
+                    const youngestAgeOfCouple = Math.min(man.age, woman.age);
+                    const maxYearsMarried = youngestAgeOfCouple - effectiveAgeAdulte;
+                    
+                    if (maxYearsMarried > 1) {
+                        const coupleSeed = [man.id, woman.id].sort().join('-');
+                        const yearsMarried = Math.floor(seededRandom(coupleSeed) * (maxYearsMarried - 1)) + 1;
+                        marriageSimYear = simulationEndYear - yearsMarried;
+                    } else {
+                        marriageSimYear = simulationEndYear - 1; 
+                    }
+                } else {
+                     marriageSimYear = simulationEndYear - 1;
+                }
+            }
+
             const refYear = campaignYear || 0;
             const displayMarriageYear = refYear === 0 ? marriageSimYear : refYear + marriageSimYear;
+            const marriageSeed = [man.id, woman.id].sort().join('-');
+            
             html += `
                 <div class="booklet-section marriage-section">
                     <h3>MARIAGE</h3>
-                    <p><strong>Célébré le :</strong> ${getFantasyDate(displayMarriageYear)}</p>
+                    <p><strong>Célébré le :</strong> ${getFantasyDate(displayMarriageYear, marriageSeed)}</p>
                     <p><strong>Lieu :</strong> ${location.name}</p>
                     <p><strong>Mentions :</strong> Le couple a juré fidélité, unissant leurs destins devant la communauté.</p>
                 </div>
             `;
         }
 
-        // Section Enfants
         const children = getChildren(couple[0], allPopulationScope).filter(c => members.some(m => m.id === c.id));
         if (children.length > 0) {
             html += `<div class="booklet-section children-section"><h3>ENFANTS</h3>`;
@@ -538,7 +724,6 @@ document.addEventListener('DOMContentLoaded', () => {
             html += `</div>`;
         }
         
-        // Membres restants (parents âgés, etc.)
         const remainingMembers = members.filter(m => !processedIds.has(m.id));
         if(remainingMembers.length > 0) {
             html += `<div class="booklet-section other-members-section"><h3>AUTRES MEMBRES RATTACHÉS</h3>`;
@@ -548,27 +733,10 @@ document.addEventListener('DOMContentLoaded', () => {
             html += `</div>`;
         }
 
-
-        // Section Décès
-        const areAllDead = members.every(m => !m.isAlive);
-        html += `<div class="booklet-section death-section"><h3>DÉCÈS</h3>`;
-        if (areAllDead) {
-            members.forEach(m => {
-                const simDeathYear = m.deathYear;
-                const refYear = campaignYear || 0;
-                const displayDeathYear = simDeathYear ? (refYear === 0 ? simDeathYear : refYear + simDeathYear) : 'inconnu';
-                html += `<p>${getFormattedNameHTML(m)} est décédé(e) en l'an ${displayDeathYear}, à l'âge de ${m.ageAtDeath || m.age} ans. Cause: ${m.causeOfDeath || 'inconnue'}.</p>`;
-            });
-        } else {
-            html += "<p>(En attente de mise à jour... que les dieux veillent sur cette famille.)</p>";
-        }
         html += `</div>`;
-
-        html += `</div>`; // fin .family-booklet
         return html;
     }
 
-    // NOUVEAU: Moteur de rendu pour la section d'une personne dans le livret
     function renderPersonSection(person, role, allPopulationScope, log, campaignYear, location) {
         if (!person) return '';
         const simBirthYear = simulationEndYear - person.age;
@@ -577,17 +745,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const parents = getParents(person, allPopulationScope);
         const father = parents.find(p => p.gender === 'Homme');
         const mother = parents.find(p => p.gender === 'Femme');
+        const spouse = getSpouse(person, allPopulationScope);
 
         let html = `<div class="booklet-person-details"><h4>${role}</h4>`;
         html += `
             <dl>
                 <dt>Nom :</dt><dd>${getFormattedNameHTML(person)}</dd>
-                <dt>Né(e) le :</dt><dd>${getFantasyDate(displayBirthYear)} (${person.isAlive ? person.age + ' ans' : 'décédé(e)'})</dd>
+                <dt>Né(e) le :</dt><dd>${getFantasyDate(displayBirthYear, person.id.toString())} (${person.isAlive ? person.age + ' ans' : 'décédé(e)'})</dd>
                 <dt>Lieu de naissance :</dt><dd>${person.locationId ? allPopulationScope.find(p => p.id === person.locationId)?.locationName || location.name : location.name}</dd>
                 <dt>Race :</dt><dd>${person.race}</dd>
                 <dt>Profession exercée :</dt><dd>${getPersonJobTitle(person)}</dd>
                 <dt>Père :</dt><dd>${father ? father.firstName + ' ' + father.lastName.toUpperCase() : 'Inconnu'} ${father && !father.isAlive ? '(décédé)' : ''}</dd>
                 <dt>Mère :</dt><dd>${mother ? mother.firstName + ' ' + mother.lastName.toUpperCase() : 'Inconnue'} ${mother && !mother.isAlive ? '(décédée)' : ''}</dd>
+                <dt>Conjoint(e) :</dt><dd>${spouse ? getFormattedNameHTML(spouse) + (!spouse.isAlive ? ' (décédé(e))' : '') : 'Célibataire'}</dd>
             </dl>
             <h5>MENTIONS MARGINALES :</h5>
             <ul class="mentions-marginales">
@@ -598,15 +768,14 @@ document.addEventListener('DOMContentLoaded', () => {
         return html;
     }
 
-    // NOUVEAU: Fonction principale remplaçant l'ancienne `renderFamilies`
     function renderFamilies(location, campaignYear) {
         let html = `<div id="family-booklets-container">`;
         const { families, population } = location.demographics;
         const allPopulationScope = currentRegion.places.flatMap(p => p.demographics.population.map(person => ({...person, locationName: p.name})));
-        const log = currentRegion.log || []; // Récupère le log depuis la région
+        const log = currentRegion.log || []; 
 
         families
-            .filter(f => f.memberIds.some(id => population.find(p => p.id === id))) // N'afficher que les familles présentes
+            .filter(f => f.memberIds.some(id => population.find(p => p.id === id))) 
             .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
             .forEach(family => {
                 html += renderNarrativeFamilyBooklet(family, location, allPopulationScope, log, campaignYear);
@@ -805,10 +974,10 @@ document.addEventListener('DOMContentLoaded', () => {
                  <div id="tab-jobs" class="tab-content">${renderJobRoster(location)}</div>
                 <div id="tab-families" class="tab-content">
                     <div class="campaign-date-input-container">
-                         <label for="campaign-year">Année de référence pour la narration :</label>
-                         <input type="number" id="campaign-year" placeholder="Ex: 600" value="">
+                         <label for="campaign-year">Année de votre campagne :</label>
+                         <input type="number" id="campaign-year" placeholder="Ex: 1350" value="1350">
                     </div>
-                    ${renderFamilies(location, 0)}
+                    ${renderFamilies(location, 1350)}
                 </div>
                 <div id="tab-distances" class="tab-content">${renderDistanceMatrix(location)}</div>
             `;
@@ -824,6 +993,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (e.target.tagName === 'BUTTON') {
                 const tabId = e.target.dataset.tab;
                 if (e.target.classList.contains('active')) return;
+
+                if (tabId === 'tab-families') {
+                    showNotification("Conseil : Choisissez votre Calendrier et renseignez l'année de début de votre campagne pour un calcul précis des dates.", 'info', 9000);
+                }
+
                 contentArea.querySelectorAll('.tab-link').forEach(btn => btn.classList.remove('active'));
                 e.target.classList.add('active');
                 contentArea.querySelectorAll('.tab-content').forEach(content => { content.classList.remove('active'); if (content.id === tabId) content.classList.add('active'); });
@@ -833,7 +1007,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const campaignYearInput = contentArea.querySelector('#campaign-year');
         if (campaignYearInput) {
             campaignYearInput.addEventListener('input', () => {
-                const newYear = parseInt(campaignYearInput.value, 10) || 0;
+                const parsedYear = parseInt(campaignYearInput.value, 10);
+                const newYear = isNaN(parsedYear) ? 1350 : parsedYear;
                 const bookletsContainer = contentArea.querySelector('#family-booklets-container');
                 if (bookletsContainer) {
                     const newBookletsHTML = renderFamilies(location, newYear);
@@ -867,17 +1042,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         window.populationScope = currentRegion.places.flatMap(p => p.demographics.population);
         
-        let maxYear = 1;
-        // NOUVEAU: Récupère la date de fin de la simulation depuis le log de la région s'il existe
-        if (currentRegion.log) {
-            maxYear = currentRegion.log.reduce((latestYear, event) => event.year > latestYear ? event.year : latestYear, 1);
+        if (currentRegion.simulationClock && currentRegion.simulationClock.year) {
+            simulationEndYear = currentRegion.simulationClock.year;
+        } else if (currentRegion.log && currentRegion.log.length > 0) {
+            simulationEndYear = currentRegion.log.reduce((latestYear, event) => event.year > latestYear ? event.year : latestYear, 1);
         } else {
-            // Fallback si le log n'est pas dans la région (ancienne sauvegarde)
-            window.populationScope.forEach(p => {
-                if (p.deathYear && p.deathYear > maxYear) maxYear = p.deathYear;
-            });
+            simulationEndYear = 1;
         }
-        simulationEndYear = maxYear;
 
         locationSelect.innerHTML = currentRegion.places.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
         selectedLocation = currentRegion.places[0];
@@ -894,6 +1065,11 @@ document.addEventListener('DOMContentLoaded', () => {
         systemSelect.addEventListener('change', (e) => {
             currentGameSystem = e.target.value;
             renderLocationView(selectedLocation);
+        });
+        
+        calendarSelect.addEventListener('change', (e) => {
+            selectedCalendar = e.target.value;
+            renderLocationView(selectedLocation); 
         });
 
         globalSearchInput.addEventListener('input', (e) => {
@@ -928,6 +1104,71 @@ document.addEventListener('DOMContentLoaded', () => {
 
         document.addEventListener('click', (e) => { if (!globalSearchInput.contains(e.target)) globalSearchResults.style.display = 'none'; });
         printBtn.addEventListener('click', () => window.print());
+        
+        const saveBtn = document.getElementById('save-json-btn');
+        if(saveBtn) {
+            saveBtn.addEventListener('click', () => {
+                if (!currentRegion) {
+                    alert("Aucune région n'est chargée pour la sauvegarde.");
+                    return;
+                }
+                const jsonData = JSON.stringify(currentRegion, null, 2);
+                const blob = new Blob([jsonData], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `EcoSimRPG_Region_${currentRegion.name.replace(/\s+/g, '_')}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            });
+        }
+
+        const loadBtn = document.getElementById('load-json-btn');
+        const fileInput = document.getElementById('json-file-input');
+        if(loadBtn && fileInput) {
+            loadBtn.addEventListener('click', () => {
+                fileInput.click();
+            });
+
+            fileInput.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const importedRegion = JSON.parse(e.target.result);
+                        
+                        if (!importedRegion.id || !importedRegion.name || !importedRegion.places) {
+                            throw new Error("Le fichier JSON ne semble pas être une région valide.");
+                        }
+
+                        let existingRegions = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+                        const regionIndex = existingRegions.findIndex(r => r.id === importedRegion.id);
+
+                        if (regionIndex > -1) {
+                            existingRegions[regionIndex] = importedRegion;
+                        } else {
+                            existingRegions.push(importedRegion);
+                        }
+
+                        localStorage.setItem(STORAGE_KEY, JSON.stringify(existingRegions));
+                        localStorage.setItem(LAST_REGION_KEY, importedRegion.id);
+
+                        alert(`La région "${importedRegion.name}" a été chargée avec succès ! La page va être rechargée.`);
+                        location.reload();
+
+                    } catch (error) {
+                        alert('Erreur lors de la lecture ou de l\'analyse du fichier JSON :\n' + error.message);
+                    } finally {
+                        fileInput.value = '';
+                    }
+                };
+                reader.readAsText(file);
+            });
+        }
 
         const floatingMenu = document.querySelector('.floating-menu');
         if (floatingMenu) {
@@ -937,9 +1178,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     e.preventDefault();
                     let message = "Cette étape est verrouillée.";
                     switch(link.id) {
-                        case 'nav-step2': message = "Veuillez d'abord créer une région et y ajouter au moins un lieu (Étape 1)."; break;
-                        case 'nav-step3': message = "Veuillez configurer et valider la structure économique de tous les lieux (Étape 2)."; break;
-                        case 'nav-step4': case 'nav-step5': message = "Veuillez d'abord générer la population initiale (Étape 3)."; break;
+                        case 'nav-step2': 
+                            message = "Veuillez d'abord créer une région et y ajouter au moins un lieu (Étape 1)."; 
+                            break;
+                        case 'nav-step3': 
+                            message = "Veuillez configurer et valider la structure économique de tous les lieux (Étape 2)."; 
+                            break;
+                        case 'nav-step4': 
+                            message = "Veuillez d'abord générer la population initiale (Étape 3)."; 
+                            break;
+                        case 'nav-step5': 
+                            message = "Cette étape est déverrouillée une fois que la simulation (Étape 4) a atteint 60 ans."; 
+                            break;
                     }
                     alert(message);
                 }

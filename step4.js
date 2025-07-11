@@ -1,11 +1,9 @@
 /**
  * EcoSimRPG - step4.js
  * Moteur principal de la simulation.
- * VERSION 17.0 - Suivi des familles parties/éteintes
- * - Ne supprime plus les familles devenues vides.
- * - Ajout d'un statut ('active', 'migrated', 'extinct') à chaque famille.
- * - Le sélecteur de famille groupe maintenant les familles actives et inactives.
- * - L'affichage de l'arbre montre un message spécifique pour les familles inactives tout en affichant l'historique des départs.
+ * VERSION 17.3 - MODIFICATION : Verrouillage de l'Étape 5
+ * - Modification de `updateAllNavLinksState()` pour que l'Étape 5 ne soit déverrouillée que si la simulation a atteint 60 ans.
+ * - Modification du message d'alerte pour refléter cette nouvelle condition de déverrouillage.
  */
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -52,7 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let lastEventLogTick = -1;
     let lastEventLogViewId = null;
 
-    // --- NOUVEAU : GESTION DE LA NAVIGATION ---
+    // --- MODIFIÉ : GESTION DE LA NAVIGATION ---
     /**
      * Met à jour l'état (activé/désactivé) de tous les liens de navigation principaux.
      * @param {object | null} region - L'objet de la région actuelle.
@@ -77,15 +75,24 @@ document.addEventListener('DOMContentLoaded', () => {
             else navStep3.classList.add('nav-disabled');
         }
 
-        // Étape 4 & 5: Au moins un lieu doit avoir une population générée (depuis l'étape 3).
+        // Étape 4: Au moins un lieu doit avoir une population générée (depuis l'étape 3).
         const isStep4Ready = isStep3Ready && region.places.some(place => place.demographics && place.demographics.population.length > 0);
         if (navStep4) {
             if (isStep4Ready) navStep4.classList.remove('nav-disabled');
             else navStep4.classList.add('nav-disabled');
         }
+
+        // MODIFIÉ : Condition pour l'Étape 5
+        // La simulation doit avoir atteint ou dépassé l'année 60.
+        const isSimFinished = region && region.log && region.log.some(e => e.year >= 60);
+        const isStep5Ready = isStep4Ready && isSimFinished;
+    
         if (navStep5) {
-            if (isStep4Ready) navStep5.classList.remove('nav-disabled'); // L'étape 5 est débloquée avec la 4.
-            else navStep5.classList.add('nav-disabled');
+            if (isStep5Ready) {
+                navStep5.classList.remove('nav-disabled');
+            } else {
+                navStep5.classList.add('nav-disabled');
+            }
         }
     }
 
@@ -171,106 +178,109 @@ function updateEventLogUI() {
 }
 
     // --- FONCTIONS DE SIMULATION PRINCIPALES ---
-    function mainLoop() {
-        if (!simulationState.isRunning) return;
+function mainLoop() {
+    if (!simulationState.isRunning) return;
 
-        if (simulationState.currentYear >= 60) {
-            pauseSimulation();
-            logEvent('🏁 Simulation terminée après 60 ans.', 'system');
-            alert('La simulation est terminée car elle a atteint sa limite de 60 ans.');
-            startSimBtn.disabled = true;
-            updateEventLogUI();
-            return;
-        }
+    if (simulationState.currentYear >= 60) {
+        pauseSimulation();
+        logEvent('🏁 Simulation terminée après 60 ans.', 'system');
+        alert('La simulation est terminée car elle a atteint sa limite de 60 ans.');
+        startSimBtn.disabled = true;
+        resetSimBtn.disabled = true; // Désactiver aussi la réinitialisation
+        updateEventLogUI();
+        saveData(); // Sauvegarder l'état final avec le log complet (débloquera l'étape 5)
+        return;
+    }
 
-        simulationState.currentTick++;
-        simulationState.currentMonth++;
-        if (simulationState.currentMonth > 12) {
-            simulationState.currentMonth = 1;
-            simulationState.currentYear++;
-        }
-        updateDateUI();
-        
-        handleProductionAndConsumption();
-        
-        const allPopulation = currentRegion.places.flatMap(p => p.demographics.population);
-        const allFamilies = currentRegion.places.flatMap(p => p.demographics.families);
+    simulationState.currentTick++;
+    simulationState.currentMonth++;
+    if (simulationState.currentMonth > 12) {
+        simulationState.currentMonth = 1;
+        simulationState.currentYear++;
+    }
+    updateDateUI();
+    
+    handleProductionAndConsumption();
+    
+    const allPopulation = currentRegion.places.flatMap(p => p.demographics.population);
+    const allFamilies = currentRegion.places.flatMap(p => p.demographics.families);
 
-        const rulers = allPopulation.filter(p => p.isAlive && p.job && getJobData(p.job.buildingName, p.job.jobTitle)?.tier === 0);
-        const dynastyMemberIds = getRulingDynastyMemberIds(rulers, allPopulation);
-        
-        const { rulingFamilies } = findRulersAndFamilies(allPopulation, allFamilies);
-        
-        const allDynastyMembers = getRulingDynastyMemberIds(rulers, allPopulation);
+    const rulers = allPopulation.filter(p => p.isAlive && p.job && getJobData(p.job.buildingName, p.job.jobTitle)?.tier === 0);
+    const dynastyMemberIds = getRulingDynastyMemberIds(rulers, allPopulation);
+    
+    const { rulingFamilies } = findRulersAndFamilies(allPopulation, allFamilies);
+    
+    const allDynastyMembers = getRulingDynastyMemberIds(rulers, allPopulation);
 
-        allPopulation.forEach(person => {
-            if (person.isAlive && person.royalTitle && !allDynastyMembers.has(person.id)) {
-                const isRuler = rulers.some(r => r.id === person.id);
-                if (!isRuler) {
-                    delete person.royalTitle;
-                }
+    allPopulation.forEach(person => {
+        if (person.isAlive && person.royalTitle && !allDynastyMembers.has(person.id)) {
+            const isRuler = rulers.some(r => r.id === person.id);
+            if (!isRuler) {
+                delete person.royalTitle;
             }
-        });
+        }
+    });
 
-        rulers.forEach(ruler => {
-            applyDynasticTitles(ruler, allPopulation);
-        });
+    rulers.forEach(ruler => {
+        applyDynasticTitles(ruler, allPopulation);
+    });
 
 
-        currentRegion.places.forEach(place => {
-            const population = place.demographics.population;
-            const placeSatisfaction = place.state.satisfaction;
+    currentRegion.places.forEach(place => {
+        const population = place.demographics.population;
+        const placeSatisfaction = place.state.satisfaction;
 
-            if (simulationState.currentMonth === 1) {
-                population.forEach(p => { 
-                    if(p.isAlive) {
-                        p.age++; 
-                        const raceData = RACES_DATA.races[p.race];
-                        if (raceData && p.age === raceData.ageTravail) {
-                            logEvent(`💼 ${p.firstName} ${p.lastName} a atteint l'âge de travailler.`, 'system', { familyId: p.familyId, personId: p.id });
-                        }
+        if (simulationState.currentMonth === 1) {
+            population.forEach(p => { 
+                if(p.isAlive) {
+                    p.age++; 
+                    const raceData = RACES_DATA.races[p.race];
+                    if (raceData && p.age === raceData.ageTravail) {
+                        logEvent(`💼 ${p.firstName} ${p.lastName} a atteint l'âge de travailler.`, 'system', { familyId: p.familyId, personId: p.id });
                     }
-                });
-            }
-            
-            population.forEach(person => {
-                if (person.isAlive && person.job) {
-                    person.totalMonthsWorked = (person.totalMonthsWorked || 0) + 1;
-                }
-
-                if (person.status === 'En congé maternité' && person.maternityLeaveEndTick && simulationState.currentTick >= person.maternityLeaveEndTick) {
-                    person.status = 'Actif';
-                    person.maternityLeaveEndTick = null;
-                    logEvent(`💼 ${person.firstName} ${person.lastName} est de nouveau disponible pour travailler après son congé de maternité.`, 'system', { familyId: person.familyId, personId: person.id });
                 }
             });
-            
-            handleSocialInteractions(population, place);
-            handleRetirement(population, place);
-            handleDeaths(population, place, placeSatisfaction);
-            // BUG FIX: Added placeSatisfaction argument to the function call
-            handleMarriages(population, place, placeSatisfaction, dynastyMemberIds);
-            handlePregnancyAndBirths(population, place, placeSatisfaction);
-            
-            handleStatAndPrestigeGrowth(allPopulation, rulingFamilies, dynastyMemberIds);
-
-            handlePromotionsAndJobChanges(population, place, dynastyMemberIds);
-            assignJobs(population, place, dynastyMemberIds);
-        });
-
-        if (simulationState.currentTick % 5 === 0) {
-            handleMigration(dynastyMemberIds);
-            handleLoveMigration(dynastyMemberIds);
         }
         
-        updateGlobalStats();
-        updateLocationPopulationSummary();
-        if (selectedFamilyId) {
-             displaySelectedFamilyTree();
-             updateEventLogUI();
-        }
-        saveData();
+        population.forEach(person => {
+            if (person.isAlive && person.job) {
+                person.totalMonthsWorked = (person.totalMonthsWorked || 0) + 1;
+            }
+
+            if (person.status === 'En congé maternité' && person.maternityLeaveEndTick && simulationState.currentTick >= person.maternityLeaveEndTick) {
+                person.status = 'Actif';
+                person.maternityLeaveEndTick = null;
+                // CORRECTION ICI : 'p' a été remplacé par 'person'
+                logEvent(`💼 ${person.firstName} ${person.lastName} est de nouveau disponible pour travailler après son congé de maternité.`, 'system', { familyId: person.familyId, personId: person.id });
+            }
+        });
+        
+        handleSocialInteractions(population, place);
+        handleRetirement(population, place);
+        handleDeaths(population, place, placeSatisfaction);
+        // BUG FIX: Added placeSatisfaction argument to the function call
+        handleMarriages(population, place, placeSatisfaction, dynastyMemberIds);
+        handlePregnancyAndBirths(population, place, placeSatisfaction);
+        
+        handleStatAndPrestigeGrowth(allPopulation, rulingFamilies, dynastyMemberIds);
+
+        handlePromotionsAndJobChanges(population, place, dynastyMemberIds);
+        assignJobs(population, place, dynastyMemberIds);
+    });
+
+    if (simulationState.currentTick % 5 === 0) {
+        handleMigration(dynastyMemberIds);
+        handleLoveMigration(dynastyMemberIds);
     }
+    
+    updateGlobalStats();
+    updateLocationPopulationSummary();
+    if (selectedFamilyId) {
+         displaySelectedFamilyTree();
+         updateEventLogUI();
+    }
+    saveData();
+}
     
     function handleProductionAndConsumption() {
         currentRegion.places.forEach(place => {
@@ -1533,7 +1543,25 @@ function applyDynasticTitles(ruler, population) {
     
     function loadData() { const data = localStorage.getItem(STORAGE_KEY); regions = data ? JSON.parse(data) : []; const lastRegionId = localStorage.getItem(LAST_REGION_KEY); if (lastRegionId) { currentRegion = regions.find(r => r.id == lastRegionId) || null; } }
     
+    /**
+     * MODIFIÉ: Sauvegarde désormais l'état de l'horloge de la simulation.
+     */
     function saveData() { 
+        if (currentRegion) {
+            // AJOUT : Persiste l'état actuel de l'horloge dans l'objet de la région.
+            currentRegion.simulationClock = {
+                tick: simulationState.currentTick,
+                month: simulationState.currentMonth,
+                year: simulationState.currentYear
+            };
+
+            const regionIndex = regions.findIndex(r => r.id === currentRegion.id);
+            if (regionIndex > -1) {
+                regions[regionIndex] = currentRegion;
+            } else {
+                regions.push(currentRegion);
+            }
+        }
         localStorage.setItem(STORAGE_KEY, JSON.stringify(regions)); 
         updateAllNavLinksState(currentRegion);
     }
@@ -2170,11 +2198,15 @@ function applyDynasticTitles(ruler, population) {
     function handleResetClick() {
         if (confirm("Réinitialiser la simulation à l'Année 1, Mois 1 ? Toute la progression (naissances, morts, événements, etc.) sera perdue, mais la population initiale sera conservée.")) {
             pauseSimulation();
-            if (initialSimulationData) {
-                regions = JSON.parse(JSON.stringify(initialSimulationData));
-                const lastRegionId = localStorage.getItem(LAST_REGION_KEY);
-                if (lastRegionId) { currentRegion = regions.find(r => r.id == lastRegionId) || null; }
+            regions = JSON.parse(JSON.stringify(initialSimulationData));
+            const lastRegionId = localStorage.getItem(LAST_REGION_KEY);
+            currentRegion = regions.find(r => r.id == lastRegionId) || null;
+            
+            // Supprimer l'horloge sauvegardée pour forcer un redémarrage à neuf
+            if (currentRegion.simulationClock) {
+                delete currentRegion.simulationClock;
             }
+
             setupInitialState();
             logEvent('🔄 Simulation réinitialisée.', 'system');
             updateEventLogUI();
@@ -2208,17 +2240,86 @@ function applyDynasticTitles(ruler, population) {
         });
     }
 
+    /**
+     * MODIFIÉ: Vérifie si une simulation est terminée, en cours ou neuve.
+     */
     function setupInitialState() {
         if (!currentRegion || !currentRegion.places.some(p => p.config?.isValidated)) {
             document.body.innerHTML = `<div class="error-container"><h1>Erreur de Simulation</h1><p>Aucune donnée de simulation valide trouvée.</p><a href="step3.html" class="btn btn-primary">Retourner à l'Étape 3</a></div>`;
             return false;
         }
-        currentRegion.places.forEach(place => { place.state = { satisfaction: 100, production: {}, consumption: {}, shortages: [], surpluses: [] }; });
-        treeZoomLevel = 1.0;
-        const familyTreeArea = document.getElementById('family-tree-display-area');
-        if (familyTreeArea) familyTreeArea.style.transform = `scale(${treeZoomLevel})`;
+    
+        const maxYearInLog = currentRegion.log ? currentRegion.log.reduce((max, event) => Math.max(max, event.year), 0) : 0;
+        // AJOUT : On récupère l'horloge sauvegardée
+        const savedClock = currentRegion.simulationClock;
+    
+        if (maxYearInLog >= 60) {
+            // --- ETAT : SIMULATION TERMINÉE (LECTURE SEULE) ---
+            simulationState = {
+                isRunning: false,
+                currentTick: savedClock?.tick || currentRegion.log[0]?.tick || 0,
+                currentMonth: savedClock?.month || currentRegion.log[0]?.month || 12,
+                currentYear: savedClock?.year || maxYearInLog,
+                tickSpeed: TICK_SPEEDS[speedControl.value] || 1000,
+                intervalId: null,
+                log: currentRegion.log || []
+            };
+            
+            // Configuration de l'UI en mode lecture seule
+            logEvent('📜 Simulation déjà terminée. Affichage de l\'état final.', 'system');
+            startSimBtn.disabled = true;
+            startSimBtn.innerHTML = '✔️ Terminé';
+            pauseSimBtn.disabled = true;
+            resetSimBtn.disabled = true;
+            
+        } else if (savedClock && savedClock.tick > 0) {
+            // --- ETAT : SIMULATION EN COURS (RECHARGEMENT) ---
+            simulationState = {
+                isRunning: false,
+                currentTick: savedClock.tick,
+                currentMonth: savedClock.month,
+                currentYear: savedClock.year,
+                tickSpeed: TICK_SPEEDS[speedControl.value] || 1000,
+                intervalId: null,
+                log: currentRegion.log || []
+            };
+             startSimBtn.disabled = false;
+             pauseSimBtn.disabled = true;
+             resetSimBtn.disabled = false;
 
-        simulationState = { isRunning: false, currentTick: 0, currentMonth: 1, currentYear: 1, tickSpeed: TICK_SPEEDS[speedControl.value] || 1000, intervalId: null, log: [] };
+        } else {
+            // --- ETAT : SIMULATION NOUVELLE (DEPUIS GEN.0) ---
+            const initialRegion = initialSimulationData.find(r => r.id === currentRegion.id);
+            if (initialRegion) {
+                currentRegion.places.forEach(place => {
+                    const initialPlace = initialRegion.places.find(p => p.id === place.id);
+                    if (initialPlace) {
+                        place.demographics = JSON.parse(JSON.stringify(initialPlace.demographics));
+                    }
+                });
+                delete currentRegion.log;
+                delete currentRegion.simulationClock;
+            }
+
+            currentRegion.places.forEach(place => { 
+                place.state = { satisfaction: 100, production: {}, consumption: {}, shortages: [], surpluses: [] }; 
+            });
+            
+            treeZoomLevel = 1.0;
+            const familyTreeArea = document.getElementById('family-tree-display-area');
+            if (familyTreeArea) familyTreeArea.style.transform = `scale(${treeZoomLevel})`;
+    
+            simulationState = { isRunning: false, currentTick: 0, currentMonth: 1, currentYear: 1, tickSpeed: TICK_SPEEDS[speedControl.value] || 1000, intervalId: null, log: [] };
+            
+            currentRegion.log = simulationState.log;
+
+            startSimBtn.disabled = false;
+            startSimBtn.innerHTML = '▶️ Démarrer';
+            pauseSimBtn.disabled = true;
+            resetSimBtn.disabled = false;
+        }
+
+        // Mise à jour de l'interface commune à tous les états
         updateGlobalStats();
         updateLocationPopulationSummary();
         updateDateUI();
@@ -2226,10 +2327,9 @@ function applyDynasticTitles(ruler, population) {
         updateLocationTabs();
         updateFamilySelector();
         displaySelectedFamilyTree();
+        lastEventLogViewId = null; 
         updateEventLogUI();
-        startSimBtn.disabled = false;
-        pauseSimBtn.disabled = true;
-        resetSimBtn.disabled = false;
+
         return true;
     }
 
@@ -2254,7 +2354,6 @@ function applyDynasticTitles(ruler, population) {
             updateEventLogUI();
         });
 
-        // MODIFICATION : Gère les clics sur les personnages ET les liens de membres partis.
         familyTreeDisplayAreaWrapper.addEventListener('click', e => {
             const personNode = e.target.closest('.person-node');
             const departedLink = e.target.closest('.departed-member-link');
@@ -2272,7 +2371,7 @@ function applyDynasticTitles(ruler, population) {
                 e.preventDefault();
                 const { newFamilyId, newLocationId } = departedLink.dataset;
                 
-                selectedLocationId = newLocationId;
+                selectedLocationId = parseInt(newLocationId, 10);
                 selectedFamilyId = newFamilyId;
 
                 characterSearchInput.value = '';
@@ -2399,6 +2498,7 @@ function applyDynasticTitles(ruler, population) {
             jobsByTierModal.querySelector('.modal-close-btn').addEventListener('click', () => { jobsByTierModal.close(); });
         }
         
+        // MODIFIÉ : Logique d'alerte du menu
         const floatingMenu = document.querySelector('.floating-menu');
         if (floatingMenu) {
             floatingMenu.addEventListener('click', (e) => {
@@ -2406,7 +2506,7 @@ function applyDynasticTitles(ruler, population) {
                 if (link && link.classList.contains('nav-disabled')) {
                     e.preventDefault();
                     let message = "Cette étape est verrouillée.";
-                    switch(link.id) {
+                    switch (link.id) {
                         case 'nav-step2':
                             message = "Veuillez d'abord créer une région et y ajouter au moins un lieu (Étape 1).";
                             break;
@@ -2414,8 +2514,10 @@ function applyDynasticTitles(ruler, population) {
                             message = "Veuillez configurer et valider la structure économique de tous les lieux (Étape 2).";
                             break;
                         case 'nav-step4':
-                        case 'nav-step5':
                             message = "Veuillez d'abord générer la population initiale (Étape 3).";
+                            break;
+                        case 'nav-step5':
+                            message = "Cette étape est déverrouillée une fois que la simulation (Étape 4) a atteint 60 ans.";
                             break;
                     }
                     alert(message);

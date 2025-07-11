@@ -10,7 +10,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
     
     <link rel="stylesheet" href="menu-style.css">
-    <link rel="stylesheet" href="step1-style.css"> <link rel="stylesheet" href="step5-style.css">
+    <link rel="stylesheet" href="step1-style.css">
+    <link rel="stylesheet" href="step5-style.css">
     <link rel="stylesheet" href="print-style.css" media="print">
 
 </head>
@@ -29,6 +30,7 @@
 </nav>
 
 <div class="page-container-step5">
+    <div id="notification-banner" class="notification-banner" aria-live="polite"></div>
     <header id="controls">
         <h1>Exploitation des Données de Simulation</h1>
         <div class="control-group">
@@ -42,6 +44,14 @@
                 <option value="pathfinder">Pathfinder</option>
             </select>
         </div>
+        <div class="control-group">
+            <label for="calendar-select">Calendrier narratif :</label>
+            <select id="calendar-select">
+                <option value="generic">Générique</option>
+                <option value="dnd5e">D&D 5e (Harptos)</option>
+                <option value="pathfinder">Pathfinder (Absalom)</option>
+            </select>
+        </div>
         
         <div class="control-group search-control-group">
             <label for="global-character-search">Recherche rapide :</label>
@@ -50,6 +60,10 @@
         </div>
         <div class="control-group">
             <button id="print-btn" class="btn btn-primary">🖨️ Imprimer</button>
+            
+            <button id="save-json-btn" class="btn">💾 Sauvegarder (JSON)</button>
+            <button id="load-json-btn" class="btn">📂 Charger (JSON)</button>
+            <input type="file" id="json-file-input" style="display: none;" accept=".json">
         </div>
     </header>
 

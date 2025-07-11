@@ -1,3 +1,4 @@
+/* Contenu du fichier step5-style.css */
 /* step5-style.css */
 
 :root {
@@ -750,4 +751,97 @@ body {
     border-radius: 4px;
     width: 150px;
     text-align: center;
+}
+
+/* ======================================================= */
+/* === NOUVEAUX STYLES POUR LA LISTE D'EMPLOIS AMÉLIORÉE === */
+/* ======================================================= */
+.job-roster-enhanced h4 {
+    font-family: 'Cinzel', serif;
+    font-size: 1.4em;
+    color: #5c4e3a;
+    margin-top: 25px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #d1c7b0;
+    padding-bottom: 5px;
+}
+
+.building-card {
+    background-color: #fdfaf2;
+    border: 1px solid #e6e0d3;
+    border-radius: 6px;
+    padding: 15px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.building-card h5 {
+    font-family: 'Cinzel', serif;
+    font-size: 1.2em;
+    margin: 0 0 5px 0;
+    color: var(--color-royal-blue);
+}
+
+.building-description {
+    font-size: 0.9em;
+    font-style: italic;
+    color: #666;
+    margin: 0 0 10px 0;
+    border-left: 2px solid #e6e0d3;
+    padding-left: 10px;
+}
+
+.production-tags {
+    margin-bottom: 10px;
+    font-size: 0.9em;
+}
+
+.production-tags .tag {
+    display: inline-block;
+    background-color: #e0e0e0;
+    padding: 3px 8px;
+    border-radius: 12px;
+    margin-left: 5px;
+    font-size: 0.9em;
+    color: #333;
+}
+
+.job-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.job-entry {
+    padding: 10px 0;
+    border-top: 1px solid #f0e8d6;
+}
+.job-entry:first-child {
+    border-top: none;
+}
+
+.job-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.job-title strong {
+    font-size: 1.05em;
+}
+
+.job-salary {
+    font-size: 0.9em;
+    color: #4CAF50;
+    font-weight: bold;
+    background-color: #e8f5e9;
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+
+.occupants-list {
+    padding-left: 15px;
+    font-size: 0.95em;
+    color: #555;
 }

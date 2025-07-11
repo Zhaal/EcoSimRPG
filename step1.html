@@ -10,7 +10,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
        
     <link rel="stylesheet" href="menu-style.css">
-
     <link rel="stylesheet" href="step1-style.css">
 </head>
 <body>
@@ -55,6 +54,11 @@
                 <input type="number" id="random-place-count" value="10" min="1" max="100" style="width: 70px;">
                 <button id="generate-map-btn" class="btn-primary" disabled>Carte Aléatoire</button>
             </div>
+            <div class="control-group">
+                <button id="save-json-btn" class="btn" disabled>💾 Sauvegarder (JSON)</button>
+                <button id="load-json-btn" class="btn">📂 Charger (JSON)</button>
+                <input type="file" id="json-file-input" style="display: none;" accept=".json">
+            </div>
         </header>
 
         <div class="workspace">
@@ -69,7 +73,7 @@
             </aside>
         </div>
     </div>
-
+    
     <dialog id="place-modal">
         <div class="modal-header" id="place-modal-header">
             <h3 id="modal-title">Créer un Nouveau Lieu</h3>
