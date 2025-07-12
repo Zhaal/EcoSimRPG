@@ -2,10 +2,9 @@
 /**
  * EcoSimRPG - step5.js
  * Page d'exploitation et d'impression des données de simulation.
- * VERSION 13.5 - MODIFICATION : Amélioration de l'affichage des emplois
- * - La vue "Emplois & Occupants" a été repensée pour afficher les bâtiments sous forme de fiches.
- * - Chaque fiche inclut désormais la description du bâtiment, les biens qu'il produit (tags), et le salaire pour chaque poste.
- * - Le style a été ajusté en conséquence dans step5-style.css pour une meilleure lisibilité.
+ * VERSION 13.7 - MODIFICATION : Changement du format d'affichage pour les noms des femmes mariées.
+ * - Le format est maintenant : "Prénom NOMMARI (née NOMDEJEUNEFILE)".
+ * - La fonction `getFormattedNameHTML` a été mise à jour pour refléter ce changement.
  */
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -178,6 +177,19 @@ document.addEventListener('DOMContentLoaded', () => {
         return parts.length > 0 ? parts.join(' ') : "< 1h";
     };
 
+    /**
+     * Convertit un total de pièces de cuivre en une chaîne de caractères formatée (po, pa, pc).
+     * @param {number} totalCopper Le montant total en pièces de cuivre.
+     * @returns {string} La chaîne de caractères formatée (ex: "1po 2pa 3pc").
+     */
+    const formatCurrency = (totalCopper) => {
+        if (isNaN(totalCopper) || totalCopper === null || totalCopper === undefined) return 'N/A';
+        const po = Math.floor(totalCopper / 100);
+        const pa = Math.floor((totalCopper % 100) / 10);
+        const pc = totalCopper % 10;
+        return `${po}po ${pa}pa ${pc}pc`;
+    };
+
     const convertToDnD = (rawValue) => {
         if (rawValue < 1) return { score: 3, modifier: -4 };
         let dndScore;
@@ -295,7 +307,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!person) return '';
         let nameHTML = `${person.firstName} ${person.lastName.toUpperCase()}`;
         if (person.gender === 'Femme' && person.maidenName && person.maidenName !== person.lastName) {
-            nameHTML = `${person.firstName} ${person.maidenName.toUpperCase()}, épouse ${person.lastName.toUpperCase()}`;
+            // MODIFICATION : Le format est maintenant "Prénom NOM (née NOMDEMJEUNEFILE)"
+            nameHTML = `${person.firstName} ${person.lastName.toUpperCase()} (née ${person.maidenName.toUpperCase()})`;
         }
         const nameClass = person.gender === 'Homme' ? 'male' : 'female';
         return `<span class="${nameClass}">${nameHTML}</span>`;
@@ -621,12 +634,16 @@ function getPersonEvents(personId, log, campaignYear) {
                             ? occupants.map(o => getFormattedNameHTML(o)).join(', ')
                             : `<i>Vacant</i>`;
                         
-                        const salary = jobDef.salaire?.totalEnCuivre || 'N/A';
+                        const salaryInCopper = jobDef.salaire?.totalEnCuivre;
+                        let salaryDisplayHtml = 'N/A';
+                        if (typeof salaryInCopper === 'number' && !isNaN(salaryInCopper)) {
+                            salaryDisplayHtml = `${salaryInCopper} pc (${formatCurrency(salaryInCopper)})`;
+                        }
     
                         html += `<li class="job-entry">
                                     <div class="job-title">
                                         <strong>${jobDef.titre} (${occupants.length}/${jobDef.postes})</strong>
-                                        <span class="job-salary">Salaire: ${salary} pc</span>
+                                        <span class="job-salary">Salaire: ${salaryDisplayHtml}</span>
                                     </div>
                                     <div class="occupants-list">${occupantsHtml}</div>
                                  </li>`;
@@ -935,7 +952,7 @@ function getPersonEvents(personId, log, campaignYear) {
                     <div class="combat-stats-container"><div class="combat-box"><div class="combat-value">${caValue}</div><div class="combat-label">CA</div></div><div class="combat-box"><div class="combat-value">${formattedIniValue}</div><div class="combat-label">INITIATIVE</div></div></div>
                 </aside>
                 <div class="char-sheet-main-content">
-                    <section class="char-sheet-info"><div class="info-block"><h4>État Civil & Occupation</h4><div class="info-line"><span><strong>Âge :</strong> ${ageLine}</span><span><strong>Prestige :</strong> ${person.prestige ? person.prestige.toFixed(0) : '0'}</span><span><strong>Occupation :</strong> ${jobTitle}</span></div></div></section>
+                    <section class="char-sheet-info"><div class="info-block"><h4>État Civil & Occupation</h4><div class="info-line"><span><strong>Âge :</strong> ${ageLine} </span><span><strong>Prestige :</strong> ${person.prestige ? person.prestige.toFixed(0) : '0'} </span><span><strong>Occupation :</strong> ${jobTitle}</span></div></div></section>
                     ${skillsSectionHtml}
                 </div>
             </div>

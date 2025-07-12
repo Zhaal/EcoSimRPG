@@ -20,7 +20,7 @@
             --color-border: #8d6e63;
             --color-border-light: #a1887f;
             --color-dark-text: #3e2723;
-            --color-gold: #ffd700;
+            --color-gold: #c79121; /* Or un peu plus sombre pour le contraste */
             --color-parchment-darker: #e9e0c7;
         }
 
@@ -50,12 +50,36 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
+            position: relative; /* Ajout pour le positionnement du badge */
+            overflow: hidden; /* Cache les parties du badge qui dépassent */
         }
 
         .choice-card:hover {
             transform: translateY(-15px) scale(1.05);
             box-shadow: 0 15px 30px rgba(0,0,0,0.3), 0 0 15px var(--color-gold);
         }
+        
+        /* Style pour la carte recommandée */
+        .choice-card.recommended {
+            border-color: var(--color-gold);
+        }
+
+        .choice-card.recommended::before {
+            content: 'Recommandé';
+            position: absolute;
+            top: 20px;
+            right: -35px;
+            background-color: var(--color-gold);
+            color: var(--color-dark-text);
+            padding: 5px 35px;
+            transform: rotate(45deg);
+            font-family: 'Cinzel', serif;
+            font-weight: 700;
+            font-size: 0.9em;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 2;
+        }
+
 
         .choice-card .icon {
             font-size: 5em;
@@ -164,15 +188,15 @@
             <p class="subtitle">Choisissez votre voie, Maître du Monde</p>
         </header>
         <div class="choice-container">
-            <div class="choice-card" id="select-forge-mode">
+            <div class="choice-card recommended" id="select-forge-mode">
                 <div class="icon">🔨</div>
                 <h3>Mode Forge</h3>
-                <p>Créez votre monde pas à pas, avec un contrôle total sur chaque étape.</p>
+                <p>L'expérience complète. Créez votre monde pas à pas, avec un contrôle total sur chaque étape pour un univers riche et sur mesure.</p>
             </div>
             <div class="choice-card" id="select-auto-mode">
                 <div class="icon">🚀</div>
                 <h3>Mode Full Auto</h3>
-                <p>Laissez la magie opérer et générez un monde complet en un seul clic.</p>
+                <p>Laissez la magie opérer et générez un monde complet en un seul clic. Idéal pour une inspiration rapide.</p>
             </div>
         </div>
     </div>
@@ -199,11 +223,11 @@
                         <h3>Forger le Royaume</h3>
                     </div>
                     <div class="step-card-body">
-                        <p>C'est l'acte fondateur, le moment où le néant recule pour laisser place à votre vision. Ici, vous ne placez pas de simples icônes, vous sculptez la géographie politique et commerciale de votre création.</p>
+                        <p>C'est l'acte fondateur. Ici, vous ne placez pas de simples icônes, vous sculptez la géographie politique et commerciale de votre création.</p>
                         <ul>
-                            <li><strong>Érigez les Piliers de la Civilisation :</strong> Fondez vos premières communautés. Qu'il s'agisse d'une capitale rayonnante destinée à dominer les âges ou d'un modeste hameau niché au creux d'une vallée oubliée, chaque lieu est une promesse.</li>
-                            <li><strong>Tissez la Toile du Monde :</strong> Tracez les artères qui feront battre le cœur de votre royaume. Des grandes voies impériales pavées, témoins de la puissance de votre trône, aux périlleux sentiers de montagne où seuls les plus audacieux s'aventurent. Chaque route est une histoire, un défi, une opportunité.</li>
-                            <li><strong>Décrétez l'Échelle du Monde :</strong> Un simple hexagone peut représenter une marche rapide d'une heure ou une journée de voyage éprouvante. Ce choix initial dictera l'ampleur des migrations, la portée du commerce et la vitesse de déploiement de vos armées.</li>
+                            <li><strong>Érigez les Piliers de la Civilisation :</strong> Fondez vos premières communautés, d'une capitale rayonnante à un modeste hameau.</li>
+                            <li><strong>Tissez la Toile du Monde :</strong> Tracez les artères du royaume. L'algorithme d'<strong>Arbre Recouvrant Minimum</strong> assure que tous les lieux sont connectés de la manière la plus efficace possible, puis ajoute des routes secondaires pour plus de réalisme.</li>
+                            <li><strong>Décrétez l'Échelle du Monde :</strong> Un simple hexagone peut représenter une marche rapide ou une journée de voyage. Ce choix initial dictera l'ampleur des migrations, du commerce et des guerres.</li>
                         </ul>
                     </div>
                 </div>
@@ -214,11 +238,11 @@
                         <h3>Ériger l'Économie</h3>
                     </div>
                     <div class="step-card-body">
-                        <p>Une cité n'est qu'une coquille vide sans l'âme de son économie. C'est ici que vous donnez une fonction, un but et une vie propre à chacun de vos lieux, transformant des points sur une carte en centres de production et de pouvoir.</p>
+                        <p>Une cité n'est qu'une coquille vide sans l'âme de son économie. C'est ici que vous donnez une fonction à chacun de vos lieux, en utilisant un solveur de dépendances sophistiqué.</p>
                         <ul>
-                           <li><strong>Le Souffle de l'Automatisation :</strong> Laissez l'intelligence des algorithmes tisser pour vous une toile économique complexe. Des forges aux marchés, des fermes aux guildes, chaque ressource trouvera son producteur, garantissant une région viable et autonome.</li>
-                           <li><strong>La Main du Créateur :</strong> Prenez les rênes. Choisissez chaque bâtiment, chaque industrie. Le système, tel un conseiller fidèle, vous soufflera en temps réel les besoins criants et les surplus abondants de votre économie naissante.</li>
-                           <li><strong>Le Cœur des Cités :</strong> Plongez dans les entrailles de chaque communauté. Votre capitale dépend-elle du poisson d'un lointain village côtier ? C'est ici que vous déchiffrerez les flux, que vous comprendrez les dépendances et que vous identifierez les opportunités stratégiques.</li>
+                           <li><strong>Le Système de "Tags" Économiques :</strong> Le cœur de la logique. Chaque bâtiment produit ('Grain', 'Outils') et requiert des "tags". Une économie est viable quand tous les besoins sont satisfaits.</li>
+                           <li><strong>La Boucle de Résolution Itérative :</strong> L'automate analyse les besoins, évalue les bâtiments possibles en pénalisant le manque de diversité, puis construit le meilleur candidat. La boucle se répète jusqu'à l'équilibre.</li>
+                           <li><strong>Le Cœur des Cités :</strong> Plongez dans les entrailles de chaque communauté pour comprendre les dépendances et identifier les opportunités stratégiques (ou les points de rupture !).</li>
                         </ul>
                     </div>
                 </div>
@@ -229,11 +253,11 @@
                         <h3>Le Souffle de la Vie</h3>
                     </div>
                     <div class="step-card-body">
-                        <p>Le décor est planté, l'économie est prête. Il ne manque que l'étincelle divine : les habitants. Assistez à la naissance de la "Génération 0", la population originelle qui façonnera les premières chroniques de votre royaume.</p>
+                        <p>Le décor est planté, l'économie est prête. Il ne manque que l'étincelle divine : la "<strong>Génération 0</strong>", la population originelle qui façonnera les premières chroniques.</p>
                         <ul>
-                            <li><strong>La Mosaïque des Peuples :</strong> Le système donne vie à des individus uniques, dotés de noms, d'âges, d'emplois et d'aspirations, en parfaite adéquation avec la tapisserie des races que vous avez imaginée.</li>
-                            <li><strong>Les Liens du Sang et du Destin :</strong> Observez la formation des premières familles. Les mariages arrangés par le système, basés sur une logique sociale et économique, peuvent donner naissance à des lignées inattendues, comme des <strong>Demi-Elfes</strong> ou des <strong>Demi-Orcs</strong>.</li>
-                            <li><strong>Fondez des Dynasties Éternelles :</strong> Ne soyez pas simple spectateur. Créez vos propres familles nobles, assignez-leur des rôles clés et définissez les <strong>lois de succession</strong> (primogéniture, élective...) qui dicteront l'ascension et la chute des puissants.</li>
+                            <li><strong>Génération Basée sur l'Emploi :</strong> Le système ne crée pas d'habitants au hasard. Il génère un individu pour chaque poste disponible, en ajustant son âge et son expérience selon le rang (Tier) de l'emploi.</li>
+                            <li><strong>Les Liens du Sang et du Destin :</strong> Un algorithme de "matching" social forme les premières familles en priorisant la compatibilité de race et de statut social, donnant naissance à des lignées cohérentes.</li>
+                            <li><strong>Fondez des Dynasties Éternelles :</strong> Ne soyez pas simple spectateur. Créez vos propres familles nobles, assignez-leur des rôles clés et définissez les <strong>lois de succession</strong> (primogéniture, élective...) qui dicteront le futur du pouvoir.</li>
                         </ul>
                     </div>
                 </div>
@@ -244,11 +268,11 @@
                         <h3>Déchaîner le Temps</h3>
                     </div>
                     <div class="step-card-body">
-                        <p>Les fondations sont posées, les acteurs sont en place. Il est temps de laisser votre création vivre sa propre vie. Lancez la simulation et observez les années, les décennies, les siècles s'écouler sous vos yeux.</p>
+                        <p>Les fondations sont posées, les acteurs sont en place. Lancez la simulation et observez les décennies, voire les siècles, s'écouler sous vos yeux.</p>
                         <ul>
-                            <li><strong>Le Grand Cycle de la Vie :</strong> Les dynasties s'agrandissent, les enfants naissent, les anciens s'éteignent. Mais attention, la surpopulation ou les famines peuvent avoir des conséquences funestes et redessiner l'équilibre démographique.</li>
-                            <li><strong>L'Ambition des Mortels :</strong> Les individus ne sont pas statiques. Ils cherchent du travail, gravissent les échelons du pouvoir, ou migrent vers d'autres cités, en quête d'une fortune ou d'une vie meilleure.</li>
-                            <li><strong>Les Annales d'un Monde :</strong> Grâce à un journal d'événements détaillé et à un arbre généalogique interactif, suivez le destin de chaque âme, de l'humble fermier au monarque tout-puissant. Chaque vie est une histoire à découvrir.</li>
+                            <li><strong>Le Grand Cycle de la Vie :</strong> Les dynasties s'agrandissent et s'éteignent. La mortalité est calculée selon l'âge, mais aussi les crises (surpopulation, famines) où les familles à faible prestige sont les plus touchées.</li>
+                            <li><strong>L'Ambition des Mortels :</strong> Les individus cherchent du travail, sont promus, ou migrent vers d'autres cités en quête d'une vie meilleure, créant un monde dynamique.</li>
+                            <li><strong>Les Annales d'un Monde :</strong> Grâce à un journal d'événements détaillé et à un arbre généalogique interactif, suivez le destin de chaque âme, de l'humble fermier au monarque tout-puissant.</li>
                         </ul>
                     </div>
                 </div>
@@ -261,9 +285,9 @@
                     <div class="step-card-body">
                         <p>Votre monde a vécu, il a une histoire. Il est temps de vous y plonger, d'en extraire les récits et les secrets pour nourrir vos propres aventures.</p>
                         <ul>
-                            <li><strong>Le Grimoire des Âmes :</strong> Consultez des fiches de personnage complètes pour chaque habitant, incluant leurs attributs (façon D&D), leur histoire professionnelle, et leur biographie générée par les événements de la simulation.</li>
-                            <li><strong>Les Artères du Royaume :</strong> Visualisez les temps de trajet précis entre vos cités. Combien de jours pour une caravane lourdement chargée ? Et pour un messager à cheval ? La logistique de votre monde n'aura plus de secrets.</li>
-                            <li><strong>Prêt pour la Table de Jeu :</strong> Imprimez les fiches de PNJ, les listes de familles influentes, ou les détails économiques d'un lieu. Tout est prêt à être intégré directement dans vos parties de jeu de rôle.</li>
+                            <li><strong>Le Grimoire des Âmes :</strong> Consultez des fiches de personnage complètes, incluant leurs attributs convertis sur une échelle D&D-like (1-20), leur histoire et leur biographie.</li>
+                            <li><strong>Les Artères du Royaume :</strong> Visualisez les temps de trajet précis calculés via un algorithme de recherche de chemin (type Dijkstra), en tenant compte du type de route et du mode de transport.</li>
+                            <li><strong>Prêt pour la Table de Jeu :</strong> Imprimez les fiches de PNJ, les listes de familles influentes, ou les détails économiques d'un lieu. Tout est prêt à être intégré dans vos parties de jeu de rôle.</li>
                         </ul>
                     </div>
                 </div>
@@ -284,7 +308,7 @@
                         <p>Ne vous contentez pas des bâtiments existants. Forgez les industries et les institutions qui rendront votre monde véritablement unique.</p>
                         <ul>
                             <li><strong>Créez sans Limites :</strong> Inventez de nouveaux bâtiments, définissez leurs fonctions, les emplois qu'ils proposent, les salaires et les prérequis en prestige pour y travailler.</li>
-                            <li><strong>Maîtrisez l'Économie :</strong> Définissez les "tags" (concepts économiques comme 'Nourriture', 'Armes', 'Savoir') que chaque bâtiment produit et ceux qu'il requiert. L'analyseur en temps réel vous guidera pour créer une économie équilibrée ou volontairement instable.</li>
+                            <li><strong>Maîtrisez l'Économie :</strong> Définissez les "tags" que chaque bâtiment produit et requiert. L'analyseur en temps réel vous guidera pour créer une économie équilibrée ou volontairement instable.</li>
                             <li><strong>Importez et Partagez :</strong> Sauvegardez vos configurations économiques complexes au format JSON pour les réutiliser dans d'autres mondes ou les partager avec d'autres maîtres du jeu.</li>
                         </ul>
                     </div>
@@ -297,8 +321,8 @@
                     <div class="step-card-body">
                         <p>Donnez naissance à des civilisations inédites et définissez leurs particularités culturelles et biologiques.</p>
                         <ul>
-                             <li><strong>Inventez des Peuples :</strong> Créez des races entièrement nouvelles ou modifiez celles existantes. Définissez leur espérance de vie, leur âge de maturité, et donnez-leur une identité culturelle à travers des listes de noms typiques.</li>
-                             <li><strong>Généalogie Complexe :</strong> Établissez les règles de compatibilité reproductive entre les races. Contrôlez l'émergence de peuples métissés ou créez des sociétés aux lignées pures et exclusives.</li>
+                             <li><strong>Inventez des Peuples :</strong> Créez des races entièrement nouvelles ou modifiez celles existantes. Définissez leur espérance de vie, leur âge de maturité, et donnez-leur une identité culturelle via des listes de noms typiques.</li>
+                             <li><strong>Généalogie Complexe :</strong> Établissez les règles de compatibilité reproductive entre les races. Contrôlez l'émergence de peuples métissés ou créez des sociétés aux lignées pures.</li>
                              <li><strong>Sauvegardez vos Créations :</strong> Tout comme pour les bâtiments, exportez vos configurations de races en JSON pour les intégrer facilement dans n'importe quel projet ou les partager avec la communauté.</li>
                         </ul>
                     </div>
