@@ -6,11 +6,254 @@
     <title>Éditeur de Races - EcoSim</title>
     
     <link rel="stylesheet" href="menu-style.css">
-
     <link rel="stylesheet" href="step1-style.css"> 
-
     <link rel="stylesheet" href="editeur.css">
-    <link rel="stylesheet" href="races_editor.css">
+    
+    <style>
+        /*
+         * ===================================================================
+         * === STYLES SPÉCIFIQUES POUR L'ÉDITEUR DE RACES ===
+         * ===================================================================
+         * Utilise les variables et classes de `editeur.css` pour une base cohérente.
+        */
+
+        /* Styles pour la liste des races dans la navigation */
+        #navigation-pane .race-item {
+            color: var(--color-dark-text);
+            cursor: pointer;
+            padding: 6px 0 6px 15px;
+            border-left: 3px solid transparent;
+            margin-left: 5px;
+            font-size: 1.1em;
+        }
+
+        #navigation-pane .race-item.race-pure {
+            color: darkviolet;
+        }
+
+        #navigation-pane .race-item.race-hybrid {
+            color: darkorange;
+        }
+
+        #navigation-pane .race-item:hover {
+            color: var(--color-royal-blue);
+            border-left-color: var(--color-royal-blue);
+        }
+
+        #navigation-pane .selected {
+            color: var(--color-royal-blue) !important; /* Assurer la priorité de la couleur de sélection */
+            font-weight: bold;
+            border-left-color: var(--color-gold);
+            background-color: rgba(212, 160, 23, 0.1);
+        }
+
+        /* Grille pour les caractéristiques numériques */
+        .grid-5 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1em;
+        }
+
+        /* Styles pour les listes de noms/prénoms */
+        .names-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1em;
+        }
+
+        .names-list {
+            min-height: 100px;
+            max-height: 200px;
+            border: 1px solid var(--color-border);
+            padding: 0.5em;
+            border-radius: 4px;
+            overflow-y: auto;
+            background-color: #fff;
+        }
+
+        /* Styles pour le widget de compatibilité */
+        #compatibilites-widget .tag-list-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        #compatibilites-widget .tag-item {
+             display: flex;
+            align-items: center;
+            gap: 8px;
+            background-color: #d1c4e9; /* Un violet clair pour la compatibilité */
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.95em;
+            border: 1px solid #b39ddb;
+        }
+
+        /* Analyse des compatibilités */
+        #analysis-output ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+
+        #analysis-output li {
+            padding: 8px;
+            border-radius: 4px;
+            margin-bottom: 6px;
+            border-left: 3px solid;
+        }
+
+        #analysis-output .analysis-ok {
+            background-color: rgba(76, 175, 80, 0.1);
+            border-color: #4CAF50;
+            color: #388E3C;
+        }
+
+        #analysis-output .analysis-warning {
+            background-color: rgba(255, 152, 0, 0.1);
+            border-color: #FF9800;
+            color: #E65100;
+        }
+
+        #analysis-output .analysis-error {
+            background-color: rgba(244, 67, 54, 0.1);
+            border-color: #F44336;
+            color: #c62828;
+        }
+
+        #analysis-output .details {
+            font-size: 0.85em;
+            margin-left: 15px;
+            color: #555;
+        }
+
+        /* --- STYLES AFFINÉS POUR LA GESTION DES HYBRIDES --- */
+        #hybrid-management-container {
+            margin-top: 1.5em;
+            padding: 1.2em; /* Moins de padding */
+            border-radius: 8px;
+            background-color: #f7f9fc;
+            border: 1px solid var(--color-border);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); /* Ombre plus subtile */
+        }
+
+        #hybrid-management-container h3 {
+            text-align: center;
+            color: var(--color-dark-text);
+            margin-bottom: 1.2em;
+            font-size: 1.2em; /* Police plus petite */
+            font-weight: 600; /* Un peu moins gras */
+        }
+
+        #hybrid-list {
+            list-style-type: none;
+            padding-left: 0;
+            max-height: 250px;
+            overflow-y: auto;
+            padding-right: 8px; /* Espace pour la barre de scroll */
+        }
+
+        /* Style de chaque carte hybride */
+        #hybrid-list li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.7em; /* Moins d'espace entre les cartes */
+            padding: 0.7em 1em; /* Padding réduit */
+            border-radius: 8px; /* Coins moins arrondis */
+            background: #ffffff;
+            border: 1px solid #e8eaf0;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            transition: all 0.2s ease-out;
+        }
+
+        #hybrid-list li:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+        }
+
+        /* Conteneur pour la formule de l'hybride */
+        #hybrid-list .hybrid-formula {
+            display: flex;
+            align-items: center;
+            gap: 8px; /* Espacement réduit */
+            font-size: 0.9em; /* Police plus petite */
+            flex-wrap: wrap; /* MODIFIÉ */
+        }
+
+        /* Style des noms de race dans la formule */
+        #hybrid-list .hybrid-formula .race-name {
+            background-color: rgba(74, 144, 226, 0.08);
+            color: #3b73b8;
+            padding: 3px 10px; /* Padding réduit */
+            border-radius: 12px;
+            font-weight: 500; /* Police normale */
+            border: 1px solid rgba(74, 144, 226, 0.15);
+        }
+
+        #hybrid-list .hybrid-formula .operator {
+            color: var(--color-dark-text);
+            font-weight: 400; /* Police normale */
+            font-size: 1.1em;
+        }
+
+        /* Bouton de suppression stylisé */
+        #hybrid-list .delete-hybrid-btn {
+            background-color: #fff1f0;
+            border: 1px solid #ffccc7;
+            color: #d9363e;
+            width: 28px; /* Taille réduite */
+            height: 28px; /* Taille réduite */
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2em;
+            line-height: 28px;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+
+        #hybrid-list .delete-hybrid-btn:hover {
+            background-color: #ff4d4f;
+            color: white;
+            transform: scale(1.05);
+        }
+
+        /* Formulaire d'ajout d'hybride */
+        #add-hybrid-form {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px; /* Espacement réduit */
+            margin-top: 1.2em; /* Marge réduite */
+            padding: 0.8em; /* Padding réduit */
+            background-color: transparent; /* Fond transparent */
+            border: 1px dashed var(--color-border); /* Bordure plus fine */
+            border-radius: 8px;
+            flex-wrap: wrap; /* MODIFIÉ */
+        }
+
+        /* === BLOC CSS MODIFIÉ === */
+        #add-hybrid-form select {
+            flex-grow: 1;             /* Permet aux éléments de s'agrandir pour remplir l'espace */
+            min-width: 120px;         /* Définit une largeur minimale pour éviter qu'ils ne soient tronqués */
+            padding: 0.5em;           /* Padding réduit */
+            border-radius: 4px;
+            border: 1px solid var(--color-border);
+            font-size: 0.9em;         /* Police plus petite */
+            background-color: #fff;
+        }
+        /* === FIN DU BLOC MODIFIÉ === */
+
+        #add-hybrid-form label {
+            font-size: 1.2em; /* Taille réduite */
+            color: #999;
+            font-weight: 400;
+        }
+
+        #add-hybrid-form #add-hybrid-btn {
+            padding: 0.5em 1em; /* Padding réduit */
+            font-size: 0.9em; /* Police plus petite */
+        }
+    </style>
 </head>
 <body>
 
@@ -54,7 +297,21 @@
                 <form id="race-form" style="display:none;"></form>
             </div>
             <div id="analysis-pane">
-                <h2>Analyse des Compatibilités</h2>
+                <div id="hybrid-management-container">
+                    <h3>Gestion des Races Hybrides</h3>
+                    <ul id="hybrid-list">
+                        </ul>
+                    <div id="add-hybrid-form" class="add-item-form">
+                        <select id="parent-a-select"></select>
+                        <label>+</label>
+                        <select id="parent-b-select"></select>
+                        <label>&rarr;</label>
+                        <select id="child-race-select"></select>
+                        <button id="add-hybrid-btn" class="btn btn-secondary">Ajouter</button>
+                    </div>
+                </div>
+
+                <h2>Analyse des Relations</h2>
                 <div id="analysis-output"></div>
             </div>
         </div>
@@ -73,7 +330,575 @@
     </div>
     
     <script src="races.js"></script>
-    <script src="races_editor.js" defer></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // === CONSTANTES ===
+            const CUSTOM_RACES_STORAGE_KEY = 'ecoSimRPG_races_custom';
+
+            // --- DOM Elements ---
+            const treeContainer = document.getElementById('tree-container');
+            const raceForm = document.getElementById('race-form');
+            const placeholder = document.getElementById('placeholder');
+            const addRaceBtn = document.getElementById('add-race-btn');
+            const resetAllBtn = document.getElementById('reset-all-btn');
+            const analysisOutput = document.getElementById('analysis-output');
+            
+            const importDataBtn = document.getElementById('import-data-btn');
+            const jsonUploadInput = document.getElementById('json-upload');
+            const openManageModalBtn = document.getElementById('open-manage-modal-btn');
+            const manageDataModal = document.getElementById('manage-data-modal');
+            const manageModalCloseBtn = document.getElementById('manage-modal-close-btn');
+            const downloadJsonBtn = document.getElementById('download-json-btn');
+
+            // --- NOUVEAUX ÉLÉMENTS DOM POUR LES HYBRIDES ---
+            const hybridList = document.getElementById('hybrid-list');
+            const parentASelect = document.getElementById('parent-a-select');
+            const parentBSelect = document.getElementById('parent-b-select');
+            const childRaceSelect = document.getElementById('child-race-select');
+            const addHybridBtn = document.getElementById('add-hybrid-btn');
+
+
+            let ecoSimData = null;
+            let selectedRaceName = null;
+            let originalData = null;
+
+            // --- Fonctions Utilitaires et de Sauvegarde ---
+            const deepClone = (obj) => JSON.parse(JSON.stringify(obj));
+            
+            // --- NOUVELLES FONCTIONS UTILITAIRES POUR LES NOMS ---
+            function getAllNames(data) {
+                const allPrenomsM = new Set();
+                const allPrenomsF = new Set();
+                const allNoms = new Set();
+                for (const raceKey in data.races) {
+                    if (data.races[raceKey].prenomsM) {
+                       data.races[raceKey].prenomsM.forEach(name => allPrenomsM.add(name));
+                    }
+                    if (data.races[raceKey].prenomsF) {
+                        data.races[raceKey].prenomsF.forEach(name => allPrenomsF.add(name));
+                    }
+                    if (data.races[raceKey].noms) {
+                        data.races[raceKey].noms.forEach(name => allNoms.add(name));
+                    }
+                }
+                return {
+                    prenomsM: Array.from(allPrenomsM),
+                    prenomsF: Array.from(allPrenomsF),
+                    noms: Array.from(allNoms)
+                };
+            }
+
+            function pickRandomNames(namesArray, count) {
+                if (!namesArray || namesArray.length === 0) return [];
+                const pickedNames = [];
+                for (let i = 0; i < count; i++) {
+                    const randomIndex = Math.floor(Math.random() * namesArray.length);
+                    pickedNames.push(namesArray[randomIndex]);
+                }
+                return pickedNames;
+            }
+
+
+            function saveCustomRacesToStorage() {
+                if (ecoSimData) {
+                    localStorage.setItem(CUSTOM_RACES_STORAGE_KEY, JSON.stringify(ecoSimData));
+                }
+            }
+
+            function downloadJSON() {
+                const jsonData = JSON.stringify(ecoSimData, null, 4);
+                const blob = new Blob([jsonData], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                const date = new Date().toISOString().slice(0, 10);
+                a.href = url;
+                a.download = `ecosim_races_data-${date}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+            
+            function handleFileUpload(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const newRaceData = JSON.parse(e.target.result);
+                        if (newRaceData.races && newRaceData.compatibilites) {
+                             if (confirm("Charger ce fichier remplacera les données de races actuelles. Continuer ?")) {
+                                ecoSimData = newRaceData;
+                                selectedRaceName = null;
+                                renderNavigation();
+                                displayRaceForm();
+                                updateAnalysis();
+                                renderHybridManagement(); // NOUVEAU
+                                saveCustomRacesToStorage();
+                                alert('Données de races chargées !');
+                            }
+                        } else {
+                            alert('Fichier JSON invalide. Il doit contenir "races" et "compatibilites".');
+                        }
+                    } catch (error) {
+                        alert('Erreur de parsing du JSON.');
+                    } finally {
+                        jsonUploadInput.value = '';
+                    }
+                };
+                reader.readAsText(file);
+            }
+
+            // --- Rendu de l'UI ---
+            function renderNavigation() {
+                treeContainer.innerHTML = '';
+                // --- MODIFIÉ POUR LA COULEUR DES RACES ---
+                const hybridRaces = new Set(ecoSimData.racesMixtes ? Object.values(ecoSimData.racesMixtes) : []);
+
+                Object.keys(ecoSimData.races).sort().forEach(raceName => {
+                    const raceDiv = document.createElement('div');
+                    raceDiv.className = 'race-item';
+                    raceDiv.textContent = raceName;
+                    raceDiv.dataset.raceName = raceName;
+
+                    if (hybridRaces.has(raceName)) {
+                        raceDiv.classList.add('race-hybrid');
+                    } else {
+                        raceDiv.classList.add('race-pure');
+                    }
+
+                    if (raceName === selectedRaceName) {
+                        raceDiv.classList.add('selected');
+                    }
+                    treeContainer.appendChild(raceDiv);
+                });
+                addNavEventListeners();
+            }
+
+            function addNavEventListeners() {
+                treeContainer.querySelectorAll('.race-item').forEach(raceDiv => {
+                    raceDiv.addEventListener('click', () => {
+                        selectedRaceName = raceDiv.dataset.raceName;
+                        document.querySelectorAll('.race-item').forEach(el => el.classList.remove('selected'));
+                        raceDiv.classList.add('selected');
+                        displayRaceForm();
+                    });
+                });
+            }
+
+            function displayRaceForm() {
+                if (!selectedRaceName || !ecoSimData.races[selectedRaceName]) {
+                    raceForm.style.display = 'none';
+                    placeholder.style.display = 'block';
+                    return;
+                }
+
+                const raceData = ecoSimData.races[selectedRaceName];
+                const allRaces = Object.keys(ecoSimData.races);
+                const compatibilites = ecoSimData.compatibilites[selectedRaceName] || [];
+
+                raceForm.innerHTML = `
+                    <h3>Édition de : ${selectedRaceName}</h3>
+                    <fieldset>
+                        <legend>Nom de la Race</legend>
+                        <input type="text" id="raceName" value="${selectedRaceName}" />
+                    </fieldset>
+                    
+                    <fieldset>
+                        <legend>Caractéristiques Démographiques</legend>
+                        <div class="grid-5">
+                            <div><label for="ageAdulte">Âge Adulte</label><input type="number" id="ageAdulte" value="${raceData.ageAdulte || 18}"></div>
+                            <div><label for="esperanceVieMax">Espérance Vie</label><input type="number" id="esperanceVieMax" value="${raceData.esperanceVieMax || 80}"></div>
+                            <div><label for="dureeGestationMois">Gestation (mois)</label><input type="number" id="dureeGestationMois" value="${raceData.dureeGestationMois || 9}"></div>
+                            <div><label for="ageApprentissage">Âge Apprentissage</label><input type="number" id="ageApprentissage" value="${raceData.ageApprentissage || 4}"></div>
+                            <div><label for="ageTravail">Âge Travail</label><input type="number" id="ageTravail" value="${raceData.ageTravail || 14}"></div>
+                        </div>
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Noms et Prénoms</legend>
+                        <div class="grid-3 names-container">
+                            ${createNameListWidget('prenomsM', 'Prénoms Masculins', raceData.prenomsM)}
+                            ${createNameListWidget('prenomsF', 'Prénoms Féminins', raceData.prenomsF)}
+                            ${createNameListWidget('noms', 'Noms de Famille', raceData.noms)}
+                        </div>
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Compatibilité pour la Reproduction</legend>
+                        ${createCompatibilityWidget(compatibilites, allRaces)}
+                    </fieldset>
+
+                    <div class="button-group">
+                        <button type="button" id="delete-race-btn" class="btn btn-delete">Supprimer cette Race</button>
+                    </div>
+                `;
+
+                placeholder.style.display = 'none';
+                raceForm.style.display = 'flex';
+                addFormEventListeners();
+            }
+
+            function createNameListWidget(id, title, names) {
+                return `
+                    <div>
+                        <label for="${id}">${title}</label>
+                        <textarea id="${id}" class="names-list" spellcheck="false">${(names || []).join('\n')}</textarea>
+                    </div>
+                `;
+            }
+            
+            function createCompatibilityWidget(compatibilites, allRaces) {
+                const tagItems = compatibilites.map(tag => `
+                    <div class="tag-item" data-tag="${tag}">
+                        <span>${tag}</span><button type="button" class="delete-btn" data-tag="${tag}">x</button>
+                    </div>`).join('');
+            
+                const raceOptions = allRaces
+                    .filter(r => r !== selectedRaceName && !compatibilites.includes(r))
+                    .sort()
+                    .map(r => `<option value="${r}">${r}</option>`).join('');
+
+                return `<div id="compatibilites-widget" class="tag-widget">
+                    <div class="tag-list-container">${tagItems}</div>
+                    <div class="add-item-form">
+                        <select><option value="">Choisir une race...</option>${raceOptions}</select>
+                        <button type="button" class="btn btn-secondary add-btn">Ajouter</button>
+                    </div>
+                </div>`;
+            }
+
+
+            // --- Logique de Mise à Jour ---
+            function addFormEventListeners() {
+                raceForm.addEventListener('change', handleFormChange);
+                raceForm.addEventListener('input', handleFormChange);
+
+                document.getElementById('delete-race-btn').addEventListener('click', deleteRace);
+                
+                // Listeners pour le widget de compatibilité
+                const compatWidget = document.getElementById('compatibilites-widget');
+                compatWidget.querySelector('.add-btn').addEventListener('click', (e) => {
+                    const select = e.target.previousElementSibling;
+                    const raceToAdd = select.value;
+                    if (raceToAdd) {
+                        if(!ecoSimData.compatibilites[selectedRaceName]) {
+                           ecoSimData.compatibilites[selectedRaceName] = [];
+                        }
+                        ecoSimData.compatibilites[selectedRaceName].push(raceToAdd);
+                        saveAndRedraw();
+                    }
+                });
+
+                compatWidget.querySelectorAll('.delete-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const raceToRemove = e.target.dataset.tag;
+                        const compatList = ecoSimData.compatibilites[selectedRaceName];
+                        if (compatList) {
+                            const index = compatList.indexOf(raceToRemove);
+                            if (index > -1) {
+                                compatList.splice(index, 1);
+                            }
+                        }
+                        saveAndRedraw();
+                    });
+                });
+            }
+
+            function handleFormChange(event) {
+                if (!selectedRaceName) return;
+
+                const raceData = ecoSimData.races[selectedRaceName];
+                
+                // Gérer le renommage de la race
+                const newName = document.getElementById('raceName').value.trim();
+                if (newName && newName !== selectedRaceName) {
+                    if (ecoSimData.races[newName]) {
+                        alert(`La race "${newName}" existe déjà !`);
+                        document.getElementById('raceName').value = selectedRaceName; // Annuler
+                        return;
+                    }
+                    
+                    // --- MISE À JOUR POUR LE RENOMMAGE ---
+                    const oldName = selectedRaceName;
+                    
+                    // 1. Mettre à jour l'objet 'races'
+                    Object.defineProperty(ecoSimData.races, newName, Object.getOwnPropertyDescriptor(ecoSimData.races, oldName));
+                    delete ecoSimData.races[oldName];
+                    
+                    // 2. Mettre à jour l'objet 'compatibilites'
+                    if (ecoSimData.compatibilites[oldName]) {
+                        Object.defineProperty(ecoSimData.compatibilites, newName, Object.getOwnPropertyDescriptor(ecoSimData.compatibilites, oldName));
+                        delete ecoSimData.compatibilites[oldName];
+                    }
+                    for (const key in ecoSimData.compatibilites) {
+                        const compatList = ecoSimData.compatibilites[key];
+                        const index = compatList.indexOf(oldName);
+                        if (index > -1) {
+                            compatList[index] = newName;
+                        }
+                    }
+
+                    // 3. Mettre à jour l'objet 'racesMixtes'
+                    const newRacesMixtes = {};
+                    for(const key in ecoSimData.racesMixtes) {
+                        let [p1, p2] = key.split('-');
+                        let value = ecoSimData.racesMixtes[key];
+                        
+                        if(p1 === oldName) p1 = newName;
+                        if(p2 === oldName) p2 = newName;
+                        if(value === oldName) value = newName;
+                        
+                        const newKey = [p1, p2].join('-');
+                        newRacesMixtes[newKey] = value;
+                    }
+                    ecoSimData.racesMixtes = newRacesMixtes;
+                    
+                    selectedRaceName = newName;
+                    saveAndRedraw(true); // Redessiner la navigation et les autres panneaux
+                    return; 
+                }
+
+                // Mettre à jour les données numériques
+                raceData.ageAdulte = parseInt(document.getElementById('ageAdulte').value) || 0;
+                raceData.esperanceVieMax = parseInt(document.getElementById('esperanceVieMax').value) || 0;
+                raceData.dureeGestationMois = parseInt(document.getElementById('dureeGestationMois').value) || 0;
+                raceData.ageApprentissage = parseInt(document.getElementById('ageApprentissage').value) || 0;
+                raceData.ageTravail = parseInt(document.getElementById('ageTravail').value) || 0;
+                
+                // Mettre à jour les listes de noms
+                raceData.prenomsM = document.getElementById('prenomsM').value.split('\n').map(n => n.trim()).filter(Boolean);
+                raceData.prenomsF = document.getElementById('prenomsF').value.split('\n').map(n => n.trim()).filter(Boolean);
+                raceData.noms = document.getElementById('noms').value.split('\n').map(n => n.trim()).filter(Boolean);
+                
+                saveCustomRacesToStorage();
+                updateAnalysis();
+            }
+
+            function saveAndRedraw(redrawNav = false) {
+                saveCustomRacesToStorage();
+                if(redrawNav) renderNavigation();
+                displayRaceForm();
+                updateAnalysis();
+                renderHybridManagement();
+            }
+
+            // --- Actions (Ajout/Suppression) ---
+            function addRace() {
+                const newRaceName = prompt("Entrez le nom de la nouvelle race :");
+                if (newRaceName && !ecoSimData.races[newRaceName]) {
+                    // --- MODIFIÉ POUR L'AJOUT DE NOMS ALÉATOIRES ---
+                    const allNames = getAllNames(ecoSimData);
+                    const randomPrenomsM = pickRandomNames(allNames.prenomsM, 10);
+                    const randomPrenomsF = pickRandomNames(allNames.prenomsF, 10);
+                    const randomNoms = pickRandomNames(allNames.noms, 10);
+
+                    ecoSimData.races[newRaceName] = {
+                        prenomsM: randomPrenomsM, 
+                        prenomsF: randomPrenomsF, 
+                        noms: randomNoms,
+                        ageAdulte: 18, esperanceVieMax: 80, dureeGestationMois: 9,
+                        ageApprentissage: 4, ageTravail: 14
+                    };
+                    ecoSimData.compatibilites[newRaceName] = [];
+                    selectedRaceName = newRaceName;
+                    saveAndRedraw(true);
+                } else if (newRaceName) {
+                    alert("Cette race existe déjà !");
+                }
+            }
+
+            function deleteRace() {
+                if (confirm(`Êtes-vous sûr de vouloir supprimer la race "${selectedRaceName}" ?\nCela la supprimera aussi des compatibilités et des définitions d'hybrides.`)) {
+                    const raceToDelete = selectedRaceName;
+                    
+                    // Supprimer de 'races'
+                    delete ecoSimData.races[raceToDelete];
+                    
+                    // Supprimer de 'compatibilites'
+                    delete ecoSimData.compatibilites[raceToDelete];
+                    for (const key in ecoSimData.compatibilites) {
+                        const compatList = ecoSimData.compatibilites[key];
+                        const index = compatList.indexOf(raceToDelete);
+                        if (index > -1) compatList.splice(index, 1);
+                    }
+
+                    // Supprimer de 'racesMixtes'
+                    const newRacesMixtes = {};
+                    for(const key in ecoSimData.racesMixtes) {
+                        let [p1, p2] = key.split('-');
+                        let value = ecoSimData.racesMixtes[key];
+                        if(p1 !== raceToDelete && p2 !== raceToDelete && value !== raceToDelete) {
+                            newRacesMixtes[key] = value;
+                        }
+                    }
+                    ecoSimData.racesMixtes = newRacesMixtes;
+
+                    selectedRaceName = null;
+                    saveAndRedraw(true);
+                }
+            }
+
+            function resetData() {
+                if (confirm("Réinitialiser les données de races à leur état d'origine ?")) {
+                    ecoSimData = deepClone(originalData);
+                    selectedRaceName = null;
+                    saveAndRedraw(true);
+                    alert("Données de races restaurées.");
+                }
+            }
+
+            // --- NOUVELLES FONCTIONS POUR LA GESTION DES HYBRIDES ---
+            function renderHybridManagement() {
+                hybridList.innerHTML = '';
+                const allRaces = Object.keys(ecoSimData.races).sort();
+                const processedKeys = new Set();
+                
+                if (ecoSimData.racesMixtes) {
+                    for (const key in ecoSimData.racesMixtes) {
+                        const [p1, p2] = key.split('-');
+                        const sortedKey = [p1, p2].sort().join('-');
+                        if (processedKeys.has(sortedKey)) continue;
+
+                        const childRace = ecoSimData.racesMixtes[key];
+                        const li = document.createElement('li');
+                        // Le HTML généré est toujours le même, seul le CSS change
+                        li.innerHTML = `<div class="hybrid-formula">
+                                            <span class="race-name">${p1}</span>
+                                            <span class="operator">+</span>
+                                            <span class="race-name">${p2}</span>
+                                            <span class="operator">&rarr;</span>
+                                            <span class="race-name" style="background-color: rgba(255, 241, 204, 0.8); color: #b5800a; border-color: rgba(212, 160, 23, 0.2);">${childRace}</span>
+                                        </div>
+                                        <button class="delete-hybrid-btn" data-key="${key}" title="Supprimer cet hybride">&times;</button>`;
+                        hybridList.appendChild(li);
+                        processedKeys.add(sortedKey);
+                    }
+                }
+                
+                // Populate select options
+                const optionsHTML = allRaces.map(r => `<option value="${r}">${r}</option>`).join('');
+                parentASelect.innerHTML = `<option value="">Parent 1</option>${optionsHTML}`;
+                parentBSelect.innerHTML = `<option value="">Parent 2</option>${optionsHTML}`;
+                childRaceSelect.innerHTML = `<option value="">Enfant</option>${optionsHTML}`;
+            }
+
+            function addHybrid() {
+                const parentA = parentASelect.value;
+                const parentB = parentBSelect.value;
+                const childRace = childRaceSelect.value;
+
+                if (!parentA || !parentB || !childRace) {
+                    alert("Veuillez sélectionner les deux parents et la race enfant.");
+                    return;
+                }
+                if (parentA === parentB) {
+                    alert("Les deux parents ne peuvent pas être de la même race pour définir un hybride.");
+                    return;
+                }
+
+                const key1 = `${parentA}-${parentB}`;
+                const key2 = `${parentB}-${parentA}`;
+                
+                if (!ecoSimData.racesMixtes) ecoSimData.racesMixtes = {};
+                
+                ecoSimData.racesMixtes[key1] = childRace;
+                ecoSimData.racesMixtes[key2] = childRace;
+                
+                saveAndRedraw(true); // Redraw nav to update colors
+            }
+
+            function deleteHybrid(key) {
+                if(!ecoSimData.racesMixtes) return;
+                const [p1, p2] = key.split('-');
+                const key1 = `${p1}-${p2}`;
+                const key2 = `${p2}-${p1}`;
+                delete ecoSimData.racesMixtes[key1];
+                delete ecoSimData.racesMixtes[key2];
+                saveAndRedraw(true); // Redraw nav to update colors
+            }
+
+
+            // --- Analyse en Temps Réel ---
+            function updateAnalysis() {
+                let html = '<ul>';
+                if (!ecoSimData || !ecoSimData.compatibilites) {
+                    analysisOutput.innerHTML = '<p>Données de compatibilité non trouvées.</p>';
+                    return;
+                }
+                const { races, compatibilites, racesMixtes } = ecoSimData;
+
+                for (const raceA in compatibilites) {
+                    const partners = compatibilites[raceA];
+                    partners.forEach(raceB => {
+                        const partnersOfB = compatibilites[raceB];
+                        const mixedRaceKey1 = `${raceA}-${raceB}`;
+                        const mixedRaceKey2 = `${raceB}-${raceA}`;
+
+                        if (!partnersOfB || !partnersOfB.includes(raceA)) {
+                            html += `<li class="analysis-error"><b>Non-réciproque:</b> ${raceA} est compatible avec ${raceB}, mais ${raceB} ne l'est pas avec ${raceA}.</li>`;
+                        } 
+                        else if (racesMixtes && (racesMixtes[mixedRaceKey1] || racesMixtes[mixedRaceKey2])) {
+                            const mixedRace = racesMixtes[mixedRaceKey1] || racesMixtes[mixedRaceKey2];
+                            if (races[mixedRace]) {
+                                 html += `<li class="analysis-ok"><b>Reproduction OK:</b> ${raceA} &harr; ${raceB} &rarr; ${mixedRace} (défini et existe).</li>`;
+                            } else {
+                                 html += `<li class="analysis-error"><b>Race Mixte Manquante:</b> La reproduction entre ${raceA} et ${raceB} devrait produire "${mixedRace}", mais cette race n'existe pas dans la base.</li>`;
+                            }
+                        }
+                        else {
+                            html += `<li class="analysis-warning"><b>Race Mixte Non Définie:</b> ${raceA} et ${raceB} sont compatibles, mais aucune race mixte n'est définie dans \`racesMixtes\`.</li>`;
+                        }
+                    });
+                }
+                html += '</ul>';
+                analysisOutput.innerHTML = html;
+            }
+
+            // --- Initialisation ---
+            function init() {
+                if (window.EcoSimData && window.EcoSimData.racesData) {
+                    originalData = deepClone(window.EcoSimData.racesData);
+                    
+                    const savedData = localStorage.getItem(CUSTOM_RACES_STORAGE_KEY);
+                    if (savedData) {
+                        console.log("Données de races personnalisées trouvées, chargement...");
+                        ecoSimData = JSON.parse(savedData);
+                    } else {
+                        ecoSimData = window.EcoSimData.racesData;
+                    }
+
+                    addRaceBtn.addEventListener('click', addRace);
+                    resetAllBtn.addEventListener('click', resetData);
+                    
+                    importDataBtn.addEventListener('click', () => jsonUploadInput.click());
+                    jsonUploadInput.addEventListener('change', handleFileUpload);
+                    downloadJsonBtn.addEventListener('click', downloadJSON);
+
+                    openManageModalBtn.addEventListener('click', () => manageDataModal.style.display = 'flex');
+                    manageModalCloseBtn.addEventListener('click', () => manageDataModal.style.display = 'none');
+
+                    // NOUVEAUX LISTENERS POUR LES HYBRIDES
+                    addHybridBtn.addEventListener('click', addHybrid);
+                    hybridList.addEventListener('click', (e) => {
+                        if (e.target.classList.contains('delete-hybrid-btn')) {
+                            deleteHybrid(e.target.dataset.key);
+                        }
+                    });
+
+
+                    renderNavigation();
+                    updateAnalysis();
+                    renderHybridManagement(); // Appel initial
+                } else {
+                    placeholder.innerHTML = "<h2>Erreur</h2><p>Le fichier <strong>races.js</strong> est manquant ou l'objet <strong>EcoSimData.racesData</strong> est introuvable.</p>";
+                }
+            }
+            
+            init();
+        });
+    </script>
 
 </body>
 </html>
