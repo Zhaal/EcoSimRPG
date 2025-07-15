@@ -2,9 +2,9 @@
 /**
  * EcoSimRPG - step5.js
  * Page d'exploitation et d'impression des données de simulation.
- * VERSION 13.7 - MODIFICATION : Changement du format d'affichage pour les noms des femmes mariées.
- * - Le format est maintenant : "Prénom NOMMARI (née NOMDEJEUNEFILE)".
- * - La fonction `getFormattedNameHTML` a été mise à jour pour refléter ce changement.
+ * VERSION 13.8 - MODIFICATION : Intégration des bonus de caractéristiques raciaux.
+ * - La fonction `getDisplayStats` ajoute maintenant les bonus définis dans `races.js`
+ * - aux scores de base avant d'appliquer les modificateurs d'âge et de genre.
  */
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -216,12 +216,31 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             return finalStats;
         }
-
+    
         let modifiedScores = {};
         for (const stat in person.stats) {
             modifiedScores[stat] = convertToDnD(person.stats[stat] || 1).score;
         }
-
+    
+        // Appliquer les bonus de caractéristiques raciaux
+        if (raceData.bonusCarac) {
+            const bonusMapping = {
+                'Force': 'force',
+                'Dextérité': 'dexterite',
+                'Constitution': 'constitution',
+                'Intelligence': 'intelligence',
+                'Sagesse': 'sagesse',
+                'Charisme': 'charisme'
+            };
+    
+            for (const statName in raceData.bonusCarac) {
+                const mappedStat = bonusMapping[statName];
+                if (mappedStat && typeof modifiedScores[mappedStat] === 'number') {
+                    modifiedScores[mappedStat] += raceData.bonusCarac[statName];
+                }
+            }
+        }
+    
         const isChildOrTeen = person.age < raceData.ageTravail;
         if (isChildOrTeen) {
             if (person.age < raceData.ageApprentissage) {
@@ -242,18 +261,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         }
-
+    
         if (person.gender === 'Femme') {
             modifiedScores.force -= 2;
             modifiedScores.constitution -= 1;
             modifiedScores.dexterite += 1;
             modifiedScores.charisme += 2;
         }
-
+    
         const middleAgeThreshold = raceData.esperanceVieMax * 0.5;
         const oldAgeThreshold = raceData.esperanceVieMax * 0.7;
         const veryOldAgeThreshold = raceData.esperanceVieMax * 0.85;
-
+    
         if (person.age > veryOldAgeThreshold) {
             modifiedScores.force -= 4;
             modifiedScores.dexterite -= 4;
@@ -269,7 +288,7 @@ document.addEventListener('DOMContentLoaded', () => {
             modifiedScores.force -= 1;
             modifiedScores.constitution -= 1;
         }
-
+    
         let finalScores = {};
         for (const stat in modifiedScores) {
             finalScores[stat] = Math.max(1, modifiedScores[stat]);

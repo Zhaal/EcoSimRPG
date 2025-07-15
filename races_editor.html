@@ -128,27 +128,26 @@
         .modal-content .button-group { justify-content: flex-end; }
         .hidden { display: none; }
 
-        .tag-widget, .keyvalue-widget {
+        .tag-widget {
             border: 1px solid var(--color-border); border-radius: 5px; padding: 1em;
             background-color: #fdfaf2;
         }
-        .tag-list-container, .kv-list-container { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
-        .tag-item, .kv-item {
+        .tag-list-container { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+        .tag-item {
             display: flex; align-items: center; gap: 8px;
             background-color: #e8e0c9; padding: 5px 10px;
             border-radius: 15px; font-size: 0.9em;
         }
-        .kv-item { border-radius: 5px; width: 100%; }
-        .kv-item input { width: auto; flex-grow: 1; }
+        .add-item-form { display: flex; gap: 10px; margin-top: 10px; }
+        .add-item-form input, .add-item-form select { flex-grow: 1; }
+
         .delete-btn {
             cursor: pointer; background-color: var(--color-error); color: white;
             border: none; border-radius: 50%; width: 20px; height: 20px;
             display: inline-flex; justify-content: center; align-items: center;
             font-weight: bold; line-height: 1;
         }
-        .add-item-form { display: flex; gap: 10px; margin-top: 10px; }
-        .add-item-form input, .add-item-form select { flex-grow: 1; }
-
+        
         #export-modal textarea {
             width: 100%; height: 250px; background-color: #fff; color: var(--color-dark-text);
             border: 1px solid var(--color-border); border-radius: 4px;
@@ -311,6 +310,29 @@
             border-radius: 15px;
             font-size: 0.95em;
             border: 1px solid #b39ddb;
+        }
+
+        /* Styles pour le widget de bonus (kv = key-value) */
+        .keyvalue-widget {
+            border: 1px solid var(--color-border); border-radius: 5px; padding: 1em;
+            background-color: #fdfaf2;
+        }
+        .kv-list-container {
+             display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px;
+        }
+        .kv-item {
+            display: flex; align-items: center; gap: 10px;
+            background-color: #e8e0c9; padding: 8px;
+            border-radius: 5px; font-size: 0.9em;
+        }
+        .kv-item .kv-key {
+            font-weight: bold;
+            flex-basis: 120px;
+            flex-shrink: 0;
+        }
+         .kv-item .kv-value {
+            flex-grow: 1;
+            width: 60px;
         }
 
         /* Analyse des compatibilités */
@@ -558,6 +580,9 @@
         document.addEventListener('DOMContentLoaded', () => {
             // === CONSTANTES ===
             const CUSTOM_RACES_STORAGE_KEY = 'ecoSimRPG_races_custom';
+            // MODIFICATION: Ajout de la liste des caractéristiques D&D
+            const DND_CHARACTERISTICS = ["Force", "Dextérité", "Constitution", "Intelligence", "Sagesse", "Charisme"];
+
 
             // --- DOM Elements ---
             const treeContainer = document.getElementById('tree-container');
@@ -658,7 +683,7 @@
                                 renderNavigation();
                                 displayRaceForm();
                                 updateAnalysis();
-                                renderHybridManagement(); // NOUVEAU
+                                renderHybridManagement();
                                 saveCustomRacesToStorage();
                                 alert('Données de races chargées !');
                             }
@@ -677,7 +702,6 @@
             // --- Rendu de l'UI ---
             function renderNavigation() {
                 treeContainer.innerHTML = '';
-                // --- MODIFIÉ POUR LA COULEUR DES RACES ---
                 const hybridRaces = new Set(ecoSimData.racesMixtes ? Object.values(ecoSimData.racesMixtes) : []);
 
                 Object.keys(ecoSimData.races).sort().forEach(raceName => {
@@ -741,6 +765,11 @@
                     </fieldset>
 
                     <fieldset>
+                        <legend>Bonus de Caractéristiques</legend>
+                        ${createBonusWidget(raceData.bonusCarac || {})}
+                    </fieldset>
+
+                    <fieldset>
                         <legend>Noms et Prénoms</legend>
                         <div class="grid-3 names-container">
                             ${createNameListWidget('prenomsM', 'Prénoms Masculins', raceData.prenomsM)}
@@ -763,6 +792,39 @@
                 raceForm.style.display = 'flex';
                 addFormEventListeners();
             }
+
+            // === BLOC DE FONCTION MODIFIÉ ===
+            function createBonusWidget(bonuses) {
+                const bonusItems = Object.entries(bonuses).map(([key, value]) => `
+                    <div class="kv-item" data-key="${key}">
+                        <span class="kv-key">${key}</span>
+                        <input type="number" class="kv-value" value="${value}">
+                        <button type="button" class="delete-btn" title="Supprimer ce bonus">x</button>
+                    </div>`).join('');
+                
+                const appliedBonuses = Object.keys(bonuses);
+                const availableOptions = DND_CHARACTERISTICS
+                    .filter(char => !appliedBonuses.includes(char))
+                    .map(char => `<option value="${char}">${char}</option>`)
+                    .join('');
+
+                const selectElement = `<select id="new-bonus-key" ${availableOptions ? '' : 'disabled'}>${availableOptions}</select>`;
+                
+                const formContent = availableOptions.length > 0
+                    ? `${selectElement}
+                       <input type="number" id="new-bonus-value" placeholder="Valeur" value="1" style="max-width: 80px;">
+                       <button type="button" class="btn btn-secondary add-btn">Ajouter</button>`
+                    : `<span style="flex-grow:1; text-align:center; font-style:italic; color:#888;">Toutes les caractéristiques sont assignées.</span>`;
+
+                return `<div id="bonus-widget" class="keyvalue-widget">
+                    <div class="kv-list-container">${bonusItems}</div>
+                    <div class="add-item-form">
+                        ${formContent}
+                    </div>
+                </div>`;
+            }
+            // === FIN DU BLOC DE FONCTION MODIFIÉ ===
+
 
             function createNameListWidget(id, title, names) {
                 return `
@@ -801,7 +863,49 @@
 
                 document.getElementById('delete-race-btn').addEventListener('click', deleteRace);
                 
-                // Listeners pour le widget de compatibilité
+                const bonusWidget = document.getElementById('bonus-widget');
+                if (bonusWidget) {
+                    const addBtn = bonusWidget.querySelector('.add-btn');
+                    if(addBtn) { // Le bouton peut ne pas exister si tous les bonus sont assignés
+                         addBtn.addEventListener('click', () => {
+                            const keyInput = document.getElementById('new-bonus-key');
+                            const valueInput = document.getElementById('new-bonus-value');
+                            const key = keyInput.value.trim();
+                            const value = parseInt(valueInput.value, 10);
+
+                            if (key && !isNaN(value)) {
+                                if (!ecoSimData.races[selectedRaceName].bonusCarac) {
+                                    ecoSimData.races[selectedRaceName].bonusCarac = {};
+                                }
+                                ecoSimData.races[selectedRaceName].bonusCarac[key] = value;
+                                saveAndRedraw();
+                            } else {
+                                alert("Veuillez entrer une valeur numérique valide pour le bonus.");
+                            }
+                        });
+                    }
+
+                    bonusWidget.querySelector('.kv-list-container').addEventListener('click', (e) => {
+                        if (e.target.classList.contains('delete-btn')) {
+                            const item = e.target.closest('.kv-item');
+                            const key = item.dataset.key;
+                            delete ecoSimData.races[selectedRaceName].bonusCarac[key];
+                            saveAndRedraw();
+                        }
+                    });
+                     bonusWidget.querySelector('.kv-list-container').addEventListener('input', (e) => {
+                        if (e.target.classList.contains('kv-value')) {
+                             const item = e.target.closest('.kv-item');
+                             const key = item.dataset.key;
+                             const newValue = parseInt(e.target.value, 10);
+                             if (!isNaN(newValue)) {
+                                ecoSimData.races[selectedRaceName].bonusCarac[key] = newValue;
+                                saveCustomRacesToStorage();
+                             }
+                        }
+                    });
+                }
+                
                 const compatWidget = document.getElementById('compatibilites-widget');
                 compatWidget.querySelector('.add-btn').addEventListener('click', (e) => {
                     const select = e.target.previousElementSibling;
@@ -833,25 +937,25 @@
             function handleFormChange(event) {
                 if (!selectedRaceName) return;
 
+                if (event.target.closest('#bonus-widget') || event.target.closest('#compatibilites-widget')) {
+                    return;
+                }
+
                 const raceData = ecoSimData.races[selectedRaceName];
                 
-                // Gérer le renommage de la race
                 const newName = document.getElementById('raceName').value.trim();
                 if (newName && newName !== selectedRaceName) {
                     if (ecoSimData.races[newName]) {
                         alert(`La race "${newName}" existe déjà !`);
-                        document.getElementById('raceName').value = selectedRaceName; // Annuler
+                        document.getElementById('raceName').value = selectedRaceName;
                         return;
                     }
                     
-                    // --- MISE À JOUR POUR LE RENOMMAGE ---
                     const oldName = selectedRaceName;
                     
-                    // 1. Mettre à jour l'objet 'races'
                     Object.defineProperty(ecoSimData.races, newName, Object.getOwnPropertyDescriptor(ecoSimData.races, oldName));
                     delete ecoSimData.races[oldName];
                     
-                    // 2. Mettre à jour l'objet 'compatibilites'
                     if (ecoSimData.compatibilites[oldName]) {
                         Object.defineProperty(ecoSimData.compatibilites, newName, Object.getOwnPropertyDescriptor(ecoSimData.compatibilites, oldName));
                         delete ecoSimData.compatibilites[oldName];
@@ -864,7 +968,6 @@
                         }
                     }
 
-                    // 3. Mettre à jour l'objet 'racesMixtes'
                     const newRacesMixtes = {};
                     for(const key in ecoSimData.racesMixtes) {
                         let [p1, p2] = key.split('-');
@@ -880,18 +983,16 @@
                     ecoSimData.racesMixtes = newRacesMixtes;
                     
                     selectedRaceName = newName;
-                    saveAndRedraw(true); // Redessiner la navigation et les autres panneaux
+                    saveAndRedraw(true);
                     return; 
                 }
 
-                // Mettre à jour les données numériques
                 raceData.ageAdulte = parseInt(document.getElementById('ageAdulte').value) || 0;
                 raceData.esperanceVieMax = parseInt(document.getElementById('esperanceVieMax').value) || 0;
                 raceData.dureeGestationMois = parseInt(document.getElementById('dureeGestationMois').value) || 0;
                 raceData.ageApprentissage = parseInt(document.getElementById('ageApprentissage').value) || 0;
                 raceData.ageTravail = parseInt(document.getElementById('ageTravail').value) || 0;
                 
-                // Mettre à jour les listes de noms
                 raceData.prenomsM = document.getElementById('prenomsM').value.split('\n').map(n => n.trim()).filter(Boolean);
                 raceData.prenomsF = document.getElementById('prenomsF').value.split('\n').map(n => n.trim()).filter(Boolean);
                 raceData.noms = document.getElementById('noms').value.split('\n').map(n => n.trim()).filter(Boolean);
@@ -912,7 +1013,6 @@
             function addRace() {
                 const newRaceName = prompt("Entrez le nom de la nouvelle race :");
                 if (newRaceName && !ecoSimData.races[newRaceName]) {
-                    // --- MODIFIÉ POUR L'AJOUT DE NOMS ALÉATOIRES ---
                     const allNames = getAllNames(ecoSimData);
                     const randomPrenomsM = pickRandomNames(allNames.prenomsM, 10);
                     const randomPrenomsF = pickRandomNames(allNames.prenomsF, 10);
@@ -923,7 +1023,8 @@
                         prenomsF: randomPrenomsF, 
                         noms: randomNoms,
                         ageAdulte: 18, esperanceVieMax: 80, dureeGestationMois: 9,
-                        ageApprentissage: 4, ageTravail: 14
+                        ageApprentissage: 4, ageTravail: 14,
+                        bonusCarac: {}
                     };
                     ecoSimData.compatibilites[newRaceName] = [];
                     selectedRaceName = newRaceName;
@@ -937,10 +1038,8 @@
                 if (confirm(`Êtes-vous sûr de vouloir supprimer la race "${selectedRaceName}" ?\nCela la supprimera aussi des compatibilités et des définitions d'hybrides.`)) {
                     const raceToDelete = selectedRaceName;
                     
-                    // Supprimer de 'races'
                     delete ecoSimData.races[raceToDelete];
                     
-                    // Supprimer de 'compatibilites'
                     delete ecoSimData.compatibilites[raceToDelete];
                     for (const key in ecoSimData.compatibilites) {
                         const compatList = ecoSimData.compatibilites[key];
@@ -948,7 +1047,6 @@
                         if (index > -1) compatList.splice(index, 1);
                     }
 
-                    // Supprimer de 'racesMixtes'
                     const newRacesMixtes = {};
                     for(const key in ecoSimData.racesMixtes) {
                         let [p1, p2] = key.split('-');
@@ -987,7 +1085,6 @@
 
                         const childRace = ecoSimData.racesMixtes[key];
                         const li = document.createElement('li');
-                        // Le HTML généré est toujours le même, seul le CSS change
                         li.innerHTML = `<div class="hybrid-formula">
                                             <span class="race-name">${p1}</span>
                                             <span class="operator">+</span>
@@ -1001,7 +1098,6 @@
                     }
                 }
                 
-                // Populate select options
                 const optionsHTML = allRaces.map(r => `<option value="${r}">${r}</option>`).join('');
                 parentASelect.innerHTML = `<option value="">Parent 1</option>${optionsHTML}`;
                 parentBSelect.innerHTML = `<option value="">Parent 2</option>${optionsHTML}`;
@@ -1030,7 +1126,7 @@
                 ecoSimData.racesMixtes[key1] = childRace;
                 ecoSimData.racesMixtes[key2] = childRace;
                 
-                saveAndRedraw(true); // Redraw nav to update colors
+                saveAndRedraw(true);
             }
 
             function deleteHybrid(key) {
@@ -1040,7 +1136,7 @@
                 const key2 = `${p2}-${p1}`;
                 delete ecoSimData.racesMixtes[key1];
                 delete ecoSimData.racesMixtes[key2];
-                saveAndRedraw(true); // Redraw nav to update colors
+                saveAndRedraw(true);
             }
 
 
@@ -1103,7 +1199,6 @@
                     openManageModalBtn.addEventListener('click', () => manageDataModal.style.display = 'flex');
                     manageModalCloseBtn.addEventListener('click', () => manageDataModal.style.display = 'none');
 
-                    // NOUVEAUX LISTENERS POUR LES HYBRIDES
                     addHybridBtn.addEventListener('click', addHybrid);
                     hybridList.addEventListener('click', (e) => {
                         if (e.target.classList.contains('delete-hybrid-btn')) {
@@ -1114,7 +1209,7 @@
 
                     renderNavigation();
                     updateAnalysis();
-                    renderHybridManagement(); // Appel initial
+                    renderHybridManagement();
                 } else {
                     placeholder.innerHTML = "<h2>Erreur</h2><p>Le fichier <strong>races.js</strong> est manquant ou l'objet <strong>EcoSimData.racesData</strong> est introuvable.</p>";
                 }

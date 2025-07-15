@@ -3,7 +3,7 @@
 var EcoSimData = window.EcoSimData || {};
 
 EcoSimData.racesData = {
-    "races": {
+      "races": {
         "Humain": {
             "prenomsM": [
                 "Gareth",
@@ -220,7 +220,15 @@ EcoSimData.racesData = {
             "esperanceVieMax": 80,
             "dureeGestationMois": 9,
             "ageApprentissage": 4,
-            "ageTravail": 14
+            "ageTravail": 14,
+            "bonusCarac": {
+                "Force": 1,
+                "Dextérité": 1,
+                "Constitution": 1,
+                "Intelligence": 1,
+                "Sagesse": 1,
+                "Charisme": 1
+            }
         },
         "Elfe": {
             "prenomsM": [
@@ -438,7 +446,10 @@ EcoSimData.racesData = {
             "esperanceVieMax": 750,
             "dureeGestationMois": 18,
             "ageApprentissage": 4,
-            "ageTravail": 18
+            "ageTravail": 18,
+            "bonusCarac": {
+                "Dextérité": 2
+            }
         },
         "Demi-Elfe": {
             "prenomsM": [
@@ -658,7 +669,10 @@ EcoSimData.racesData = {
             "esperanceVieMax": 180,
             "dureeGestationMois": 12,
             "ageApprentissage": 4,
-            "ageTravail": 16
+            "ageTravail": 16,
+            "bonusCarac": {
+                "Charisme": 2
+            }
         },
         "Orc": {
             "prenomsM": [
@@ -879,7 +893,12 @@ EcoSimData.racesData = {
             "esperanceVieMax": 60,
             "dureeGestationMois": 6,
             "ageApprentissage": 3,
-            "ageTravail": 8
+            "ageTravail": 8,
+            "bonusCarac": {
+                "Force": 2,
+                "Constitution": 1,
+                "Intelligence": -2
+            }
         },
         "Demi-Orc": {
             "prenomsM": [
@@ -1101,7 +1120,11 @@ EcoSimData.racesData = {
             "esperanceVieMax": 70,
             "dureeGestationMois": 8,
             "ageApprentissage": 3,
-            "ageTravail": 10
+            "ageTravail": 10,
+            "bonusCarac": {
+                "Force": 2,
+                "Constitution": 1
+            }
         },
         "Nain": {
             "prenomsM": [
@@ -1320,7 +1343,10 @@ EcoSimData.racesData = {
             "esperanceVieMax": 350,
             "dureeGestationMois": 12,
             "ageApprentissage": 5,
-            "ageTravail": 12
+            "ageTravail": 12,
+            "bonusCarac": {
+                "Constitution": 2
+            }
         }
     },
     "compatibilites": {
