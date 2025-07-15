@@ -1278,7 +1278,7 @@ function applyDynasticTitles(ruler, population) {
                     if (parent && parent.job) {
                         const jobData = getJobData(parent.job.buildingName, parent.job.jobTitle);
                         if (jobData && jobData.gainsMensuels) {
-                            parentPrestigeGain += (jobData.gainsMensuels.prestige || 0) * 0.50;
+                            parentPrestigeGain += (jobData.gainsMensuels.prestige || 0) * 0.10;
                             for (const stat in jobData.gainsMensuels.stats) {
                                 parentStatGains[stat] += (jobData.gainsMensuels.stats[stat] || 0) * 0.50;
                             }
