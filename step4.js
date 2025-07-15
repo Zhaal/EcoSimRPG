@@ -1243,8 +1243,8 @@ function applyDynasticTitles(ruler, population) {
                     }
 
                     let workTimeMultiplier = 1.0;
-                    const WORK_DECAY_START_YEARS = 25;
-                    const WORK_CEASE_YEARS = 50;
+                    const WORK_DECAY_START_YEARS = 5;
+                    const WORK_CEASE_YEARS = 25;
                     const totalYearsWorked = (person.totalMonthsWorked || 0) / 12;
 
                     if (totalYearsWorked >= WORK_DECAY_START_YEARS) {
