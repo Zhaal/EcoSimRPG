@@ -1,4 +1,4 @@
-// Fichier généré par l'Éditeur EcoSim le 07/07/2025 21:07:28
+// Fichier généré par l'Éditeur EcoSim le 16/07/2025 20:04:53
 
 window.EcoSimData = window.EcoSimData || {};
 EcoSimData.buildings = EcoSimData.buildings || {};
@@ -7,24 +7,10 @@ EcoSimData.buildings['Bourg'] = {
     "Bâtiments Administratifs": {
         "Hôtel de Ville": {
             "description": "Centre névralgique du pouvoir administratif du bourg, où siège le conseil.",
-            "providesTags": [
-                "Administration"
-            ],
+            "providesTags": [],
             "requiresTags": {
-                "Sécurité": {
-                    "distance": 1
-                },
-                "Justice": {
-                    "distance": 1
-                },
-                "Finances Publiques": {
-                    "distance": 1
-                },
                 "Vêtements de Luxe": {
                     "distance": 4
-                },
-                "Divertissement de Qualité": {
-                    "distance": 3
                 }
             },
             "emplois": [
@@ -36,7 +22,7 @@ EcoSimData.buildings['Bourg'] = {
                         "totalEnCuivre": 615
                     },
                     "prerequis": {
-                        "prestige": 20
+                        "prestige": 200
                     },
                     "gainsMensuels": {
                         "prestige": 0.8,
@@ -59,7 +45,7 @@ EcoSimData.buildings['Bourg'] = {
                         "totalEnCuivre": 75
                     },
                     "prerequis": {
-                        "prestige": 10
+                        "prestige": 100
                     },
                     "gainsMensuels": {
                         "prestige": 0.5,
@@ -78,9 +64,7 @@ EcoSimData.buildings['Bourg'] = {
         },
         "Garde du Bourg": {
             "description": "Force de police professionnelle assurant la loi et l'ordre dans le bourg.",
-            "providesTags": [
-                "Sécurité"
-            ],
+            "providesTags": [],
             "requiresTags": {
                 "Armement de Qualité": {
                     "distance": 2
@@ -101,13 +85,13 @@ EcoSimData.buildings['Bourg'] = {
                         "totalEnCuivre": 95
                     },
                     "prerequis": {
-                        "prestige": 16
+                        "prestige": 160
                     },
                     "gainsMensuels": {
                         "prestige": 0.6,
                         "stats": {
                             "intelligence": 0.1,
-                            "force": 0.4,
+                            "force": 0.3,
                             "constitution": 0.3,
                             "dexterite": 0.2,
                             "sagesse": 0.1,
@@ -124,14 +108,14 @@ EcoSimData.buildings['Bourg'] = {
                         "totalEnCuivre": 65
                     },
                     "prerequis": {
-                        "prestige": 5
+                        "prestige": 50
                     },
                     "gainsMensuels": {
                         "prestige": 0.3,
                         "stats": {
                             "intelligence": 0.1,
                             "force": 0.3,
-                            "constitution": 0.4,
+                            "constitution": 0.2,
                             "dexterite": 0.2,
                             "sagesse": 0.1,
                             "charisme": 0.1
@@ -143,16 +127,8 @@ EcoSimData.buildings['Bourg'] = {
         },
         "Tribunal du Bourg": {
             "description": "Tribunal où sont réglés les litiges civils et criminels mineurs.",
-            "providesTags": [
-                "Justice"
-            ],
+            "providesTags": [],
             "requiresTags": {
-                "Administration": {
-                    "distance": 1
-                },
-                "Savoir Écrit": {
-                    "distance": 2
-                },
                 "Livres": {
                     "distance": 2
                 }
@@ -166,17 +142,17 @@ EcoSimData.buildings['Bourg'] = {
                         "totalEnCuivre": 105
                     },
                     "prerequis": {
-                        "prestige": 18
+                        "prestige": 180
                     },
                     "gainsMensuels": {
                         "prestige": 0.7,
                         "stats": {
-                            "intelligence": 0.4,
+                            "intelligence": 0.3,
                             "force": 0.1,
                             "constitution": 0.2,
                             "dexterite": 0.3,
-                            "sagesse": 0.4,
-                            "charisme": 0.4
+                            "sagesse": 0.2,
+                            "charisme": 0.3
                         }
                     },
                     "type": "mixte"
@@ -189,16 +165,16 @@ EcoSimData.buildings['Bourg'] = {
                         "totalEnCuivre": 70
                     },
                     "prerequis": {
-                        "prestige": 8
+                        "prestige": 80
                     },
                     "gainsMensuels": {
                         "prestige": 0.4,
                         "stats": {
-                            "intelligence": 0.4,
+                            "intelligence": 0.3,
                             "force": 0.1,
                             "constitution": 0.2,
                             "dexterite": 0.2,
-                            "sagesse": 0.4,
+                            "sagesse": 0.2,
                             "charisme": 0.3
                         }
                     },
@@ -208,20 +184,8 @@ EcoSimData.buildings['Bourg'] = {
         },
         "Bureau du Percepteur": {
             "description": "Collecte des taxes et gestion des finances publiques du bourg.",
-            "providesTags": [
-                "Finances Publiques"
-            ],
-            "requiresTags": {
-                "Administration": {
-                    "distance": 1
-                },
-                "Commerce": {
-                    "distance": 2
-                },
-                "Sécurité": {
-                    "distance": 1
-                }
-            },
+            "providesTags": [],
+            "requiresTags": {},
             "emplois": [
                 {
                     "tier": 3,
@@ -231,7 +195,7 @@ EcoSimData.buildings['Bourg'] = {
                         "totalEnCuivre": 80
                     },
                     "prerequis": {
-                        "prestige": 12
+                        "prestige": 120
                     },
                     "gainsMensuels": {
                         "prestige": 0.5,
@@ -239,9 +203,9 @@ EcoSimData.buildings['Bourg'] = {
                             "intelligence": 0.3,
                             "force": 0.1,
                             "constitution": 0.1,
-                            "dexterite": 0.3,
-                            "sagesse": 0.4,
-                            "charisme": 0.3
+                            "dexterite": 0.2,
+                            "sagesse": 0.3,
+                            "charisme": 0.2
                         }
                     },
                     "type": "mixte"
@@ -275,17 +239,17 @@ EcoSimData.buildings['Bourg'] = {
                         "totalEnCuivre": 110
                     },
                     "prerequis": {
-                        "prestige": 15
+                        "prestige": 150
                     },
                     "gainsMensuels": {
                         "prestige": 0.6,
                         "stats": {
                             "intelligence": 0.2,
-                            "force": 0.4,
-                            "constitution": 0.3,
-                            "dexterite": 0.4,
-                            "sagesse": 0.2,
-                            "charisme": 0.3
+                            "force": 0.3,
+                            "constitution": 0.2,
+                            "dexterite": 0.3,
+                            "sagesse": 0.1,
+                            "charisme": 0.2
                         }
                     },
                     "type": "mixte"
@@ -298,17 +262,17 @@ EcoSimData.buildings['Bourg'] = {
                         "totalEnCuivre": 70
                     },
                     "prerequis": {
-                        "prestige": 5
+                        "prestige": 50
                     },
                     "gainsMensuels": {
                         "prestige": 0.3,
                         "stats": {
-                            "intelligence": 0.3,
-                            "force": 0.4,
-                            "constitution": 0.4,
-                            "dexterite": 0.4,
+                            "intelligence": 0.2,
+                            "force": 0.2,
+                            "constitution": 0.2,
+                            "dexterite": 0.3,
                             "sagesse": 0.1,
-                            "charisme": 0.2
+                            "charisme": 0.1
                         }
                     },
                     "type": "mixte"
@@ -340,17 +304,17 @@ EcoSimData.buildings['Bourg'] = {
                         "totalEnCuivre": 90
                     },
                     "prerequis": {
-                        "prestige": 12
+                        "prestige": 120
                     },
                     "gainsMensuels": {
                         "prestige": 0.5,
                         "stats": {
-                            "intelligence": 0.3,
-                            "force": 0.2,
-                            "constitution": 0.3,
-                            "dexterite": 0.4,
-                            "sagesse": 0.3,
-                            "charisme": 0.3
+                            "intelligence": 0.2,
+                            "force": 0.1,
+                            "constitution": 0.2,
+                            "dexterite": 0.3,
+                            "sagesse": 0.1,
+                            "charisme": 0.2
                         }
                     },
                     "type": "mixte"
@@ -363,15 +327,15 @@ EcoSimData.buildings['Bourg'] = {
                         "totalEnCuivre": 65
                     },
                     "prerequis": {
-                        "prestige": 4
+                        "prestige": 40
                     },
                     "gainsMensuels": {
                         "prestige": 0.3,
                         "stats": {
                             "intelligence": 0.2,
                             "force": 0.1,
-                            "constitution": 0.3,
-                            "dexterite": 0.4,
+                            "constitution": 0.1,
+                            "dexterite": 0.3,
                             "sagesse": 0.1,
                             "charisme": 0.1
                         }
@@ -405,17 +369,17 @@ EcoSimData.buildings['Bourg'] = {
                         "totalEnCuivre": 85
                     },
                     "prerequis": {
-                        "prestige": 10
+                        "prestige": 100
                     },
                     "gainsMensuels": {
                         "prestige": 0.5,
                         "stats": {
-                            "intelligence": 0.4,
-                            "force": 0.3,
+                            "intelligence": 0.3,
+                            "force": 0.2,
                             "constitution": 0.2,
-                            "dexterite": 0.4,
-                            "sagesse": 0.3,
-                            "charisme": 0.3
+                            "dexterite": 0.3,
+                            "sagesse": 0.1,
+                            "charisme": 0.1
                         }
                     },
                     "type": "mixte"
@@ -428,13 +392,13 @@ EcoSimData.buildings['Bourg'] = {
                         "totalEnCuivre": 60
                     },
                     "prerequis": {
-                        "prestige": 3
+                        "prestige": 30
                     },
                     "gainsMensuels": {
                         "prestige": 0.2,
                         "stats": {
                             "intelligence": 0.1,
-                            "force": 0.3,
+                            "force": 0.2,
                             "constitution": 0.2,
                             "dexterite": 0.3,
                             "sagesse": 0.1,
@@ -476,16 +440,16 @@ EcoSimData.buildings['Bourg'] = {
                         "totalEnCuivre": 88
                     },
                     "prerequis": {
-                        "prestige": 9
+                        "prestige": 90
                     },
                     "gainsMensuels": {
                         "prestige": 0.5,
                         "stats": {
-                            "intelligence": 0.2,
+                            "intelligence": 0.1,
                             "force": 0.3,
-                            "constitution": 0.4,
-                            "dexterite": 0.3,
-                            "sagesse": 0.2,
+                            "constitution": 0.3,
+                            "dexterite": 0.2,
+                            "sagesse": 0.1,
                             "charisme": 0.2
                         }
                     },
@@ -535,16 +499,16 @@ EcoSimData.buildings['Bourg'] = {
                         "totalEnCuivre": 82
                     },
                     "prerequis": {
-                        "prestige": 10
+                        "prestige": 100
                     },
                     "gainsMensuels": {
                         "prestige": 0.5,
                         "stats": {
-                            "intelligence": 0.3,
+                            "intelligence": 0.2,
                             "force": 0.2,
-                            "constitution": 0.4,
-                            "dexterite": 0.3,
-                            "sagesse": 0.2,
+                            "constitution": 0.3,
+                            "dexterite": 0.1,
+                            "sagesse": 0.1,
                             "charisme": 0.2
                         }
                     },
@@ -604,15 +568,15 @@ EcoSimData.buildings['Bourg'] = {
                         "totalEnCuivre": 100
                     },
                     "prerequis": {
-                        "prestige": 14
+                        "prestige": 140
                     },
                     "gainsMensuels": {
                         "prestige": 0.6,
                         "stats": {
                             "intelligence": 0.2,
                             "force": 0.3,
-                            "constitution": 0.4,
-                            "dexterite": 0.3,
+                            "constitution": 0.3,
+                            "dexterite": 0.2,
                             "sagesse": 0.2,
                             "charisme": 0.1
                         }
@@ -643,16 +607,16 @@ EcoSimData.buildings['Bourg'] = {
                         "totalEnCuivre": 95
                     },
                     "prerequis": {
-                        "prestige": 13
+                        "prestige": 130
                     },
                     "gainsMensuels": {
                         "prestige": 0.6,
                         "stats": {
-                            "intelligence": 0.3,
+                            "intelligence": 0.2,
                             "force": 0.1,
-                            "constitution": 0.3,
-                            "dexterite": 0.5,
-                            "sagesse": 0.2,
+                            "constitution": 0.1,
+                            "dexterite": 0.4,
+                            "sagesse": 0.1,
                             "charisme": 0.2
                         }
                     },
@@ -674,12 +638,6 @@ EcoSimData.buildings['Bourg'] = {
                 },
                 "Pierres Taillées": {
                     "distance": 5
-                },
-                "Sécurité": {
-                    "distance": 1
-                },
-                "Finances Privées": {
-                    "distance": 2
                 }
             },
             "emplois": [
@@ -691,17 +649,17 @@ EcoSimData.buildings['Bourg'] = {
                         "totalEnCuivre": 110
                     },
                     "prerequis": {
-                        "prestige": 16
+                        "prestige": 160
                     },
                     "gainsMensuels": {
                         "prestige": 0.7,
                         "stats": {
-                            "intelligence": 0.3,
-                            "force": 0.2,
-                            "constitution": 0.2,
-                            "dexterite": 0.5,
-                            "sagesse": 0.2,
-                            "charisme": 0.3
+                            "intelligence": 0.2,
+                            "force": 0.1,
+                            "constitution": 0.1,
+                            "dexterite": 0.4,
+                            "sagesse": 0.1,
+                            "charisme": 0.2
                         }
                     },
                     "type": "mixte"
@@ -714,17 +672,17 @@ EcoSimData.buildings['Bourg'] = {
                         "totalEnCuivre": 70
                     },
                     "prerequis": {
-                        "prestige": 6
+                        "prestige": 60
                     },
                     "gainsMensuels": {
                         "prestige": 0.3,
                         "stats": {
-                            "intelligence": 0.3,
+                            "intelligence": 0.2,
                             "force": 0.1,
-                            "constitution": 0.3,
-                            "dexterite": 0.4,
-                            "sagesse": 0.2,
-                            "charisme": 0.2
+                            "constitution": 0.2,
+                            "dexterite": 0.3,
+                            "sagesse": 0.1,
+                            "charisme": 0.1
                         }
                     },
                     "type": "mixte"
@@ -750,16 +708,16 @@ EcoSimData.buildings['Bourg'] = {
                         "totalEnCuivre": 72
                     },
                     "prerequis": {
-                        "prestige": 7
+                        "prestige": 70
                     },
                     "gainsMensuels": {
                         "prestige": 0.3,
                         "stats": {
-                            "intelligence": 0.2,
-                            "force": 0.2,
-                            "constitution": 0.3,
-                            "dexterite": 0.5,
-                            "sagesse": 0.3,
+                            "intelligence": 0.1,
+                            "force": 0.1,
+                            "constitution": 0.2,
+                            "dexterite": 0.4,
+                            "sagesse": 0.2,
                             "charisme": 0.1
                         }
                     },
@@ -773,16 +731,16 @@ EcoSimData.buildings['Bourg'] = {
                         "totalEnCuivre": 50
                     },
                     "prerequis": {
-                        "prestige": 2
+                        "prestige": 20
                     },
                     "gainsMensuels": {
                         "prestige": 0.1,
                         "stats": {
-                            "intelligence": 0.3,
+                            "intelligence": 0.1,
                             "force": 0.2,
-                            "constitution": 0.4,
-                            "dexterite": 0.4,
-                            "sagesse": 0.2,
+                            "constitution": 0.2,
+                            "dexterite": 0.3,
+                            "sagesse": 0.1,
                             "charisme": 0.1
                         }
                     },
@@ -794,9 +752,7 @@ EcoSimData.buildings['Bourg'] = {
     "Bâtiments Indépendants": {
         "Hôtel des Voyageurs": {
             "description": "Grande auberge de qualité offrant chambres privées, un restaurant et une écurie.",
-            "providesTags": [
-                "Hébergement"
-            ],
+            "providesTags": [],
             "requiresTags": {
                 "Vin": {
                     "distance": 5
@@ -818,9 +774,6 @@ EcoSimData.buildings['Bourg'] = {
                 },
                 "Fleurs": {
                     "distance": 3
-                },
-                "Sécurité": {
-                    "distance": 1
                 }
             },
             "emplois": [
@@ -832,17 +785,17 @@ EcoSimData.buildings['Bourg'] = {
                         "totalEnCuivre": 98
                     },
                     "prerequis": {
-                        "prestige": 13
+                        "prestige": 130
                     },
                     "gainsMensuels": {
                         "prestige": 0.5,
                         "stats": {
-                            "intelligence": 0.3,
-                            "force": 0.3,
+                            "intelligence": 0.2,
+                            "force": 0.2,
                             "constitution": 0.3,
-                            "dexterite": 0.3,
+                            "dexterite": 0.2,
                             "sagesse": 0.1,
-                            "charisme": 0.3
+                            "charisme": 0.2
                         }
                     },
                     "type": "mixte"
@@ -855,16 +808,16 @@ EcoSimData.buildings['Bourg'] = {
                         "totalEnCuivre": 60
                     },
                     "prerequis": {
-                        "prestige": 4
+                        "prestige": 40
                     },
                     "gainsMensuels": {
                         "prestige": 0.3,
                         "stats": {
-                            "intelligence": 0.2,
-                            "force": 0.3,
+                            "intelligence": 0.1,
+                            "force": 0.2,
                             "constitution": 0.2,
                             "dexterite": 0.2,
-                            "sagesse": 0.2,
+                            "sagesse": 0.1,
                             "charisme": 0.1
                         }
                     },
@@ -875,8 +828,7 @@ EcoSimData.buildings['Bourg'] = {
         "Laboratoire d'Alchimie": {
             "description": "Création de potions puissantes, de réactifs alchimiques et de transmutations mineures.",
             "providesTags": [
-                "Potions Complexes",
-                "Savoir Alchimique"
+                "Potions Complexes"
             ],
             "requiresTags": {
                 "Herbes Rares": {
@@ -887,9 +839,6 @@ EcoSimData.buildings['Bourg'] = {
                 },
                 "Champignons Rares": {
                     "distance": 10
-                },
-                "Sécurité": {
-                    "distance": 2
                 },
                 "Livres": {
                     "distance": 3
@@ -904,17 +853,17 @@ EcoSimData.buildings['Bourg'] = {
                         "totalEnCuivre": 115
                     },
                     "prerequis": {
-                        "prestige": 17
+                        "prestige": 170
                     },
                     "gainsMensuels": {
                         "prestige": 0.7,
                         "stats": {
-                            "intelligence": 0.5,
+                            "intelligence": 0.3,
                             "force": 0.1,
                             "constitution": 0.2,
-                            "dexterite": 0.3,
-                            "sagesse": 0.4,
-                            "charisme": 0.3
+                            "dexterite": 0.2,
+                            "sagesse": 0.3,
+                            "charisme": 0.2
                         }
                     },
                     "type": "mixte"
@@ -927,17 +876,17 @@ EcoSimData.buildings['Bourg'] = {
                         "totalEnCuivre": 68
                     },
                     "prerequis": {
-                        "prestige": 6
+                        "prestige": 60
                     },
                     "gainsMensuels": {
                         "prestige": 0.3,
                         "stats": {
-                            "intelligence": 0.4,
+                            "intelligence": 0.3,
                             "force": 0.1,
-                            "constitution": 0.2,
-                            "dexterite": 0.3,
-                            "sagesse": 0.3,
-                            "charisme": 0.2
+                            "constitution": 0.1,
+                            "dexterite": 0.2,
+                            "sagesse": 0.2,
+                            "charisme": 0.1
                         }
                     },
                     "type": "mixte"
@@ -946,21 +895,8 @@ EcoSimData.buildings['Bourg'] = {
         },
         "Guilde des Marchands": {
             "description": "Centre pour le commerce, les contrats de caravanes et la finance.",
-            "providesTags": [
-                "Commerce",
-                "Finances Privées"
-            ],
-            "requiresTags": {
-                "Sécurité": {
-                    "distance": 2
-                },
-                "Contrats": {
-                    "distance": 2
-                },
-                "Justice": {
-                    "distance": 2
-                }
-            },
+            "providesTags": [],
+            "requiresTags": {},
             "emplois": [
                 {
                     "tier": 2,
@@ -970,16 +906,16 @@ EcoSimData.buildings['Bourg'] = {
                         "totalEnCuivre": 110
                     },
                     "prerequis": {
-                        "prestige": 15
+                        "prestige": 150
                     },
                     "gainsMensuels": {
                         "prestige": 0.6,
                         "stats": {
-                            "intelligence": 0.4,
+                            "intelligence": 0.3,
                             "force": 0.2,
                             "constitution": 0.3,
                             "dexterite": 0.1,
-                            "sagesse": 0.3,
+                            "sagesse": 0.2,
                             "charisme": 0.1
                         }
                     },
@@ -993,7 +929,7 @@ EcoSimData.buildings['Bourg'] = {
                         "totalEnCuivre": 70
                     },
                     "prerequis": {
-                        "prestige": 5
+                        "prestige": 50
                     },
                     "gainsMensuels": {
                         "prestige": 0.3,
@@ -1012,13 +948,8 @@ EcoSimData.buildings['Bourg'] = {
         },
         "Théâtre du Bourg": {
             "description": "Lieu de divertissement proposant des pièces, des concerts et des spectacles.",
-            "providesTags": [
-                "Divertissement de Qualité"
-            ],
+            "providesTags": [],
             "requiresTags": {
-                "Sécurité": {
-                    "distance": 2
-                },
                 "Planches": {
                     "distance": 10
                 },
@@ -1038,17 +969,17 @@ EcoSimData.buildings['Bourg'] = {
                         "totalEnCuivre": 85
                     },
                     "prerequis": {
-                        "prestige": 10
+                        "prestige": 100
                     },
                     "gainsMensuels": {
                         "prestige": 0.5,
                         "stats": {
-                            "intelligence": 0.3,
-                            "force": 0.2,
-                            "constitution": 0.3,
-                            "dexterite": 0.4,
-                            "sagesse": 0.2,
-                            "charisme": 0.4
+                            "intelligence": 0.2,
+                            "force": 0.1,
+                            "constitution": 0.2,
+                            "dexterite": 0.3,
+                            "sagesse": 0.1,
+                            "charisme": 0.2
                         }
                     },
                     "type": "mixte"
@@ -1061,17 +992,17 @@ EcoSimData.buildings['Bourg'] = {
                         "totalEnCuivre": 58
                     },
                     "prerequis": {
-                        "prestige": 4
+                        "prestige": 40
                     },
                     "gainsMensuels": {
                         "prestige": 0.3,
                         "stats": {
                             "intelligence": 0.2,
-                            "force": 0.3,
-                            "constitution": 0.2,
-                            "dexterite": 0.4,
-                            "sagesse": 0.3,
-                            "charisme": 0.4
+                            "force": 0.1,
+                            "constitution": 0.1,
+                            "dexterite": 0.3,
+                            "sagesse": 0.2,
+                            "charisme": 0.2
                         }
                     },
                     "type": "mixte"
@@ -1081,13 +1012,9 @@ EcoSimData.buildings['Bourg'] = {
         "Bibliothèque & Scriptorium": {
             "description": "Un lieu de savoir où les scribes copient des manuscrits et où les érudits étudient.",
             "providesTags": [
-                "Savoir Écrit",
                 "Livres"
             ],
             "requiresTags": {
-                "Administration": {
-                    "distance": 3
-                },
                 "Cuir": {
                     "distance": 8
                 },
@@ -1104,16 +1031,16 @@ EcoSimData.buildings['Bourg'] = {
                         "totalEnCuivre": 75
                     },
                     "prerequis": {
-                        "prestige": 9
+                        "prestige": 90
                     },
                     "gainsMensuels": {
                         "prestige": 0.4,
                         "stats": {
-                            "intelligence": 0.5,
+                            "intelligence": 0.4,
                             "force": 0.1,
                             "constitution": 0.2,
                             "dexterite": 0.2,
-                            "sagesse": 0.5,
+                            "sagesse": 0.3,
                             "charisme": 0.1
                         }
                     },
@@ -1127,12 +1054,12 @@ EcoSimData.buildings['Bourg'] = {
                         "totalEnCuivre": 55
                     },
                     "prerequis": {
-                        "prestige": 3
+                        "prestige": 30
                     },
                     "gainsMensuels": {
                         "prestige": 0.2,
                         "stats": {
-                            "intelligence": 0.4,
+                            "intelligence": 0.3,
                             "force": 0.1,
                             "constitution": 0.2,
                             "dexterite": 0.2,
@@ -1161,13 +1088,13 @@ EcoSimData.buildings['Bourg'] = {
                         "totalEnCuivre": 65
                     },
                     "prerequis": {
-                        "prestige": 10
+                        "prestige": 100
                     },
                     "gainsMensuels": {
                         "prestige": 0.5,
                         "stats": {
-                            "intelligence": 0.3,
-                            "force": 0.2,
+                            "intelligence": 0.2,
+                            "force": 0.1,
                             "constitution": 0.2,
                             "dexterite": 0.3,
                             "sagesse": 0.1,
@@ -1184,15 +1111,15 @@ EcoSimData.buildings['Bourg'] = {
                         "totalEnCuivre": 40
                     },
                     "prerequis": {
-                        "prestige": 1
+                        "prestige": 10
                     },
                     "gainsMensuels": {
                         "prestige": 0.2,
                         "stats": {
                             "intelligence": 0.1,
-                            "force": 0.3,
-                            "constitution": 0.4,
-                            "dexterite": 0.3,
+                            "force": 0.2,
+                            "constitution": 0.3,
+                            "dexterite": 0.2,
                             "sagesse": 0.1,
                             "charisme": 0.1
                         }
@@ -1216,14 +1143,14 @@ EcoSimData.buildings['Bourg'] = {
                         "totalEnCuivre": 62
                     },
                     "prerequis": {
-                        "prestige": 9
+                        "prestige": 90
                     },
                     "gainsMensuels": {
                         "prestige": 0.4,
                         "stats": {
-                            "intelligence": 0.2,
-                            "force": 0.3,
-                            "constitution": 0.3,
+                            "intelligence": 0.1,
+                            "force": 0.1,
+                            "constitution": 0.2,
                             "dexterite": 0.2,
                             "sagesse": 0.2,
                             "charisme": 0.2
@@ -1234,7 +1161,7 @@ EcoSimData.buildings['Bourg'] = {
                 {
                     "tier": 5,
                     "titre": "Vendangeur",
-                    "postes": 10,
+                    "postes": 15,
                     "salaire": {
                         "totalEnCuivre": 35
                     },
@@ -1245,9 +1172,9 @@ EcoSimData.buildings['Bourg'] = {
                         "prestige": 0.1,
                         "stats": {
                             "intelligence": 0.1,
-                            "force": 0.3,
-                            "constitution": 0.3,
-                            "dexterite": 0.4,
+                            "force": 0.2,
+                            "constitution": 0.2,
+                            "dexterite": 0.3,
                             "sagesse": 0.1,
                             "charisme": 0.1
                         }
@@ -1279,17 +1206,17 @@ EcoSimData.buildings['Bourg'] = {
                         "totalEnCuivre": 75
                     },
                     "prerequis": {
-                        "prestige": 8
+                        "prestige": 80
                     },
                     "gainsMensuels": {
                         "prestige": 0.4,
                         "stats": {
                             "intelligence": 0.2,
                             "force": 0.1,
-                            "constitution": 0.3,
+                            "constitution": 0.2,
                             "dexterite": 0.3,
-                            "sagesse": 0.2,
-                            "charisme": 0.2
+                            "sagesse": 0.1,
+                            "charisme": 0.1
                         }
                     },
                     "type": "mixte"
@@ -1312,17 +1239,17 @@ EcoSimData.buildings['Bourg'] = {
                         "totalEnCuivre": 70
                     },
                     "prerequis": {
-                        "prestige": 10
+                        "prestige": 100
                     },
                     "gainsMensuels": {
                         "prestige": 0.5,
                         "stats": {
-                            "intelligence": 0.3,
-                            "force": 0.2,
-                            "constitution": 0.3,
-                            "dexterite": 0.2,
-                            "sagesse": 0.3,
-                            "charisme": 0.3
+                            "intelligence": 0.2,
+                            "force": 0.1,
+                            "constitution": 0.2,
+                            "dexterite": 0.1,
+                            "sagesse": 0.2,
+                            "charisme": 0.1
                         }
                     },
                     "type": "mixte"
@@ -1335,7 +1262,7 @@ EcoSimData.buildings['Bourg'] = {
                         "totalEnCuivre": 50
                     },
                     "prerequis": {
-                        "prestige": 3
+                        "prestige": 30
                     },
                     "gainsMensuels": {
                         "prestige": 0.3,
@@ -1372,17 +1299,17 @@ EcoSimData.buildings['Bourg'] = {
                         "totalEnCuivre": 85
                     },
                     "prerequis": {
-                        "prestige": 11
+                        "prestige": 110
                     },
                     "gainsMensuels": {
                         "prestige": 0.5,
                         "stats": {
-                            "intelligence": 0.3,
-                            "force": 0.3,
+                            "intelligence": 0.2,
+                            "force": 0.2,
                             "constitution": 0.3,
                             "dexterite": 0.2,
-                            "sagesse": 0.2,
-                            "charisme": 0.2
+                            "sagesse": 0.1,
+                            "charisme": 0.1
                         }
                     },
                     "type": "mixte"
@@ -1395,15 +1322,15 @@ EcoSimData.buildings['Bourg'] = {
                         "totalEnCuivre": 52
                     },
                     "prerequis": {
-                        "prestige": 2
+                        "prestige": 20
                     },
                     "gainsMensuels": {
                         "prestige": 0.2,
                         "stats": {
                             "intelligence": 0.1,
-                            "force": 0.3,
-                            "constitution": 0.3,
-                            "dexterite": 0.4,
+                            "force": 0.2,
+                            "constitution": 0.2,
+                            "dexterite": 0.3,
                             "sagesse": 0.1,
                             "charisme": 0.1
                         }
@@ -1429,7 +1356,7 @@ EcoSimData.buildings['Bourg'] = {
                         "totalEnCuivre": 75
                     },
                     "prerequis": {
-                        "prestige": 9
+                        "prestige": 90
                     },
                     "gainsMensuels": {
                         "prestige": 0.4,
@@ -1437,8 +1364,8 @@ EcoSimData.buildings['Bourg'] = {
                             "intelligence": 0.2,
                             "force": 0.2,
                             "constitution": 0.3,
-                            "dexterite": 0.3,
-                            "sagesse": 0.3,
+                            "dexterite": 0.2,
+                            "sagesse": 0.1,
                             "charisme": 0.1
                         }
                     },
@@ -1452,14 +1379,14 @@ EcoSimData.buildings['Bourg'] = {
                         "totalEnCuivre": 48
                     },
                     "prerequis": {
-                        "prestige": 2
+                        "prestige": 20
                     },
                     "gainsMensuels": {
                         "prestige": 0.2,
                         "stats": {
                             "intelligence": 0.1,
                             "force": 0.2,
-                            "constitution": 0.3,
+                            "constitution": 0.2,
                             "dexterite": 0.2,
                             "sagesse": 0.1,
                             "charisme": 0.1
@@ -1489,7 +1416,7 @@ EcoSimData.buildings['Bourg'] = {
                         "totalEnCuivre": 78
                     },
                     "prerequis": {
-                        "prestige": 8
+                        "prestige": 80
                     },
                     "gainsMensuels": {
                         "prestige": 0.4,
@@ -1525,16 +1452,16 @@ EcoSimData.buildings['Bourg'] = {
                         "totalEnCuivre": 68
                     },
                     "prerequis": {
-                        "prestige": 8
+                        "prestige": 80
                     },
                     "gainsMensuels": {
                         "prestige": 0.4,
                         "stats": {
                             "intelligence": 0.2,
-                            "force": 0.2,
+                            "force": 0.1,
                             "constitution": 0.3,
                             "dexterite": 0.3,
-                            "sagesse": 0.2,
+                            "sagesse": 0.1,
                             "charisme": 0.2
                         }
                     },
@@ -1548,7 +1475,7 @@ EcoSimData.buildings['Bourg'] = {
                         "totalEnCuivre": 45
                     },
                     "prerequis": {
-                        "prestige": 2
+                        "prestige": 20
                     },
                     "gainsMensuels": {
                         "prestige": 0.2,
@@ -1556,7 +1483,7 @@ EcoSimData.buildings['Bourg'] = {
                             "intelligence": 0.1,
                             "force": 0.2,
                             "constitution": 0.2,
-                            "dexterite": 0.3,
+                            "dexterite": 0.2,
                             "sagesse": 0.1,
                             "charisme": 0.1
                         }
@@ -1573,11 +1500,7 @@ EcoSimData.buildings['Bourg'] = {
                 "Gibier",
                 "Fourrures"
             ],
-            "requiresTags": {
-                "Sécurité": {
-                    "distance": 2
-                }
-            },
+            "requiresTags": {},
             "emplois": [
                 {
                     "tier": 3,
@@ -1587,17 +1510,17 @@ EcoSimData.buildings['Bourg'] = {
                         "totalEnCuivre": 80
                     },
                     "prerequis": {
-                        "prestige": 12
+                        "prestige": 120
                     },
                     "gainsMensuels": {
                         "prestige": 0.5,
                         "stats": {
-                            "intelligence": 0.3,
-                            "force": 0.3,
-                            "constitution": 0.4,
-                            "dexterite": 0.5,
-                            "sagesse": 0.3,
-                            "charisme": 0.2
+                            "intelligence": 0.2,
+                            "force": 0.2,
+                            "constitution": 0.3,
+                            "dexterite": 0.4,
+                            "sagesse": 0.2,
+                            "charisme": 0.1
                         }
                     },
                     "type": "mixte"
@@ -1605,21 +1528,21 @@ EcoSimData.buildings['Bourg'] = {
                 {
                     "tier": 4,
                     "titre": "Chasseur",
-                    "postes": 8,
+                    "postes": 10,
                     "salaire": {
                         "totalEnCuivre": 55
                     },
                     "prerequis": {
-                        "prestige": 5
+                        "prestige": 50
                     },
                     "gainsMensuels": {
                         "prestige": 0.3,
                         "stats": {
-                            "intelligence": 0.2,
-                            "force": 0.2,
-                            "constitution": 0.3,
-                            "dexterite": 0.5,
-                            "sagesse": 0.2,
+                            "intelligence": 0.1,
+                            "force": 0.1,
+                            "constitution": 0.2,
+                            "dexterite": 0.3,
+                            "sagesse": 0.1,
                             "charisme": 0.1
                         }
                     },
@@ -1651,11 +1574,11 @@ EcoSimData.buildings['Bourg'] = {
                     "gainsMensuels": {
                         "prestige": 0.4,
                         "stats": {
-                            "intelligence": 0.3,
-                            "force": 0.2,
-                            "constitution": 0.4,
-                            "dexterite": 0.4,
-                            "sagesse": 0.2,
+                            "intelligence": 0.2,
+                            "force": 0.1,
+                            "constitution": 0.3,
+                            "dexterite": 0.3,
+                            "sagesse": 0.1,
                             "charisme": 0.1
                         }
                     },
@@ -1669,17 +1592,17 @@ EcoSimData.buildings['Bourg'] = {
                         "totalEnCuivre": 40
                     },
                     "prerequis": {
-                        "prestige": 2
+                        "prestige": 20
                     },
                     "gainsMensuels": {
                         "prestige": 0.2,
                         "stats": {
-                            "intelligence": 0.2,
+                            "intelligence": 0.1,
                             "force": 0.2,
-                            "constitution": 0.3,
-                            "dexterite": 0.4,
-                            "sagesse": 0.3,
-                            "charisme": 0.2
+                            "constitution": 0.2,
+                            "dexterite": 0.3,
+                            "sagesse": 0.2,
+                            "charisme": 0.1
                         }
                     },
                     "type": "mixte"
@@ -1709,16 +1632,16 @@ EcoSimData.buildings['Bourg'] = {
                         "totalEnCuivre": 78
                     },
                     "prerequis": {
-                        "prestige": 8
+                        "prestige": 80
                     },
                     "gainsMensuels": {
                         "prestige": 0.4,
                         "stats": {
-                            "intelligence": 0.2,
-                            "force": 0.3,
-                            "constitution": 0.3,
-                            "dexterite": 0.4,
-                            "sagesse": 0.2,
+                            "intelligence": 0.1,
+                            "force": 0.2,
+                            "constitution": 0.2,
+                            "dexterite": 0.3,
+                            "sagesse": 0.1,
                             "charisme": 0.1
                         }
                     },
@@ -1732,16 +1655,16 @@ EcoSimData.buildings['Bourg'] = {
                         "totalEnCuivre": 45
                     },
                     "prerequis": {
-                        "prestige": 1
+                        "prestige": 10
                     },
                     "gainsMensuels": {
                         "prestige": 0.2,
                         "stats": {
                             "intelligence": 0.1,
-                            "force": 0.3,
-                            "constitution": 0.4,
-                            "dexterite": 0.4,
-                            "sagesse": 0.2,
+                            "force": 0.2,
+                            "constitution": 0.3,
+                            "dexterite": 0.3,
+                            "sagesse": 0.1,
                             "charisme": 0.1
                         }
                     },
@@ -1765,16 +1688,16 @@ EcoSimData.buildings['Bourg'] = {
                         "totalEnCuivre": 65
                     },
                     "prerequis": {
-                        "prestige": 9
+                        "prestige": 90
                     },
                     "gainsMensuels": {
                         "prestige": 0.4,
                         "stats": {
-                            "intelligence": 0.2,
-                            "force": 0.2,
-                            "constitution": 0.4,
-                            "dexterite": 0.4,
-                            "sagesse": 0.2,
+                            "intelligence": 0.1,
+                            "force": 0.1,
+                            "constitution": 0.3,
+                            "dexterite": 0.3,
+                            "sagesse": 0.1,
                             "charisme": 0.1
                         }
                     },
@@ -1788,16 +1711,16 @@ EcoSimData.buildings['Bourg'] = {
                         "totalEnCuivre": 42
                     },
                     "prerequis": {
-                        "prestige": 3
+                        "prestige": 30
                     },
                     "gainsMensuels": {
                         "prestige": 0.2,
                         "stats": {
-                            "intelligence": 0.2,
-                            "force": 0.2,
-                            "constitution": 0.3,
-                            "dexterite": 0.2,
-                            "sagesse": 0.2,
+                            "intelligence": 0.1,
+                            "force": 0.1,
+                            "constitution": 0.2,
+                            "dexterite": 0.1,
+                            "sagesse": 0.1,
                             "charisme": 0.1
                         }
                     },
@@ -1825,16 +1748,16 @@ EcoSimData.buildings['Bourg'] = {
                         "totalEnCuivre": 72
                     },
                     "prerequis": {
-                        "prestige": 10
+                        "prestige": 100
                     },
                     "gainsMensuels": {
                         "prestige": 0.5,
                         "stats": {
-                            "intelligence": 0.2,
-                            "force": 0.4,
-                            "constitution": 0.4,
-                            "dexterite": 0.3,
-                            "sagesse": 0.2,
+                            "intelligence": 0.1,
+                            "force": 0.3,
+                            "constitution": 0.3,
+                            "dexterite": 0.2,
+                            "sagesse": 0.1,
                             "charisme": 0.1
                         }
                     },
@@ -1848,16 +1771,16 @@ EcoSimData.buildings['Bourg'] = {
                         "totalEnCuivre": 50
                     },
                     "prerequis": {
-                        "prestige": 3
+                        "prestige": 30
                     },
                     "gainsMensuels": {
                         "prestige": 0.2,
                         "stats": {
                             "intelligence": 0.1,
-                            "force": 0.6,
-                            "constitution": 0.5,
+                            "force": 0.4,
+                            "constitution": 0.3,
                             "dexterite": 0.2,
-                            "sagesse": 0.2,
+                            "sagesse": 0.1,
                             "charisme": 0.1
                         }
                     },
@@ -1878,9 +1801,6 @@ EcoSimData.buildings['Bourg'] = {
                 },
                 "Outils Simples": {
                     "distance": 5
-                },
-                "Sécurité": {
-                    "distance": 3
                 }
             },
             "emplois": [
@@ -1892,16 +1812,16 @@ EcoSimData.buildings['Bourg'] = {
                         "totalEnCuivre": 90
                     },
                     "prerequis": {
-                        "prestige": 12
+                        "prestige": 120
                     },
                     "gainsMensuels": {
                         "prestige": 0.5,
                         "stats": {
-                            "intelligence": 0.2,
+                            "intelligence": 0.1,
                             "force": 0.4,
-                            "constitution": 0.5,
-                            "dexterite": 0.4,
-                            "sagesse": 0.3,
+                            "constitution": 0.4,
+                            "dexterite": 0.3,
+                            "sagesse": 0.2,
                             "charisme": 0.1
                         }
                     },
@@ -1915,16 +1835,16 @@ EcoSimData.buildings['Bourg'] = {
                         "totalEnCuivre": 60
                     },
                     "prerequis": {
-                        "prestige": 3
+                        "prestige": 30
                     },
                     "gainsMensuels": {
                         "prestige": 0.2,
                         "stats": {
-                            "intelligence": 0.2,
-                            "force": 0.4,
-                            "constitution": 0.4,
-                            "dexterite": 0.4,
-                            "sagesse": 0.2,
+                            "intelligence": 0.1,
+                            "force": 0.3,
+                            "constitution": 0.3,
+                            "dexterite": 0.3,
+                            "sagesse": 0.1,
                             "charisme": 0.1
                         }
                     },

@@ -207,77 +207,82 @@ document.addEventListener('DOMContentLoaded', () => {
         return { score: finalScore, modifier: modifier };
     };
 
-    function getDisplayStats(person) {
-        const raceData = RACES_DATA.races[person.race];
-        if (!raceData) {
-            let finalStats = {};
-            for (const stat in person.stats) {
-                finalStats[stat] = convertToDnD(person.stats[stat]).score;
-            }
-            return finalStats;
-        }
-    
-        let modifiedScores = {};
+function getDisplayStats(person) {
+    const raceData = RACES_DATA.races[person.race];
+    if (!raceData) {
+        let finalStats = {};
         for (const stat in person.stats) {
-            modifiedScores[stat] = convertToDnD(person.stats[stat] || 1).score;
+            finalStats[stat] = convertToDnD(person.stats[stat]).score;
         }
-    
-        // Appliquer les bonus de caractéristiques raciaux
-        if (raceData.bonusCarac) {
-            const bonusMapping = {
-                'Force': 'force',
-                'Dextérité': 'dexterite',
-                'Constitution': 'constitution',
-                'Intelligence': 'intelligence',
-                'Sagesse': 'sagesse',
-                'Charisme': 'charisme'
-            };
-    
-            for (const statName in raceData.bonusCarac) {
-                const mappedStat = bonusMapping[statName];
-                if (mappedStat && typeof modifiedScores[mappedStat] === 'number') {
-                    modifiedScores[mappedStat] += raceData.bonusCarac[statName];
-                }
+        return finalStats;
+    }
+
+    let modifiedScores = {};
+    for (const stat in person.stats) {
+        modifiedScores[stat] = convertToDnD(person.stats[stat] || 1).score;
+    }
+
+    // --- BLOC DÉPLACÉ ET CORRIGÉ ---
+    // 1. Appliquer les modificateurs de jeunesse en PREMIER
+    const isChildOrTeen = person.age < raceData.ageTravail;
+    if (isChildOrTeen) {
+        let scalingFactor;
+        if (person.age < raceData.ageApprentissage) {
+            scalingFactor = 0.4;
+        } else {
+            const startAge = raceData.ageApprentissage;
+            const endAge = raceData.ageTravail;
+            const apprenticeshipDuration = endAge - startAge;
+            const startFactor = 0.4;
+            const endFactor = 1.0;
+            let progress = (apprenticeshipDuration > 0) ? (person.age - startAge) / apprenticeshipDuration : 1.0;
+            scalingFactor = startFactor + (endFactor - startFactor) * progress;
+        }
+        // Appliquer le facteur de réduction à chaque stat de base
+        for (const stat in modifiedScores) {
+            modifiedScores[stat] = Math.round(modifiedScores[stat] * scalingFactor);
+        }
+    }
+
+    // 2. Appliquer les bonus de caractéristiques raciaux
+    if (raceData.bonusCarac) {
+        const bonusMapping = {
+            'Force': 'force',
+            'Dextérité': 'dexterite',
+            'Constitution': 'constitution',
+            'Intelligence': 'intelligence',
+            'Sagesse': 'sagesse',
+            'Charisme': 'charisme'
+        };
+
+        for (const statName in raceData.bonusCarac) {
+            const mappedStat = bonusMapping[statName];
+            if (mappedStat && typeof modifiedScores[mappedStat] === 'number') {
+                modifiedScores[mappedStat] += raceData.bonusCarac[statName];
             }
         }
-    
-        const isChildOrTeen = person.age < raceData.ageTravail;
-        if (isChildOrTeen) {
-            if (person.age < raceData.ageApprentissage) {
-                for (const stat in modifiedScores) {
-                    modifiedScores[stat] = Math.round(modifiedScores[stat] * 0.4);
-                }
-            } else {
-                const startAge = raceData.ageApprentissage;
-                const endAge = raceData.ageTravail;
-                const apprenticeshipDuration = endAge - startAge;
-                const startFactor = 0.4;
-                const endFactor = 1.0;
-                let progress = (apprenticeshipDuration > 0) ? (person.age - startAge) / apprenticeshipDuration : 1.0;
-                const scalingFactor = startFactor + (endFactor - startFactor) * progress;
-                for (const stat in modifiedScores) {
-                    const baseScore = convertToDnD(person.stats[stat] || 1).score;
-                    modifiedScores[stat] = Math.round(baseScore * scalingFactor);
-                }
-            }
-        }
-    
-        if (person.gender === 'Femme') {
-            modifiedScores.force -= 2;
-            modifiedScores.constitution -= 1;
-            modifiedScores.dexterite += 1;
-            modifiedScores.charisme += 2;
-        }
-    
-        const middleAgeThreshold = raceData.esperanceVieMax * 0.5;
-        const oldAgeThreshold = raceData.esperanceVieMax * 0.7;
-        const veryOldAgeThreshold = raceData.esperanceVieMax * 0.85;
-    
+    }
+
+    // 3. Appliquer les modificateurs de genre
+    if (person.gender === 'Femme') {
+        modifiedScores.force -= 1;
+        modifiedScores.constitution -= 1;
+        modifiedScores.dexterite += 1;
+        modifiedScores.charisme += 1;
+    }
+
+    // 4. Appliquer les modificateurs de vieillesse
+    const middleAgeThreshold = raceData.esperanceVieMax * 0.3;
+    const oldAgeThreshold = raceData.esperanceVieMax * 0.5;
+    const veryOldAgeThreshold = raceData.esperanceVieMax * 0.7;
+
+    // IMPORTANT : Les modificateurs de vieillesse ne s'appliquent pas aux jeunes.
+    if (!isChildOrTeen) {
         if (person.age > veryOldAgeThreshold) {
             modifiedScores.force -= 4;
             modifiedScores.dexterite -= 4;
             modifiedScores.constitution -= 5;
-            modifiedScores.sagesse += 2;
+            modifiedScores.sagesse += 1;
             modifiedScores.intelligence += 1;
         } else if (person.age > oldAgeThreshold) {
             modifiedScores.force -= 2;
@@ -288,13 +293,15 @@ document.addEventListener('DOMContentLoaded', () => {
             modifiedScores.force -= 1;
             modifiedScores.constitution -= 1;
         }
-    
-        let finalScores = {};
-        for (const stat in modifiedScores) {
-            finalScores[stat] = Math.max(1, modifiedScores[stat]);
-        }
-        return finalScores;
     }
+
+    // 5. Finaliser les scores
+    let finalScores = {};
+    for (const stat in modifiedScores) {
+        finalScores[stat] = Math.max(1, modifiedScores[stat]);
+    }
+    return finalScores;
+}
 
     const getPersonById = (id, scope) => scope.find(p => p.id === id);
     const getParents = (person, scope) => (person.parents || []).map(id => getPersonById(id, scope)).filter(Boolean);
