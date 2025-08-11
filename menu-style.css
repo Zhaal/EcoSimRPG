@@ -16,7 +16,8 @@
     --color-border: #A1887F;
     --color-error: #B71C1C;
     --font-title: 'Cinzel', serif;
-    --font-body: 'Lora', serif;
+    --font-body: 'Merriweather', serif;
+    --font-special: 'MedievalSharp', cursive;
 }
 
 /* --- Conteneur principal du menu flottant --- */
