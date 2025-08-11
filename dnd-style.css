@@ -1,0 +1,91 @@
+/* dnd-style.css - D&D theme overrides */
+
+:root {
+    --font-title: 'Cinzel', serif;
+    --font-body: 'Merriweather', serif;
+    --font-special: 'MedievalSharp', cursive;
+
+    /* Nouvelle palette de couleurs D&D */
+    --color-parchment: #f5eeda;
+    --color-border: #8a6a57; /* Un marron plus riche */
+    --color-dark-text: #4d4033; /* Un marron foncé moins noir */
+    --color-gold: #c59c3c; /* Un vieil or */
+    --color-primary-accent: #6a0f0f; /* Un rouge sang / bordeaux */
+    --color-primary-accent-dark: #4a0a0a;
+    --color-stone-gray: #6c757d;
+}
+
+body {
+    font-family: var(--font-body);
+}
+
+.main-title {
+    font-family: var(--font-special) !important;
+    font-size: 5.5em !important; /* Un peu plus grand */
+    font-weight: normal !important; /* La police est déjà très stylisée */
+    letter-spacing: 0.05em !important;
+}
+
+.subtitle {
+    font-family: var(--font-body) !important;
+    font-size: 1.5em !important;
+    font-style: italic !important;
+    opacity: 0.9 !important;
+    margin-top: 10px !important;
+}
+
+.intro-section, .step-card, .choice-card p {
+    font-family: var(--font-body) !important;
+}
+
+.intro-section h2, .step-card-header h3, .step-number, .choice-card h3, .cta-button {
+     font-family: var(--font-title) !important;
+}
+
+body {
+    background-image: url('https://www.transparenttextures.com/patterns/old-paper.png');
+    background-color: #f5eeda; /* Fallback color */
+}
+
+.main-content-index {
+    background: none;
+    /* border: 20px solid transparent;
+    border-image: url(https://i.imgur.com/gO9gB7m.png) 30 round; */
+    padding: 20px;
+}
+
+/* --- Menu Flottant --- */
+.floating-menu {
+    background: linear-gradient(135deg, var(--color-primary-accent), var(--color-primary-accent-dark));
+    border-right: 2px solid var(--color-gold);
+}
+
+/* --- En-tête --- */
+.index-header {
+    background: linear-gradient(135deg, var(--color-primary-accent), var(--color-primary-accent-dark), #3E2723);
+    border-bottom: 5px solid var(--color-gold);
+}
+
+/* --- Numéro d'étape --- */
+.step-number {
+    background-color: var(--color-primary-accent);
+}
+
+/* --- Bouton d'action --- */
+.cta-button {
+    background-color: var(--color-primary-accent);
+    border-bottom: 4px solid var(--color-primary-accent-dark);
+}
+
+.cta-button:hover {
+    background-color: var(--color-primary-accent-dark);
+}
+
+/* --- Cartes --- */
+.step-card, .choice-card {
+    border-radius: 4px; /* Coins moins arrondis */
+    border: 10px solid transparent;
+    border-image: url(https://i.imgur.com/v8u9x2A.png) 20 round; /* Une bordure plus simple */
+    box-shadow: 5px 5px 15px rgba(0,0,0,0.5);
+    background-color: var(--color-parchment);
+}
